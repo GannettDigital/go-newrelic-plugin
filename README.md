@@ -1,1 +1,1 @@
-# go-newrelic-plugin
+go-newrelic-plugin
