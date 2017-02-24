@@ -25,7 +25,7 @@ node {
     --environment=\"${environment}\" \
     --region=\"${region}\" \
     --ci-job-number=${env.BUILD_ID} \
-    --codecov-token=\"${env.CODECOV_GO_SCALRIFY}\" \
+    --codecov-token=\"${env.CODECOV_GO_NEWRELIC_PLUGIN}\" \
     --package \
     --skip-deploy \
     --skip-swagger"
