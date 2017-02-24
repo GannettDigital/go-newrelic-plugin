@@ -26,9 +26,9 @@ const (
 	// NewRelic settings
 	DefaultNewRelicKey = "FAKELICENSEKEYFAKELICENSEKEYFAKELICENSEK"
 	// Nginx settings
-	DefaultNGINXListenPort = "8140"
-	DefaultNGINXStatusURI  = "nginx_status"
-	DefaultNGINXStatusPage = "http://localhost"
+	DefaultNginxListenPort = "8140"
+	DefaultNginxStatusURI  = "nginx_status"
+	DefaultNginxStatusPage = "http://localhost"
 )
 
 // Options -
@@ -36,9 +36,9 @@ var opts struct {
 	// optional
 	AppName         string `long:"app-name"`
 	NewRelicKey     string `long:"new-relic-key"`
-	NGINXListenPort string `long:"nginx-listen-port"`
-	NGINXStatusURI  string `long:"nginx-status-uri"`
-	NGINXStatusPage string `long:"nginx-status-page"`
+	NginxListenPort string `long:"nginx-listen-port"`
+	NginxStatusURI  string `long:"nginx-status-uri"`
+	NginxStatusPage string `long:"nginx-status-page"`
 }
 
 func init() {
@@ -52,14 +52,14 @@ func init() {
 	if opts.NewRelicKey == "" {
 		opts.NewRelicKey = DefaultNewRelicKey
 	}
-	if opts.NGINXListenPort == "" {
-		opts.NGINXListenPort = DefaultNGINXListenPort
+	if opts.NginxListenPort == "" {
+		opts.NginxListenPort = DefaultNginxListenPort
 	}
-	if opts.NGINXStatusURI == "" {
-		opts.NGINXStatusURI = DefaultNGINXStatusURI
+	if opts.NginxStatusURI == "" {
+		opts.NginxStatusURI = DefaultNginxStatusURI
 	}
-	if opts.NGINXStatusPage == "" {
-		opts.NGINXStatusPage = DefaultNGINXStatusPage
+	if opts.NginxStatusPage == "" {
+		opts.NginxStatusPage = DefaultNginxStatusPage
 	}
 }
 
@@ -67,15 +67,15 @@ func getMetrics(app newrelicMonitoring.Application) {
 	pluginConfig := events.Config{
 		App:     app,
 		AppName: opts.AppName,
-		NGINXConfig: helpers.NGINXConfig{
-			NGINXListenPort: opts.NGINXListenPort,
-			NGINXStatusURI:  opts.NGINXStatusURI,
-			NGINXStatusPage: opts.NGINXStatusPage,
+		NginxConfig: helpers.NginxConfig{
+			NginxListenPort: opts.NginxListenPort,
+			NginxStatusURI:  opts.NginxStatusURI,
+			NginxStatusPage: opts.NginxStatusPage,
 		},
 	}
 
 	for {
-		pluginConfig.NGINXEvent()
+		pluginConfig.NginxEvent()
 		time.Sleep(time.Minute)
 	}
 }

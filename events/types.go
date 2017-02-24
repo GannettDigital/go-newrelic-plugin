@@ -8,5 +8,5 @@ import (
 type Config struct {
 	App         newrelicMonitoring.Application
 	AppName     string
-	NGINXConfig helpers.NGINXConfig
+	NginxConfig helpers.NginxConfig
 }

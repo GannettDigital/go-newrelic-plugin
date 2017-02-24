@@ -9,13 +9,13 @@ import (
 	"github.com/franela/goblin"
 )
 
-var fakeConfig helpers.NGINXConfig
+var fakeConfig helpers.NginxConfig
 
 func init() {
-	fakeConfig = helpers.NGINXConfig{
-		NGINXListenPort: "8140",
-		NGINXStatusURI:  "nginx_status",
-		NGINXStatusPage: "http://localhost",
+	fakeConfig = helpers.NginxConfig{
+		NginxListenPort: "8140",
+		NginxStatusURI:  "nginx_status",
+		NginxStatusPage: "http://localhost",
 	}
 }
 
@@ -41,7 +41,7 @@ func TestPollStatus(t *testing.T) {
 				Waiting:     1,
 				Reading:     0,
 			},
-			TestDescription: "Successfully GET NGINX status page",
+			TestDescription: "Successfully GET Nginx status page",
 		},
 	}
 
@@ -55,7 +55,7 @@ func TestPollStatus(t *testing.T) {
 	}
 }
 
-func TestGetNGINXStatus(t *testing.T) {
+func TestGetNginxStatus(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	var tests = []struct {
@@ -67,14 +67,14 @@ func TestGetNGINXStatus(t *testing.T) {
 				Code: 200,
 				Data: []byte("Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 "),
 			},
-			TestDescription: "Successfully GET NGINX status page",
+			TestDescription: "Successfully GET Nginx status page",
 		},
 	}
 
 	for _, test := range tests {
-		g.Describe("getNGINXStatus()", func() {
+		g.Describe("getNginxStatus()", func() {
 			g.It(test.TestDescription, func() {
-				result := getNGINXStatus(&fakeConfig, test.HTTPRunner)
+				result := getNginxStatus(&fakeConfig, test.HTTPRunner)
 				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.Data))).Equal(true)
 			})
 		})

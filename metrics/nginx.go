@@ -24,12 +24,12 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func PollStatus(config *helpers.NGINXConfig, runner utilsHTTP.HTTPRunner) helpers.NginxMetrics {
-	return scrapeStatus(getNGINXStatus(config, runner))
+func PollStatus(config *helpers.NginxConfig, runner utilsHTTP.HTTPRunner) helpers.NginxMetrics {
+	return scrapeStatus(getNginxStatus(config, runner))
 }
 
-func getNGINXStatus(config *helpers.NGINXConfig, runner utilsHTTP.HTTPRunner) string {
-	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NGINXStatusPage, config.NGINXListenPort, config.NGINXStatusURI)
+func getNginxStatus(config *helpers.NginxConfig, runner utilsHTTP.HTTPRunner) string {
+	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxStatusPage, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
 	if err != nil {
@@ -47,9 +47,9 @@ func getNGINXStatus(config *helpers.NGINXConfig, runner utilsHTTP.HTTPRunner) st
 			"code":                   code,
 			"data":                   string(data),
 			"httpReq":                httpReq,
-			"config.NGINXStatusPage": config.NGINXStatusPage,
-			"config.NGINXListenPort": config.NGINXListenPort,
-			"config.NGINXStatusURI":  config.NGINXStatusURI,
+			"config.NginxStatusPage": config.NginxStatusPage,
+			"config.NginxListenPort": config.NginxListenPort,
+			"config.NginxStatusURI":  config.NginxStatusURI,
 			"error":                  err,
 		}).Error("Encountered error calling CallAPI")
 

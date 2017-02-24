@@ -11,16 +11,16 @@ import (
 
 var log = logrus.New()
 
-// NGINXEvent - record NGINX metrics
-func (config *Config) NGINXEvent() {
+// NginxEvent - record Nginx metrics
+func (config *Config) NginxEvent() {
 	var runner utilsHTTP.HTTPRunnerImpl
-	pollResult := metrics.PollStatus(&config.NGINXConfig, runner)
+	pollResult := metrics.PollStatus(&config.NginxConfig, runner)
 
 	log.WithFields(logrus.Fields{
 		"config": config,
-	}).Info("Reporting NGINXMetrics to NewRelic")
+	}).Info("Reporting NginxMetrics to NewRelic")
 
-	config.App.RecordCustomEvent("NGINXMetrics", map[string]interface{}{
+	config.App.RecordCustomEvent("NginxMetrics", map[string]interface{}{
 		"nginx.net.connections": pollResult.Connections,
 		"nginx.net.accepts":     pollResult.Accepts,
 		"nginx.net.handled":     pollResult.Handled,

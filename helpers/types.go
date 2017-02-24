@@ -10,8 +10,8 @@ type NginxMetrics struct {
 	Reading     int //connections where nginx is reading the request header
 }
 
-type NGINXConfig struct {
-	NGINXListenPort string
-	NGINXStatusURI  string
-	NGINXStatusPage string
+type NginxConfig struct {
+	NginxListenPort string
+	NginxStatusURI  string
+	NginxStatusPage string
 }
