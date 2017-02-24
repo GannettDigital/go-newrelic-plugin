@@ -20,13 +20,15 @@ Default app name should actually make sense (app, env, etc)
 var log = logrus.New()
 
 const (
-	// App name
+	// DefaultAppName - App name
 	DefaultAppName = "go-newrelic-plugin"
-	// NewRelic settings
+	// DefaultNewRelicKey - NewRelic settings
 	DefaultNewRelicKey = "FAKELICENSEKEYFAKELICENSEKEYFAKELICENSEK"
-	// Nginx settings
+	// DefaultNginxListenPort - Nginx settings
 	DefaultNginxListenPort = "8140"
-	DefaultNginxStatusURI  = "nginx_status"
+	// DefaultNginxStatusURI - Nginx settings
+	DefaultNginxStatusURI = "nginx_status"
+	// DefaultNginxStatusPage - Nginx settings
 	DefaultNginxStatusPage = "http://localhost"
 )
 
