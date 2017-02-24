@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -96,7 +95,10 @@ func main() {
 	// Relic UI.
 	app, err := newrelicMonitoring.NewApplication(cfg)
 	if err != nil {
-		fmt.Println(err)
+		log.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("NewRelic application setup error")
+
 		os.Exit(1)
 	}
 

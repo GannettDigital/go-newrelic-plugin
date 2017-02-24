@@ -1,7 +1,6 @@
 package events
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/GannettDigital/go-newrelic-plugin/metrics"
@@ -37,8 +36,6 @@ func (config *Config) CustomEventExample() {
 	rint := rand.Intn(100)
 	cpu := metrics.GetCPULoad()
 	mem := metrics.GetMemFree()
-
-	fmt.Println("Testing Go Nginx Test")
 
 	config.App.RecordCustomEvent(customeventname, map[string]interface{}{
 		"testInt": rint,
