@@ -1,4 +1,4 @@
-go-newrelic-plugin
+# go-newrelic-plugin
 
 This repository holds the go-newrelic-plugin which uses [New Relic Go Agent](https://github.com/newrelic/go-agent) to send [custom events](https://docs.newrelic.com/docs/insights/new-relic-insights/custom-events/inserting-custom-events-new-relic-apm-agents) to Insights as a sort of plugin.
 
