@@ -28,10 +28,7 @@ node {
     --codecov-token=\"${env.CODECOV_GO_SCALRIFY}\" \
     --package \
     --skip-deploy \
-    --skip-swagger \
-    --skip-unit-tests \
-    --skip-validate \
-    --skip-source-check"
+    --skip-swagger"
   }
   catch (err) {
     currentBuild.result = "FAILURE"
