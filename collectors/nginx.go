@@ -1,4 +1,4 @@
-package goNewRelicCollector
+package collectors
 
 import (
 	"bytes"
@@ -22,12 +22,12 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func nginxCollector(config Config, stats chan<- map[string]string) {
+func NginxCollector(config Config, stats chan<- map[string]interface{}) {
 	var runner utilsHTTP.HTTPRunnerImpl
-	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, runner))
+	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, stats, runner))
 }
 
-func getNginxStatus(config NginxConfig, runner utilsHTTP.HTTPRunner) string {
+func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
 	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxStatusPage, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
@@ -37,6 +37,7 @@ func getNginxStatus(config NginxConfig, runner utilsHTTP.HTTPRunner) string {
 			"error":       err,
 		}).Error("Encountered error creating http.NewRequest")
 
+		close(stats)
 		return ""
 	}
 
@@ -52,13 +53,15 @@ func getNginxStatus(config NginxConfig, runner utilsHTTP.HTTPRunner) string {
 			"error":                  err,
 		}).Error("Encountered error calling CallAPI")
 
+		close(stats)
 		return ""
 	}
 
 	return string(data)
 }
 
-func scrapeStatus(status string) map[string]string {
+func scrapeStatus(status string) map[string]interface{} {
+
 	multi := regexp.MustCompile(`Active connections: (\d+)`).FindString(status)
 	contents := strings.Fields(multi)
 	active := contents[2]
@@ -91,7 +94,7 @@ func scrapeStatus(status string) map[string]string {
 		"waiting":  waiting,
 	}).Info("Scraped NGINX values")
 
-	return map[string]string{
+	return map[string]interface{}{
 		"nginx.net.connections": active,
 		"nginx.net.accepts":     accepts,
 		"nginx.net.handled":     handled,

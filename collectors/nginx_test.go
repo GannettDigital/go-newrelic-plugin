@@ -1,10 +1,10 @@
-package goNewRelicCollector
+package collectors
 
 import (
 	"reflect"
 	"testing"
 
-	fake "github.com/GannettDigital/go-newrelic-plugin/goNewRelicCollector/fake"
+	fake "github.com/GannettDigital/go-newrelic-plugin/collectors/fake"
 	"github.com/franela/goblin"
 )
 
@@ -37,7 +37,7 @@ func TestGetNginxStatus(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("getNginxStatus()", func() {
 			g.It(test.TestDescription, func() {
-				result := getNginxStatus(fakeConfig, test.HTTPRunner)
+				result := getNginxStatus(fakeConfig, make(chan map[string]interface{}, 1), test.HTTPRunner)
 				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.Data))).Equal(true)
 			})
 		})
@@ -49,12 +49,12 @@ func TestScrapeStatus(t *testing.T) {
 
 	var tests = []struct {
 		Data            string
-		ExpectedResult  map[string]string
+		ExpectedResult  map[string]interface{}
 		TestDescription string
 	}{
 		{
 			Data: "Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 ",
-			ExpectedResult: map[string]string{
+			ExpectedResult: map[string]interface{}{
 				"nginx.net.connections": "2",
 				"nginx.net.accepts":     "29",
 				"nginx.net.handled":     "29",
