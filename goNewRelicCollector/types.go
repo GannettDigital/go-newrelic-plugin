@@ -37,4 +37,12 @@ tags:
 */
 
 type Config struct {
+	AppName     string
+	NginxConfig NginxConfig
+}
+
+type NginxConfig struct {
+	NginxListenPort string
+	NginxStatusURI  string
+	NginxStatusPage string
 }
