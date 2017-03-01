@@ -2,7 +2,8 @@ package: github.com/GannettDigital/go-newrelic-plugin
 import:
 - package: github.com/Sirupsen/logrus
 - package: github.com/newrelic/go-agent
-- package: github.com/oleiade/reflections
+- package: "github.com/jessevdk/go-flags"
+- package: github.com/shirou/gopsutil
 - package: github.com/GannettDigital/paas-api-utils
   repo: git@github.com:GannettDigital/paas-api-utils.git
   version: =2.0.0
