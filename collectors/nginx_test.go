@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	fake "github.com/GannettDigital/go-newrelic-plugin/goNewRelicCollector/fake"
+	fake "github.com/GannettDigital/go-newrelic-plugin/collectors/fake"
 	"github.com/franela/goblin"
 )
 
@@ -37,7 +37,7 @@ func TestGetNginxStatus(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("getNginxStatus()", func() {
 			g.It(test.TestDescription, func() {
-				result := getNginxStatus(fakeConfig, test.HTTPRunner)
+				result := getNginxStatus(fakeConfig, make(chan map[string]interface{}, 1), test.HTTPRunner)
 				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.Data))).Equal(true)
 			})
 		})

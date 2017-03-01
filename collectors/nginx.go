@@ -24,10 +24,10 @@ var log = logrus.New()
 
 func NginxCollector(config Config, stats chan<- map[string]interface{}) {
 	var runner utilsHTTP.HTTPRunnerImpl
-	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, runner))
+	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, stats, runner))
 }
 
-func getNginxStatus(config NginxConfig, runner utilsHTTP.HTTPRunner) string {
+func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
 	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxStatusPage, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
@@ -37,6 +37,7 @@ func getNginxStatus(config NginxConfig, runner utilsHTTP.HTTPRunner) string {
 			"error":       err,
 		}).Error("Encountered error creating http.NewRequest")
 
+		close(stats)
 		return ""
 	}
 
@@ -52,6 +53,7 @@ func getNginxStatus(config NginxConfig, runner utilsHTTP.HTTPRunner) string {
 			"error":                  err,
 		}).Error("Encountered error calling CallAPI")
 
+		close(stats)
 		return ""
 	}
 

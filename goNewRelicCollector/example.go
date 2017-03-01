@@ -1,7 +1,9 @@
 package collectors
 
+import "github.com/GannettDigital/go-newrelic-plugin/collectors"
+
 // ExampleCollector used for reference for collector developers
-func ExampleCollector(config Config, stats chan<- map[string]interface{}) {
+func ExampleCollector(config collectors.Config, stats chan<- map[string]interface{}) {
 	// do something real to collect some stats for your specific technology //
 
 	// Important:
