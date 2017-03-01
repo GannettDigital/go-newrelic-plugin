@@ -18,6 +18,7 @@ func main() {
 	config := collectors.Config{
 		AppName: "test-newrelic-plugin",
 		NginxConfig: collectors.NginxConfig{
+			Enabled:         true,
 			NginxListenPort: "8140",
 			NginxStatusURI:  "nginx_status",
 			NginxStatusPage: "http://localhost",

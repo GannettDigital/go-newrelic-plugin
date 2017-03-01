@@ -3,7 +3,7 @@ package collectors
 var CollectorArray map[string]Collector
 
 // As we develop new collectors, add to this list here, so that our dispatcher
-// knows abou tthem
+// knows about them
 func init() {
 	CollectorArray = map[string]Collector{
 		"nginx": NginxCollector,
@@ -30,6 +30,7 @@ type Config struct {
 }
 
 type NginxConfig struct {
+	Enabled         bool
 	NginxListenPort string
 	NginxStatusURI  string
 	NginxStatusPage string
