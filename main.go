@@ -29,7 +29,7 @@ func main() {
 			// TODO: random delay to offset collections
 			// TODO: time sourced from config
 			ticker := time.NewTicker(time.Millisecond * 500)
-			for _ := range ticker.C {
+			for _ = range ticker.C {
 				go getResult(collectorName, app, config, collectorValue)
 			}
 			//}
