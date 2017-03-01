@@ -1,4 +1,4 @@
-package goNewRelicCollector
+package collectors
 
 import (
 	"reflect"
@@ -49,12 +49,12 @@ func TestScrapeStatus(t *testing.T) {
 
 	var tests = []struct {
 		Data            string
-		ExpectedResult  map[string]string
+		ExpectedResult  map[string]interface{}
 		TestDescription string
 	}{
 		{
 			Data: "Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 ",
-			ExpectedResult: map[string]string{
+			ExpectedResult: map[string]interface{}{
 				"nginx.net.connections": "2",
 				"nginx.net.accepts":     "29",
 				"nginx.net.handled":     "29",

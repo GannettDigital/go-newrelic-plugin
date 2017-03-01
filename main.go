@@ -5,35 +5,36 @@ import (
 	"os"
 	"time"
 
+	"github.com/GannettDigital/go-newrelic-plugin/collectors"
 	"github.com/Sirupsen/logrus"
 	newrelicMonitoring "github.com/newrelic/go-agent"
 )
 
+var log = logrus.New()
+
 func main() {
-	// list of collectors that exist
-	// the key needs to match the value as defined in the config file
-	// the value is the collector method that will be used to gather the stats for that type
-	collectorArray := map[string]Collector{
-		"nginx": nginxCollector,
+
+	// TODO: populate config from config.yaml
+	config := collectors.Config{
+		AppName: "test-newrelic-plugin",
+		NginxConfig: collectors.NginxConfig{
+			NginxListenPort: "8140",
+			NginxStatusURI:  "nginx_status",
+			NginxStatusPage: "http://localhost",
+		},
 	}
 
-	// TODO: populate config
-	config := Config{}
-
 	app := setupNewRelic(config)
+
 	// main routine
-	for name, collector := range collectorArray {
-		go func(collectorName string, collectorValue Collector) {
-			//if _, exists := config[collectorName]; exists {
-			//if config[collectorName]["enabled"] == "true" || true {
+	for name, collector := range collectors.CollectorArray {
+		go func(collectorName string, collectorValue collectors.Collector) {
 			// TODO: random delay to offset collections
 			// TODO: time sourced from config
-			ticker := time.NewTicker(time.Millisecond * 500)
+			ticker := time.NewTicker(time.Millisecond * 1000)
 			for _ = range ticker.C {
 				go getResult(collectorName, app, config, collectorValue)
 			}
-			//}
-			//}
 		}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
 	}
 
@@ -42,29 +43,43 @@ func main() {
 
 }
 
-func getResult(collectorName string, app newrelicMonitoring.Application, config Config, collector Collector) {
-	fmt.Println("get result for", collectorName)
-	c := make(chan map[string]string, 1)
+func getResult(collectorName string, app newrelicMonitoring.Application, config collectors.Config, collector collectors.Collector) {
+	c := make(chan map[string]interface{}, 1)
 	collector(config, c)
 
 	select {
-	case res := <-c:
-		sendData(collectorName, app, config, res)
+	case res, success := <-c:
+		if success {
+			log.WithFields(logrus.Fields{
+				"collector": collectorName,
+			}).Info("received data from collector")
+			sendData(collectorName, app, config, res)
+		} else {
+			log.WithFields(logrus.Fields{
+				"collector": collectorName,
+			}).Error("received error from collector")
+		}
 	case <-time.After(time.Second * 10):
 		// timeout so we don't leaving threads that block forever
+		log.WithFields(logrus.Fields{
+			"collector": collectorName,
+		}).Error("dispatcher timed out waiting for response from collector")
 	}
 }
 
-func sendData(collectorName string, app newrelicMonitoring.Application, config Config, stats map[string]string) {
+func sendData(collectorName string, app newrelicMonitoring.Application, config collectors.Config, stats map[string]interface{}) {
+	log.WithFields(logrus.Fields{
+		"collector": collectorName,
+	}).Info("recording event")
 	// send stats
-	App.RecordCustomEvent(collectorName, stats)
+	app.RecordCustomEvent(fmt.Sprintf("gannettNewRelic%s", collectorName), stats)
 }
 
-func setupNewRelic(config Config) newrelicMonitoring.Application {
+func setupNewRelic(config collectors.Config) newrelicMonitoring.Application {
 
 	// TODO: pull from config
 	// Create an app config.  Application name and New Relic license key are required.
-	cfg := newrelicMonitoring.NewConfig("test-newrelic-plugin", os.Getenv("NR_KEY"))
+	cfg := newrelicMonitoring.NewConfig(config.AppName, os.Getenv("NR_KEY"))
 
 	// Enable Go runtime metrics for the plugin
 	cfg.RuntimeSampler.Enabled = true
