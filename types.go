@@ -11,7 +11,7 @@ package goNewRelicCollector
   }
 
 */
-type Collector func(config Config, stats chan<- map[string]string)
+type Collector func(config Config, stats chan<- map[string]interface{})
 
 // TODO:
 // source from config.yaml
