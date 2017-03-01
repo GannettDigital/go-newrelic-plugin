@@ -1,14 +1,12 @@
-package metrics
+package collectors
 
 import (
 	"bytes"
 	"fmt"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
@@ -24,11 +22,12 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func PollStatus(config *helpers.NginxConfig, runner utilsHTTP.HTTPRunner) helpers.NginxMetrics {
-	return scrapeStatus(getNginxStatus(config, runner))
+func NginxCollector(config Config, stats chan<- map[string]interface{}) {
+	var runner utilsHTTP.HTTPRunnerImpl
+	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, stats, runner))
 }
 
-func getNginxStatus(config *helpers.NginxConfig, runner utilsHTTP.HTTPRunner) string {
+func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
 	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxStatusPage, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
@@ -38,6 +37,7 @@ func getNginxStatus(config *helpers.NginxConfig, runner utilsHTTP.HTTPRunner) st
 			"error":       err,
 		}).Error("Encountered error creating http.NewRequest")
 
+		close(stats)
 		return ""
 	}
 
@@ -53,13 +53,15 @@ func getNginxStatus(config *helpers.NginxConfig, runner utilsHTTP.HTTPRunner) st
 			"error":                  err,
 		}).Error("Encountered error calling CallAPI")
 
+		close(stats)
 		return ""
 	}
 
 	return string(data)
 }
 
-func scrapeStatus(status string) helpers.NginxMetrics {
+func scrapeStatus(status string) map[string]interface{} {
+
 	multi := regexp.MustCompile(`Active connections: (\d+)`).FindString(status)
 	contents := strings.Fields(multi)
 	active := contents[2]
@@ -90,33 +92,15 @@ func scrapeStatus(status string) helpers.NginxMetrics {
 		"reading":  reading,
 		"writing":  writing,
 		"waiting":  waiting,
-	}).Warn("Encountered error creating http.NewRequest")
+	}).Info("Scraped NGINX values")
 
-	return helpers.NginxMetrics{
-		Connections: toInt(active),
-		Accepts:     toInt(accepts),
-		Handled:     toInt(handled),
-		Requests:    toInt(requests),
-		Writing:     toInt(writing),
-		Waiting:     toInt(waiting),
-		Reading:     toInt(reading),
-	}
-}
-
-func toInt(value string) int {
-	if value == "" {
-		return 0
-	} else {
-		valueInt, err := strconv.Atoi(value)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"valueInt": valueInt,
-				"error":    err,
-			}).Error("Error converting value to int")
-
-			return 0
-		}
-
-		return valueInt
+	return map[string]interface{}{
+		"nginx.net.connections": active,
+		"nginx.net.accepts":     accepts,
+		"nginx.net.handled":     handled,
+		"nginx.net.requests":    requests,
+		"nginx.net.writing":     writing,
+		"nginx.net.waiting":     waiting,
+		"nginx.net.reading":     reading,
 	}
 }
