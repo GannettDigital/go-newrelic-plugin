@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	reflections "gopkg.in/oleiade/reflections.v1"
+
 	"github.com/GannettDigital/go-newrelic-plugin/collectors"
 	"github.com/Sirupsen/logrus"
 	newrelicMonitoring "github.com/newrelic/go-agent"
@@ -17,11 +19,12 @@ func main() {
 	// TODO: populate config from config.yaml
 	config := collectors.Config{
 		AppName: "test-newrelic-plugin",
-		NginxConfig: collectors.NginxConfig{
+		Nginx: collectors.NginxConfig{
 			Enabled:         true,
 			NginxListenPort: "8140",
 			NginxStatusURI:  "nginx_status",
 			NginxStatusPage: "http://localhost",
+			PollIntervalMS:  500,
 		},
 	}
 
@@ -29,14 +32,43 @@ func main() {
 
 	// main routine
 	for name, collector := range collectors.CollectorArray {
-		go func(collectorName string, collectorValue collectors.Collector) {
-			// TODO: random delay to offset collections
-			// TODO: time sourced from config
-			ticker := time.NewTicker(time.Millisecond * 1000)
-			for _ = range ticker.C {
-				go getResult(collectorName, app, config, collectorValue)
+		conf, err := reflections.GetField(config, name)
+
+		if err == nil {
+			enabled, err := reflections.GetField(conf, "Enabled")
+			if err == nil && enabled.(bool) {
+				log.WithFields(logrus.Fields{
+					"collector": name,
+				}).Info("collector enabled, starting...")
+				go func(collectorName string, collectorValue collectors.Collector) {
+
+					// TODO: random delay to offset collections
+					poll, _ := reflections.GetField(conf, "PollIntervalMS")
+					ticker := time.NewTicker(time.Millisecond * time.Duration(poll.(int)))
+					for _ = range ticker.C {
+						go func() {
+							defer func() {
+								// recover from panic if one occured. Set err to nil otherwise.
+								if err := recover(); err != nil {
+									log.WithFields(logrus.Fields{
+										"error": err,
+									}).Error("collector panic'd, bad collector..")
+								}
+							}()
+							getResult(collectorName, app, config, collectorValue)
+						}()
+					}
+				}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
+			} else {
+				log.WithFields(logrus.Fields{
+					"collector": name,
+				}).Info("collector not enabled")
 			}
-		}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
+		} else {
+			log.WithFields(logrus.Fields{
+				"collector": name,
+			}).Info("collector config not found")
+		}
 	}
 
 	done := make(chan bool)

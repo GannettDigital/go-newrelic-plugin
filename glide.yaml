@@ -2,7 +2,7 @@ package: github.com/GannettDigital/go-newrelic-plugin
 import:
 - package: github.com/Sirupsen/logrus
 - package: github.com/newrelic/go-agent
-- package: github.com/oleiade/reflections
+- package: gopkg.in/oleiade/reflections.v1
 - package: github.com/franela/goblin
 - package: github.com/GannettDigital/paas-api-utils
   repo: git@github.com:GannettDigital/paas-api-utils.git

@@ -24,7 +24,7 @@ var log = logrus.New()
 
 func NginxCollector(config Config, stats chan<- map[string]interface{}) {
 	var runner utilsHTTP.HTTPRunnerImpl
-	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, stats, runner))
+	stats <- scrapeStatus(getNginxStatus(config.Nginx, stats, runner))
 }
 
 func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
