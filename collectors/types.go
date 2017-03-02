@@ -25,13 +25,22 @@ func init() {
 type Collector func(config Config, stats chan<- map[string]interface{})
 
 type Config struct {
-	AppName     string
-	NginxConfig NginxConfig
+	AppName        string                  `yaml:"appname"`
+	NewRelicKey    string                  `yaml:"newrelickey"`
+	DefaultDelayMS int                     `yaml:"defaultdelayms"`
+	Collectors     map[string]CommonConfig `yaml:"collectors"`
 }
 
+type CommonConfig struct {
+	Enabled         bool            `yaml:"enabled" required:"true"`
+	DelayMS         int             `yaml:"delayms"`
+	CollectorConfig CollectorConfig `yaml:"collectorconfig"`
+}
+
+type CollectorConfig interface{}
+
 type NginxConfig struct {
-	Enabled         bool
-	NginxListenPort string
-	NginxStatusURI  string
-	NginxStatusPage string
+	NginxListenPort string `yaml:"nginxlistenport"`
+	NginxStatusURI  string `yaml:"nginxstatusuri"`
+	NginxStatusPage string `yaml:"nginxstatuspage"`
 }

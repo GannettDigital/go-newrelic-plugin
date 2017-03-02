@@ -8,33 +8,27 @@ import (
 	"github.com/GannettDigital/go-newrelic-plugin/collectors"
 	"github.com/Sirupsen/logrus"
 	newrelicMonitoring "github.com/newrelic/go-agent"
+	"github.com/spf13/viper"
 )
 
 var log = logrus.New()
 
 func main() {
 
-	// TODO: populate config from config.yaml
-	config := collectors.Config{
-		AppName: "test-newrelic-plugin",
-		NginxConfig: collectors.NginxConfig{
-			Enabled:         true,
-			NginxListenPort: "8140",
-			NginxStatusURI:  "nginx_status",
-			NginxStatusPage: "http://localhost",
-		},
-	}
+	config := loadConfig()
 
 	app := setupNewRelic(config)
 
 	// main routine
 	for name, collector := range collectors.CollectorArray {
 		go func(collectorName string, collectorValue collectors.Collector) {
-			// TODO: random delay to offset collections
-			// TODO: time sourced from config
-			ticker := time.NewTicker(time.Millisecond * 1000)
-			for _ = range ticker.C {
-				go getResult(collectorName, app, config, collectorValue)
+			// if config file has enabled the collector indicated by collectorName
+			if config.Collectors[collectorName].Enabled {
+				// TODO: random delay to offset collections
+				ticker := time.NewTicker(readCollectorDelay(collectorName, config))
+				for _ = range ticker.C {
+					go getResult(collectorName, app, config, collectorValue)
+				}
 			}
 		}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
 	}
@@ -42,6 +36,24 @@ func main() {
 	done := make(chan bool)
 	<-done // block forever
 
+}
+
+func readCollectorDelay(name string, conf collectors.Config) time.Duration {
+	collectorConf := conf.Collectors[name]
+	delay := conf.DefaultDelayMS
+
+	if collectorConf.DelayMS != 0 {
+		delay = collectorConf.DelayMS
+	}
+
+	result, err := time.ParseDuration(fmt.Sprintf("%dms", delay))
+
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("Delay time parsing error")
+	}
+	return result
 }
 
 func getResult(collectorName string, app newrelicMonitoring.Application, config collectors.Config, collector collectors.Collector) {
@@ -80,7 +92,7 @@ func setupNewRelic(config collectors.Config) newrelicMonitoring.Application {
 
 	// TODO: pull from config
 	// Create an app config.  Application name and New Relic license key are required.
-	cfg := newrelicMonitoring.NewConfig(config.AppName, os.Getenv("NR_KEY"))
+	cfg := newrelicMonitoring.NewConfig(config.AppName, config.NewRelicKey)
 
 	// Enable Go runtime metrics for the plugin
 	cfg.RuntimeSampler.Enabled = true
@@ -105,7 +117,41 @@ func setupNewRelic(config collectors.Config) newrelicMonitoring.Application {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("Connection error")
+
+		os.Exit(1)
 	}
 
 	return app
+}
+
+// loadConfig - read from config file and marshal info collectors.Config
+func loadConfig() collectors.Config {
+	// set up viper to find config file
+	vip := viper.New()
+	vip.SetConfigType("yaml")
+	vip.SetConfigName("config")
+	vip.AddConfigPath("/etc/newrelic_plugins/")
+	vip.AddConfigPath(".")
+
+	// read in config file
+	err := vip.ReadInConfig()
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("Error reading config file")
+
+		os.Exit(1)
+	}
+
+	// marshal config file data into collectors.Config and return it
+	var conf collectors.Config
+	err = vip.Unmarshal(&conf)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("Error unmarshaling configs")
+
+		os.Exit(1)
+	}
+	return conf
 }
