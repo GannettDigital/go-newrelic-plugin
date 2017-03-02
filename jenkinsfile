@@ -28,8 +28,6 @@ node {
     --package \
     --skip-deploy \
     --skip-swagger \
-    --skip-validate \
-    --skip-unit-tests \
     --skip-source-check"
   }
   catch (err) {
