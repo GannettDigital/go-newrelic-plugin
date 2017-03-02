@@ -27,7 +27,17 @@ func main() {
 				// TODO: random delay to offset collections
 				ticker := time.NewTicker(readCollectorDelay(collectorName, config))
 				for _ = range ticker.C {
-					go getResult(collectorName, app, config, collectorValue)
+					go func() {
+						defer func() {
+							// recover from panic if one occured. Set err to nil otherwise.
+							if err := recover(); err != nil {
+								log.WithFields(logrus.Fields{
+									"error": err,
+								}).Error("collector panic'd, bad collector..")
+							}
+						}()
+						getResult(collectorName, app, config, collectorValue)
+					}()
 				}
 			}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
 		}
