@@ -23,6 +23,13 @@ func main() {
 			NginxStatusURI:  "nginx_status",
 			NginxStatusPage: "http://localhost",
 		},
+		RabbitmqConfig: collectors.RabbitmqConfig{
+			Enabled:  true,
+			User:     "scalr",
+			Password: "hiTVPamzPm",
+			Port:     "15672",
+			Host:     "http://10.84.100.176",
+		},
 	}
 
 	app := setupNewRelic(config)

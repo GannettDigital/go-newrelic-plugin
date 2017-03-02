@@ -1,6 +1,7 @@
 package: github.com/GannettDigital/go-newrelic-plugin
 import:
 - package: github.com/Sirupsen/logrus
+- package: github.com/michaelklishin/rabbit-hole
 - package: github.com/newrelic/go-agent
 - package: github.com/oleiade/reflections
 - package: github.com/franela/goblin
