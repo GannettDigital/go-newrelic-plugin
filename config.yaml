@@ -1,0 +1,27 @@
+---
+# example config file for plugin
+appname: test-newrelic-plugin
+newrelickey: somenewrelickeyhere
+defaultdelayms: 1000
+collectors:
+  nginx:
+    enabled: false
+    delayms: 1000
+    collectorconfig:
+      nginxlistenport: "8140"
+      nginxstatusuri: nginx_status
+      nginxstatuspage: http://localhost
+  rabbitmq:
+    enabled: true
+    delayms: 2000
+    collectorconfig:
+      rabbitmquser: scalr
+      rabbitmqpassword: hiTVPamzPm
+      rabbitmqport: "15672"
+      rabbitmqhost: http://10.84.100.59
+  haproxy:
+    enabled: false
+    delayms: 1000
+    collectorconfig:
+      something: "stuff"
+      otherthing: thing

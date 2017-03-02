@@ -9,6 +9,7 @@ import (
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
+	"github.com/mitchellh/mapstructure"
 )
 
 /*
@@ -24,7 +25,18 @@ var log = logrus.New()
 
 func NginxCollector(config Config, stats chan<- []map[string]interface{}) {
 	var runner utilsHTTP.HTTPRunnerImpl
-	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, stats, runner))
+	// decode generic config type map[string]interface{} into NginxConfig
+	var nginxConf NginxConfig
+	err := mapstructure.Decode(config.Collectors["nginx"].CollectorConfig, &nginxConf)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("Unable to decode nginx config into NginxConfig object")
+
+		close(stats)
+	}
+
+	stats <- scrapeStatus(getNginxStatus(nginxConf, stats, runner))
 }
 
 func getNginxStatus(config NginxConfig, stats chan<- []map[string]interface{}, runner utilsHTTP.HTTPRunner) string {

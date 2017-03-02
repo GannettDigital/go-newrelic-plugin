@@ -8,24 +8,18 @@ import (
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
+	"github.com/mitchellh/mapstructure"
 )
 
 type NodeInfo struct {
-	Name     string `json:"name"`
-	NodeType string `json:"type"`
-
-	FdUsed        int  `json:"fd_used"`
-	FdTotal       int  `json:"fd_total"`
-	SocketsUsed   int  `json:"sockets_used"`
-	SocketsTotal  int  `json:"sockets_total"`
-	MemUsed       int  `json:"mem_used"`
-	MemLimit      int  `json:"mem_limit"`
-	MemAlarm      bool `json:"mem_alarm"`
-	DiskFree      int  `json:"disk_free"`
-	DiskFreeLimit int  `json:"disk_free_limit"`
-	DiskFreeAlarm bool `json:"disk_free_alarm"`
-
-	// Erlang scheduler run queue length
+	Name           string `json:"name"`
+	FdUsed         int    `json:"fd_used"`
+	FdTotal        int    `json:"fd_total"`
+	SocketsUsed    int    `json:"sockets_used"`
+	SocketsTotal   int    `json:"sockets_total"`
+	MemUsed        int    `json:"mem_used"`
+	DiskFree       int    `json:"disk_free"`
+	DiskFreeLimit  int    `json:"disk_free_limit"`
 	RunQueueLength uint32 `json:"run_queue"`
 	Processors     uint32 `json:"processors"`
 	Uptime         uint64 `json:"uptime"`
@@ -40,8 +34,6 @@ type QueueInfo struct {
 	Durable bool `json:"durable"`
 	// RabbitMQ node that hosts master for this queue
 	Node string `json:"node"`
-	// Queue status
-	Status string `json:"status"`
 	// Total amount of RAM used by this queue
 	Memory int64 `json:"memory"`
 	// How many consumers this queue has
@@ -73,7 +65,7 @@ func executeAndDecode(runner utilsHTTP.HTTPRunner, httpReq http.Request, record 
 }
 
 func listNodes(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (nodeRecords []NodeInfo, err error) {
-	rabbitmqNodeStatsURI := fmt.Sprintf("%v:%v/%v", config.Host, config.Port, "api/nodes")
+	rabbitmqNodeStatsURI := fmt.Sprintf("%v:%v/%v", config.RabbitMQHost, config.RabbitMQPort, "api/nodes")
 	httpReq, err := http.NewRequest("GET", rabbitmqNodeStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -82,7 +74,7 @@ func listNodes(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (nodeRecords 
 		}).Error("Encountered error creating http.NewRequest")
 		return []NodeInfo{}, err
 	}
-	httpReq.SetBasicAuth(config.User, config.Password)
+	httpReq.SetBasicAuth(config.RabbitMQUser, config.RabbitMQPassword)
 	err = executeAndDecode(runner, *httpReq, &nodeRecords)
 	if err != nil {
 		return []NodeInfo{}, err
@@ -92,7 +84,7 @@ func listNodes(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (nodeRecords 
 }
 
 func listQueues(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (queueRecords []QueueInfo, err error) {
-	rabbitmqQueuesStatsURI := fmt.Sprintf("%v:%v/%v", config.Host, config.Port, "api/queues")
+	rabbitmqQueuesStatsURI := fmt.Sprintf("%v:%v/%v", config.RabbitMQHost, config.RabbitMQPort, "api/queues")
 	httpReq, err := http.NewRequest("GET", rabbitmqQueuesStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -101,7 +93,7 @@ func listQueues(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (queueRecord
 		}).Error("Encountered error creating http.NewRequest")
 		return []QueueInfo{}, err
 	}
-	httpReq.SetBasicAuth(config.User, config.Password)
+	httpReq.SetBasicAuth(config.RabbitMQUser, config.RabbitMQPassword)
 	err = executeAndDecode(runner, *httpReq, &queueRecords)
 	if err != nil {
 		return []QueueInfo{}, err
@@ -113,7 +105,8 @@ func getRabbitmqStatus(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) ([]ma
 	NodesResponse, err := listNodes(config, runner)
 	if err != nil {
 		log.WithFields(logrus.Fields{
-			"error": err,
+			"rabbitConfig": config,
+			"error":        err,
 		}).Error("Encountered error querying Nodes")
 		return make([]map[string]interface{}, 0), err
 	}
@@ -159,17 +152,19 @@ func getRabbitmqStatus(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) ([]ma
 //RabbitmqCollector gets the rabbits stats.
 func RabbitmqCollector(config Config, stats chan<- []map[string]interface{}) {
 	var runner utilsHTTP.HTTPRunnerImpl
-	rabbitResponses, getStatsError := getRabbitmqStatus(config.RabbitmqConfig, runner)
+	var rabbitConf RabbitmqConfig
+	err := mapstructure.Decode(config.Collectors["rabbitmq"].CollectorConfig, &rabbitConf)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("Unable to decode nginx config into NginxConfig object")
+
+		close(stats)
+	}
+	rabbitResponses, getStatsError := getRabbitmqStatus(rabbitConf, runner)
 	if getStatsError != nil {
 		close(stats)
 		return
 	}
 	stats <- rabbitResponses
-	/*
-	  When called, this needs to:
-	    1. collect metrics from rabbit
-	    2. format metris into a map[string]interface{}
-	    3. send that map[string]interface{} back on the channel (where the dispatcher will push it to NR)
-	    4. thats all!
-	*/
 }
