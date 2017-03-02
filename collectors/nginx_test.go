@@ -8,6 +8,7 @@ import (
 	"github.com/franela/goblin"
 )
 
+var fakeFullConfig Config
 var fakeConfig NginxConfig
 
 func init() {
@@ -15,6 +16,58 @@ func init() {
 		NginxListenPort: "8140",
 		NginxStatusURI:  "nginx_status",
 		NginxStatusPage: "http://localhost",
+	}
+	fakeFullConfig = Config{
+		AppName:        "test-newrelic-plugin",
+		NewRelicKey:    "somenewrelickeyhere",
+		DefaultDelayMS: 1000,
+		Collectors: map[string]CommonConfig{
+			"nginx": CommonConfig{
+				Enabled:         true,
+				DelayMS:         500,
+				CollectorConfig: fakeConfig,
+			},
+		},
+	}
+}
+
+func TestNginxCollector(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		HTTPRunner      fake.HTTPResult
+		ExpectedResult  map[string]interface{}
+		TestDescription string
+	}{
+		{
+			HTTPRunner: fake.HTTPResult{
+				Code: 200,
+				Data: []byte("Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 "),
+			},
+			ExpectedResult: map[string]interface{}{
+				"nginx.net.connections": 2,
+				"nginx.net.accepts":     29,
+				"nginx.net.handled":     29,
+				"nginx.net.requests":    31,
+				"nginx.net.writing":     1,
+				"nginx.net.waiting":     1,
+				"nginx.net.reading":     0,
+			},
+			TestDescription: "Successfully GET Nginx status page",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("NginxCollector()", func() {
+			g.It(test.TestDescription, func() {
+				stats := make(chan map[string]interface{}, 1)
+				NginxCollector(fakeFullConfig, stats, test.HTTPRunner)
+				close(stats)
+				for stat := range stats {
+					g.Assert(reflect.DeepEqual(stat, test.ExpectedResult)).Equal(true)
+				}
+			})
+		})
 	}
 }
 
@@ -55,13 +108,13 @@ func TestScrapeStatus(t *testing.T) {
 		{
 			Data: "Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 ",
 			ExpectedResult: map[string]interface{}{
-				"nginx.net.connections": "2",
-				"nginx.net.accepts":     "29",
-				"nginx.net.handled":     "29",
-				"nginx.net.requests":    "31",
-				"nginx.net.writing":     "1",
-				"nginx.net.waiting":     "1",
-				"nginx.net.reading":     "0",
+				"nginx.net.connections": 2,
+				"nginx.net.accepts":     29,
+				"nginx.net.handled":     29,
+				"nginx.net.requests":    31,
+				"nginx.net.writing":     1,
+				"nginx.net.waiting":     1,
+				"nginx.net.reading":     0,
 			},
 			TestDescription: "Successfully scrape given status page",
 		},

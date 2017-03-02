@@ -24,8 +24,7 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func NginxCollector(config Config, stats chan<- map[string]interface{}) {
-	var runner utilsHTTP.HTTPRunnerImpl
+func NginxCollector(config Config, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) {
 	// decode generic config type map[string]interface{} into NginxConfig
 	var nginxConf NginxConfig
 	err := mapstructure.Decode(config.Collectors["nginx"].CollectorConfig, &nginxConf)
