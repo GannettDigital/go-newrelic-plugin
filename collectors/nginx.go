@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
@@ -23,8 +24,7 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func NginxCollector(config Config, stats chan<- []map[string]interface{}) {
-	var runner utilsHTTP.HTTPRunnerImpl
+func NginxCollector(config Config, stats chan<- []map[string]interface{}, runner utilsHTTP.HTTPRunner) {
 	// decode generic config type map[string]interface{} into NginxConfig
 	var nginxConf NginxConfig
 	err := mapstructure.Decode(config.Collectors["nginx"].CollectorConfig, &nginxConf)
@@ -107,13 +107,31 @@ func scrapeStatus(status string) []map[string]interface{} {
 	}).Info("Scraped NGINX values")
 	Stats := make([]map[string]interface{}, 1)
 	Stats[0] = map[string]interface{}{
-		"nginx.net.connections": active,
-		"nginx.net.accepts":     accepts,
-		"nginx.net.handled":     handled,
-		"nginx.net.requests":    requests,
-		"nginx.net.writing":     writing,
-		"nginx.net.waiting":     waiting,
-		"nginx.net.reading":     reading,
+		"nginx.net.connections": toInt(active),
+		"nginx.net.accepts":     toInt(accepts),
+		"nginx.net.handled":     toInt(handled),
+		"nginx.net.requests":    toInt(requests),
+		"nginx.net.writing":     toInt(writing),
+		"nginx.net.waiting":     toInt(waiting),
+		"nginx.net.reading":     toInt(reading),
 	}
 	return Stats
+}
+
+func toInt(value string) int {
+	if value == "" {
+		return 0
+	} else {
+		valueInt, err := strconv.Atoi(value)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"valueInt": valueInt,
+				"error":    err,
+			}).Error("Error converting value to int")
+
+			return 0
+		}
+
+		return valueInt
+	}
 }

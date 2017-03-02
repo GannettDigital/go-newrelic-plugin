@@ -150,8 +150,7 @@ func getRabbitmqStatus(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) ([]ma
 }
 
 //RabbitmqCollector gets the rabbits stats.
-func RabbitmqCollector(config Config, stats chan<- []map[string]interface{}) {
-	var runner utilsHTTP.HTTPRunnerImpl
+func RabbitmqCollector(config Config, stats chan<- []map[string]interface{}, runner utilsHTTP.HTTPRunner) {
 	var rabbitConf RabbitmqConfig
 	err := mapstructure.Decode(config.Collectors["rabbitmq"].CollectorConfig, &rabbitConf)
 	if err != nil {

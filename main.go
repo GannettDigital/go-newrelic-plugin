@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/GannettDigital/go-newrelic-plugin/collectors"
+	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 	newrelicMonitoring "github.com/newrelic/go-agent"
 	"github.com/spf13/viper"
@@ -58,7 +59,8 @@ func readCollectorDelay(name string, conf collectors.Config) time.Duration {
 
 func getResult(collectorName string, app newrelicMonitoring.Application, config collectors.Config, collector collectors.Collector) {
 	c := make(chan []map[string]interface{}, 1)
-	collector(config, c)
+	var runner utilsHTTP.HTTPRunnerImpl
+	collector(config, c, runner)
 
 	select {
 	case responses, success := <-c:
