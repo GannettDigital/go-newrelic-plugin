@@ -23,7 +23,7 @@ func init() {
   }
 
 */
-type Collector func(config Config, stats chan<- map[string]interface{})
+type Collector func(config Config, stats chan<- []map[string]interface{})
 
 type Config struct {
 	AppName        string

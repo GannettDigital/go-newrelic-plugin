@@ -28,7 +28,7 @@ func main() {
 			User:     "scalr",
 			Password: "hiTVPamzPm",
 			Port:     "15672",
-			Host:     "http://10.84.100.176",
+			Host:     "http://10.84.100.59",
 		},
 	}
 
@@ -39,7 +39,7 @@ func main() {
 		go func(collectorName string, collectorValue collectors.Collector) {
 			// TODO: random delay to offset collections
 			// TODO: time sourced from config
-			ticker := time.NewTicker(time.Millisecond * 1000)
+			ticker := time.NewTicker(time.Millisecond * 3000)
 			for _ = range ticker.C {
 				go getResult(collectorName, app, config, collectorValue)
 			}
@@ -52,16 +52,18 @@ func main() {
 }
 
 func getResult(collectorName string, app newrelicMonitoring.Application, config collectors.Config, collector collectors.Collector) {
-	c := make(chan map[string]interface{}, 1)
+	c := make(chan []map[string]interface{}, 1)
 	collector(config, c)
 
 	select {
-	case res, success := <-c:
+	case responses, success := <-c:
 		if success {
 			log.WithFields(logrus.Fields{
 				"collector": collectorName,
 			}).Info("received data from collector")
-			sendData(collectorName, app, config, res)
+			for _, response := range responses {
+				sendData(collectorName, app, config, response)
+			}
 		} else {
 			log.WithFields(logrus.Fields{
 				"collector": collectorName,

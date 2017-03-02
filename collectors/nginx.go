@@ -22,12 +22,12 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func NginxCollector(config Config, stats chan<- map[string]interface{}) {
+func NginxCollector(config Config, stats chan<- []map[string]interface{}) {
 	var runner utilsHTTP.HTTPRunnerImpl
 	stats <- scrapeStatus(getNginxStatus(config.NginxConfig, stats, runner))
 }
 
-func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
+func getNginxStatus(config NginxConfig, stats chan<- []map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
 	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxStatusPage, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
@@ -60,7 +60,7 @@ func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, run
 	return string(data)
 }
 
-func scrapeStatus(status string) map[string]interface{} {
+func scrapeStatus(status string) []map[string]interface{} {
 
 	multi := regexp.MustCompile(`Active connections: (\d+)`).FindString(status)
 	contents := strings.Fields(multi)
@@ -93,8 +93,8 @@ func scrapeStatus(status string) map[string]interface{} {
 		"writing":  writing,
 		"waiting":  waiting,
 	}).Info("Scraped NGINX values")
-
-	return map[string]interface{}{
+	Stats := make([]map[string]interface{}, 1)
+	Stats[0] = map[string]interface{}{
 		"nginx.net.connections": active,
 		"nginx.net.accepts":     accepts,
 		"nginx.net.handled":     handled,
@@ -103,4 +103,5 @@ func scrapeStatus(status string) map[string]interface{} {
 		"nginx.net.waiting":     waiting,
 		"nginx.net.reading":     reading,
 	}
+	return Stats
 }
