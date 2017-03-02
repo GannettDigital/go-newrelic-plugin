@@ -21,16 +21,16 @@ func main() {
 
 	// main routine
 	for name, collector := range collectors.CollectorArray {
-		go func(collectorName string, collectorValue collectors.Collector) {
-			// if config file has enabled the collector indicated by collectorName
-			if config.Collectors[collectorName].Enabled {
+		// if config file has enabled the collector indicated by collectorName
+		if config.Collectors[name].Enabled {
+			go func(collectorName string, collectorValue collectors.Collector) {
 				// TODO: random delay to offset collections
 				ticker := time.NewTicker(readCollectorDelay(collectorName, config))
 				for _ = range ticker.C {
 					go getResult(collectorName, app, config, collectorValue)
 				}
-			}
-		}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
+			}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
+		}
 	}
 
 	done := make(chan bool)
