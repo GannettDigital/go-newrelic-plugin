@@ -76,3 +76,38 @@ func TestScrapeStatus(t *testing.T) {
 		})
 	}
 }
+
+func TestToInt(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		Value           string
+		ExpectedResult  int
+		TestDescription string
+	}{
+		{
+			Value:           "234567",
+			ExpectedResult:  234567,
+			TestDescription: "Should return int 234567 of string",
+		},
+		{
+			Value:           "",
+			ExpectedResult:  0,
+			TestDescription: "Should return 0 if empty string",
+		},
+		{
+			Value:           "xyz",
+			ExpectedResult:  0,
+			TestDescription: "Should return 0 if error converting to int",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("toInt()", func() {
+			g.It(test.TestDescription, func() {
+				result := toInt(test.Value)
+				g.Assert(reflect.DeepEqual(result, test.ExpectedResult)).Equal(true)
+			})
+		})
+	}
+}

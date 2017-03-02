@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
@@ -95,12 +96,30 @@ func scrapeStatus(status string) map[string]interface{} {
 	}).Info("Scraped NGINX values")
 
 	return map[string]interface{}{
-		"nginx.net.connections": active,
-		"nginx.net.accepts":     accepts,
-		"nginx.net.handled":     handled,
-		"nginx.net.requests":    requests,
-		"nginx.net.writing":     writing,
-		"nginx.net.waiting":     waiting,
-		"nginx.net.reading":     reading,
+		"nginx.net.connections": toInt(active),
+		"nginx.net.accepts":     toInt(accepts),
+		"nginx.net.handled":     toInt(handled),
+		"nginx.net.requests":    toInt(requests),
+		"nginx.net.writing":     toInt(writing),
+		"nginx.net.waiting":     toInt(waiting),
+		"nginx.net.reading":     toInt(reading),
+	}
+}
+
+func toInt(value string) int {
+	if value == "" {
+		return 0
+	} else {
+		valueInt, err := strconv.Atoi(value)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"valueInt": valueInt,
+				"error":    err,
+			}).Error("Error converting value to int")
+
+			return 0
+		}
+
+		return valueInt
 	}
 }
