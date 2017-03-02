@@ -6,7 +6,7 @@ var CollectorArray map[string]Collector
 // knows about them
 func init() {
 	CollectorArray = map[string]Collector{
-		"nginx": NginxCollector,
+		"Nginx": NginxCollector,
 	}
 
 }
@@ -25,12 +25,13 @@ func init() {
 type Collector func(config Config, stats chan<- map[string]interface{})
 
 type Config struct {
-	AppName     string
-	NginxConfig NginxConfig
+	AppName string
+	Nginx   NginxConfig
 }
 
 type NginxConfig struct {
 	Enabled         bool
+	PollIntervalMS  int
 	NginxListenPort string
 	NginxStatusURI  string
 	NginxStatusPage string
