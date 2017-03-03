@@ -10,7 +10,37 @@ Finally, a for loop is begun which does several things:
   * Sleeps for a specified amount of time (default is one minute).  This controls how often your custom metrics are collected.  Please note the Agent will only send custom events to Insights every sixty seconds after `RecordCustomEvents` is called.
   * Keeps the plugin agent running until terminated by the system.
 
+## Available Plugins
+* [nginx](#nginx)
+* [rabbitmq](#rabbitmq)
+
+## Configuration Examples
+
+#### nginx
+
+```yaml
+nginx:
+  enabled: false
+  delayms: 1000
+  collectorconfig:
+    nginxlistenport: "8140"
+    nginxstatusuri: nginx_status
+    nginxstatuspage: http://localhost
+```
+
+#### rabbitMQ
+
+```yaml
+rabbitmq:
+  enabled: true
+  delayms: 1000
+  collectorconfig:
+    rabbitmquser: scalr
+    rabbitmqpassword: secure
+    rabbitmqport: "15672"
+    rabbitmqhost: http://localhost
+```
+
 ## Adding to this repository
 
-Feel free to add custom metrics to this repo. Be sure to add a new event, and
-test coverage for new metrics.
+Feel free to add custom metrics to this repo. Be sure to add a new event, test coverage, and update the README.
