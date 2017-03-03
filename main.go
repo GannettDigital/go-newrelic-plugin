@@ -67,16 +67,18 @@ func readCollectorDelay(name string, conf collectors.Config) time.Duration {
 }
 
 func getResult(collectorName string, app newrelicMonitoring.Application, config collectors.Config, collector collectors.Collector) {
-	c := make(chan map[string]interface{}, 1)
+	c := make(chan []map[string]interface{}, 1)
 	collector(config, c)
 
 	select {
-	case res, success := <-c:
+	case responses, success := <-c:
 		if success {
 			log.WithFields(logrus.Fields{
 				"collector": collectorName,
 			}).Info("received data from collector")
-			sendData(collectorName, app, config, res)
+			for _, response := range responses {
+				sendData(collectorName, app, config, response)
+			}
 		} else {
 			log.WithFields(logrus.Fields{
 				"collector": collectorName,

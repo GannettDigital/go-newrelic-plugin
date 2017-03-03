@@ -1,12 +1,18 @@
 package collectors
 
+import "github.com/GannettDigital/paas-api-utils/utilsHTTP"
+
+var runner utilsHTTP.HTTPRunner
 var CollectorArray map[string]Collector
 
 // As we develop new collectors, add to this list here, so that our dispatcher
 // knows about them
 func init() {
+	runner = utilsHTTP.HTTPRunnerImpl{}
+
 	CollectorArray = map[string]Collector{
-		"nginx": NginxCollector,
+		"nginx":    NginxCollector,
+		"rabbitmq": RabbitmqCollector,
 	}
 
 }
@@ -22,7 +28,7 @@ func init() {
   }
 
 */
-type Collector func(config Config, stats chan<- map[string]interface{})
+type Collector func(config Config, stats chan<- []map[string]interface{})
 
 type Config struct {
 	AppName        string                  `yaml:"appname"`
@@ -43,4 +49,11 @@ type NginxConfig struct {
 	NginxListenPort string `yaml:"nginxlistenport"`
 	NginxStatusURI  string `yaml:"nginxstatusuri"`
 	NginxStatusPage string `yaml:"nginxstatuspage"`
+}
+
+type RabbitmqConfig struct {
+	RabbitMQUser     string `yaml:"rabbitmquser"`
+	RabbitMQPassword string `yaml:"rabbitmqpassword"`
+	RabbitMQPort     string `yaml:"rabbitmqport"`
+	RabbitMQHost     string `yaml:"rabbitmqhost"`
 }

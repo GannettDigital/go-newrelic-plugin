@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
-	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 )
@@ -23,8 +23,7 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func NginxCollector(config Config, stats chan<- map[string]interface{}) {
-	var runner utilsHTTP.HTTPRunnerImpl
+func NginxCollector(config Config, stats chan<- []map[string]interface{}) {
 	// decode generic config type map[string]interface{} into NginxConfig
 	var nginxConf NginxConfig
 	err := mapstructure.Decode(config.Collectors["nginx"].CollectorConfig, &nginxConf)
@@ -36,10 +35,10 @@ func NginxCollector(config Config, stats chan<- map[string]interface{}) {
 		close(stats)
 	}
 
-	stats <- scrapeStatus(getNginxStatus(nginxConf, stats, runner))
+	stats <- scrapeStatus(getNginxStatus(nginxConf, stats))
 }
 
-func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
+func getNginxStatus(config NginxConfig, stats chan<- []map[string]interface{}) string {
 	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxStatusPage, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
@@ -72,7 +71,7 @@ func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, run
 	return string(data)
 }
 
-func scrapeStatus(status string) map[string]interface{} {
+func scrapeStatus(status string) []map[string]interface{} {
 
 	multi := regexp.MustCompile(`Active connections: (\d+)`).FindString(status)
 	contents := strings.Fields(multi)
@@ -105,14 +104,33 @@ func scrapeStatus(status string) map[string]interface{} {
 		"writing":  writing,
 		"waiting":  waiting,
 	}).Info("Scraped NGINX values")
+	Stats := make([]map[string]interface{}, 1)
+	Stats[0] = map[string]interface{}{
+		"nginx.net.connections": toInt(active),
+		"nginx.net.accepts":     toInt(accepts),
+		"nginx.net.handled":     toInt(handled),
+		"nginx.net.requests":    toInt(requests),
+		"nginx.net.writing":     toInt(writing),
+		"nginx.net.waiting":     toInt(waiting),
+		"nginx.net.reading":     toInt(reading),
+	}
+	return Stats
+}
 
-	return map[string]interface{}{
-		"nginx.net.connections": active,
-		"nginx.net.accepts":     accepts,
-		"nginx.net.handled":     handled,
-		"nginx.net.requests":    requests,
-		"nginx.net.writing":     writing,
-		"nginx.net.waiting":     waiting,
-		"nginx.net.reading":     reading,
+func toInt(value string) int {
+	if value == "" {
+		return 0
+	} else {
+		valueInt, err := strconv.Atoi(value)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"valueInt": valueInt,
+				"error":    err,
+			}).Error("Error converting value to int")
+
+			return 0
+		}
+
+		return valueInt
 	}
 }
