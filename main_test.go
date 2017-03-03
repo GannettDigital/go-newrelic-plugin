@@ -136,3 +136,22 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertToInterfaceMap(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		InputMap        map[string]string
+		ExpectedRes     map[string]interface{}
+		TestDescription string
+	}{}
+
+	for _, test := range tests {
+		g.Describe("convertToInterfaceMap()", func() {
+			g.It(test.TestDescription, func() {
+				res := convertToInterfaceMap(test.InputMap)
+				g.Assert(res).Equal(test.ExpectedRes)
+			})
+		})
+	}
+}
