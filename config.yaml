@@ -3,6 +3,13 @@
 appname: test-newrelic-plugin
 newrelickey: somenewrelickeyhere
 defaultdelayms: 1000
+tags:
+  keyvalue:
+    tag1: sometagvalue
+    tag2: someothertagvalue
+  env:
+    - VAR_1
+    - VAR_2
 collectors:
   nginx:
     enabled: false
@@ -22,6 +29,13 @@ collectors:
   haproxy:
     enabled: false
     delayms: 1000
+    tags:
+      keyvalue:
+        tag3: sometagvalue3
+        tag4: someothertagvalue4
+      env:
+        - VAR_3
+        - VAR_4
     collectorconfig:
       something: "stuff"
       otherthing: thing

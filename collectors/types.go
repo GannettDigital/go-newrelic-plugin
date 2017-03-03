@@ -34,13 +34,20 @@ type Config struct {
 	AppName        string                  `yaml:"appname"`
 	NewRelicKey    string                  `yaml:"newrelickey"`
 	DefaultDelayMS int                     `yaml:"defaultdelayms"`
+	Tags           Tags                    `yaml:"tags"`
 	Collectors     map[string]CommonConfig `yaml:"collectors"`
 }
 
 type CommonConfig struct {
 	Enabled         bool            `yaml:"enabled" required:"true"`
 	DelayMS         int             `yaml:"delayms"`
+	Tags            Tags            `yaml:"tags"`
 	CollectorConfig CollectorConfig `yaml:"collectorconfig"`
+}
+
+type Tags struct {
+	KeyValue map[string]string `yaml:"keyvalue"`
+	Env      []string          `yaml:"env"`
 }
 
 type CollectorConfig interface{}

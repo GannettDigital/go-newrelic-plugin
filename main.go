@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/GannettDigital/go-newrelic-plugin/collectors"
@@ -106,8 +107,45 @@ func sendData(collectorName string, app newrelicMonitoring.Application, config c
 	log.WithFields(logrus.Fields{
 		"collector": collectorName,
 	}).Info("recording event")
+
+	tags := processTags(collectorName, config)
+	payload := mergeMaps(tags, stats)
 	// send stats
-	app.RecordCustomEvent(fmt.Sprintf("gannettNewRelic%s", collectorName), stats)
+	app.RecordCustomEvent(fmt.Sprintf("gannettNewRelic%s", collectorName), payload)
+}
+
+// processTags - read all ENV tags, and append collector specific to global for both kv tags and env tags
+func processTags(collectorName string, config collectors.Config) map[string]interface{} {
+	kvList := mergeMaps(convertToInterfaceMap(config.Tags.KeyValue), convertToInterfaceMap(config.Collectors[collectorName].Tags.KeyValue))
+	envList := append(config.Tags.Env, config.Collectors[collectorName].Tags.Env...)
+	kvList = mergeMaps(kvList, readEnvList(envList))
+	return kvList
+}
+
+// mergeMaps - merge two map[string]interface{}
+func mergeMaps(global map[string]interface{}, specific map[string]interface{}) map[string]interface{} {
+	for key, value := range specific {
+		global[key] = value
+	}
+	return global
+}
+
+// readEnvList - read all environment variables and return them as a map[string]interface{}
+func readEnvList(envList []string) map[string]interface{} {
+	resultList := make(map[string]interface{})
+	for _, env := range envList {
+		resultList[strings.ToLower(env)] = os.Getenv(env)
+	}
+	return resultList
+}
+
+// convertToInterfaceMap - make map[string]string into a map[string]interface
+func convertToInterfaceMap(stringMap map[string]string) map[string]interface{} {
+	interfaceMap := make(map[string]interface{})
+	for key, value := range stringMap {
+		interfaceMap[key] = value
+	}
+	return interfaceMap
 }
 
 func setupNewRelic(config collectors.Config) newrelicMonitoring.Application {
