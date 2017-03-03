@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/GannettDigital/go-newrelic-plugin/collectors"
@@ -133,8 +134,7 @@ func mergeMaps(global map[string]interface{}, specific map[string]interface{}) m
 func readEnvList(envList []string) map[string]interface{} {
 	resultList := make(map[string]interface{})
 	for _, env := range envList {
-		value := os.Getenv(env)
-		resultList[env] = value
+		resultList[strings.ToLower(env)] = os.Getenv(env)
 	}
 	return resultList
 }
