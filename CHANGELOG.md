@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.6
+
+Ryan Grothouse - catch panic so a poorly implemented collector can't nuke our monitor
+
 # 0.0.5
 Michael Dunton - adding support and Multiple Stats from a plugin and adding Rabbitmq
 
