@@ -78,10 +78,28 @@ func TestLoadConfig(t *testing.T) {
 				AppName:        "test-newrelic-plugin",
 				NewRelicKey:    "somenewrelickeyhere",
 				DefaultDelayMS: 1000,
+				Tags: collectors.Tags{
+					KeyValue: map[string]string{
+						"tag2": "someothertagvalue",
+						"tag1": "sometagvalue",
+					},
+					Env: []string{
+						"VAR_1",
+						"VAR_2"},
+				},
 				Collectors: map[string]collectors.CommonConfig{
 					"haproxy": collectors.CommonConfig{
 						Enabled: true,
 						DelayMS: 1000,
+						Tags: collectors.Tags{
+							KeyValue: map[string]string{
+								"tag4": "someothertagvalue4",
+								"tag3": "sometagvalue3",
+							},
+							Env: []string{
+								"VAR_3", "VAR_4",
+							},
+						},
 						CollectorConfig: map[string]interface{}{
 							"otherthing": "thing",
 							"something":  "stuff"},

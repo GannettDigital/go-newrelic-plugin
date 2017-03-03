@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.5
+
+Tom Barber - allow optional global and collector specific key value and environment variable tags to be specified in config
+
 # 0.0.4
 
 Bridget Lane - move utils.HTTPRunner for NGINX tests
