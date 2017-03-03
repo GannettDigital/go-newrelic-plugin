@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/GannettDigital/go-newrelic-plugin/collectors"
+	"github.com/GannettDigital/goFigure"
 	"github.com/Sirupsen/logrus"
 	newrelicMonitoring "github.com/newrelic/go-agent"
 	"github.com/spf13/viper"
@@ -15,7 +18,10 @@ var log = logrus.New()
 
 func main() {
 
-	config := loadConfig()
+	config, err := loadConfig("", &gofigure.ConfigClient{}, os.Getenv("GOFIGURE_BUCKET"), os.Getenv("GOFIGURE_ITEM_PATH"))
+	if err != nil {
+		os.Exit(1)
+	}
 
 	app := setupNewRelic(config)
 
@@ -106,8 +112,45 @@ func sendData(collectorName string, app newrelicMonitoring.Application, config c
 	log.WithFields(logrus.Fields{
 		"collector": collectorName,
 	}).Info("recording event")
+
+	tags := processTags(collectorName, config)
+	payload := mergeMaps(tags, stats)
 	// send stats
-	app.RecordCustomEvent(fmt.Sprintf("gannettNewRelic%s", collectorName), stats)
+	app.RecordCustomEvent(fmt.Sprintf("gannettNewRelic%s", collectorName), payload)
+}
+
+// processTags - read all ENV tags, and append collector specific to global for both kv tags and env tags
+func processTags(collectorName string, config collectors.Config) map[string]interface{} {
+	kvList := mergeMaps(convertToInterfaceMap(config.Tags.KeyValue), convertToInterfaceMap(config.Collectors[collectorName].Tags.KeyValue))
+	envList := append(config.Tags.Env, config.Collectors[collectorName].Tags.Env...)
+	kvList = mergeMaps(kvList, readEnvList(envList))
+	return kvList
+}
+
+// mergeMaps - merge two map[string]interface{}
+func mergeMaps(global map[string]interface{}, specific map[string]interface{}) map[string]interface{} {
+	for key, value := range specific {
+		global[key] = value
+	}
+	return global
+}
+
+// readEnvList - read all environment variables and return them as a map[string]interface{}
+func readEnvList(envList []string) map[string]interface{} {
+	resultList := make(map[string]interface{})
+	for _, env := range envList {
+		resultList[strings.ToLower(env)] = os.Getenv(env)
+	}
+	return resultList
+}
+
+// convertToInterfaceMap - make map[string]string into a map[string]interface
+func convertToInterfaceMap(stringMap map[string]string) map[string]interface{} {
+	interfaceMap := make(map[string]interface{})
+	for key, value := range stringMap {
+		interfaceMap[key] = value
+	}
+	return interfaceMap
 }
 
 func setupNewRelic(config collectors.Config) newrelicMonitoring.Application {
@@ -147,11 +190,17 @@ func setupNewRelic(config collectors.Config) newrelicMonitoring.Application {
 }
 
 // loadConfig - read from config file and marshal info collectors.Config
-func loadConfig() collectors.Config {
+func loadConfig(configName string, client gofigure.Client, bucket string, itemPath string) (collectors.Config, error) {
+	if configName == "" {
+		configName = "config"
+	}
+	// config object to return
+	var conf collectors.Config
+
 	// set up viper to find config file
 	vip := viper.New()
 	vip.SetConfigType("yaml")
-	vip.SetConfigName("config")
+	vip.SetConfigName(configName)
 	vip.AddConfigPath("/etc/newrelic_plugins/")
 	vip.AddConfigPath(".")
 
@@ -160,20 +209,36 @@ func loadConfig() collectors.Config {
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
-		}).Error("Error reading config file")
+		}).Info("Error reading local config file, will attempt to locate goFigure configs...")
 
-		os.Exit(1)
+		// attempt to read from s3 bucket if GOFIGURE_BUCKET and GOFIGURE_ITEM_PATH are set
+		if (bucket != "") && (itemPath != "") {
+			client.Setup(bucket, itemPath, "yaml")
+
+			err = client.LoadAndUnmarshal(&conf)
+			if err != nil {
+				log.WithFields(logrus.Fields{
+					"err": err,
+				}).Error("Error loading config file from s3")
+
+				return conf, err
+			}
+
+			return conf, nil
+		}
+
+		log.WithFields(logrus.Fields{}).Error("Error locating any configs")
+		return conf, errors.New("No configs located")
 	}
 
 	// marshal config file data into collectors.Config and return it
-	var conf collectors.Config
 	err = vip.Unmarshal(&conf)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("Error unmarshaling configs")
 
-		os.Exit(1)
+		return conf, err
 	}
-	return conf
+	return conf, nil
 }

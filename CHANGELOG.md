@@ -3,6 +3,18 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.9
+
+Tom Barber - add ability to attempt to load from s3 config when no local file is found
+
+# 0.0.8
+
+Tom Barber - allow optional global and collector specific key value and environment variable tags to be specified in config
+
+# 0.0.7
+
+Michael Dunton - Updating example.go and adding config examples to readme
+
 # 0.0.6
 
 Ryan Grothouse - catch panic so a poorly implemented collector can't nuke our monitor
