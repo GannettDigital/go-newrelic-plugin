@@ -2,13 +2,14 @@ package collectors
 
 import "github.com/GannettDigital/paas-api-utils/utilsHTTP"
 
-var CollectorArray map[string]Collector
 var runner utilsHTTP.HTTPRunner
+var CollectorArray map[string]Collector
 
 // As we develop new collectors, add to this list here, so that our dispatcher
 // knows about them
 func init() {
 	runner = utilsHTTP.HTTPRunnerImpl{}
+
 	CollectorArray = map[string]Collector{
 		"nginx":    NginxCollector,
 		"rabbitmq": RabbitmqCollector,
