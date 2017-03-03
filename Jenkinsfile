@@ -25,7 +25,6 @@ node {
     --environment=\"${environment}\" \
     --region=\"${region}\" \
     --ci-job-number=${env.BUILD_ID} \
-    --package \
     --skip-deploy \
     --skip-swagger \
     --skip-source-check"
