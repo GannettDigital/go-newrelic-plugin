@@ -3,8 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 0.0.4
+# 0.0.5
+Michael Dunton - adding support and Multiple Stats from a plugin and adding Rabbitmq
 
+# 0.0.4
 Bridget Lane - move utils.HTTPRunner for NGINX tests
 
 # 0.0.3

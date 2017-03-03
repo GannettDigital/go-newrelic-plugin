@@ -80,14 +80,23 @@ func TestLoadConfig(t *testing.T) {
 				DefaultDelayMS: 1000,
 				Collectors: map[string]collectors.CommonConfig{
 					"haproxy": collectors.CommonConfig{
-						Enabled: true,
+						Enabled: false,
 						DelayMS: 1000,
 						CollectorConfig: map[string]interface{}{
 							"otherthing": "thing",
 							"something":  "stuff"},
 					},
-					"nginx": collectors.CommonConfig{
+					"rabbitmq": collectors.CommonConfig{
 						Enabled: true,
+						DelayMS: 2000,
+						CollectorConfig: map[string]interface{}{
+							"rabbitmquser":     "scalr",
+							"rabbitmqpassword": "hiTVPamzPm",
+							"rabbitmqport":     "15672",
+							"rabbitmqhost":     "http://10.84.100.59"},
+					},
+					"nginx": collectors.CommonConfig{
+						Enabled: false,
 						DelayMS: 1000,
 						CollectorConfig: map[string]interface{}{
 							"nginxlistenport": "8140",
