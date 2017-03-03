@@ -1,7 +1,7 @@
 ---
 # example config file for plugin
 appname: test-newrelic-plugin
-newrelickey: ca69e48d3e9e6be39c913067f3280862fd555980
+newrelickey: somenewrelickeyhere
 defaultdelayms: 1000
 collectors:
   nginx:
