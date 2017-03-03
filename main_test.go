@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GannettDigital/go-newrelic-plugin/collectors"
+	fakeGofigure "github.com/GannettDigital/goFigure/fake"
 	"github.com/franela/goblin"
 )
 
@@ -73,10 +75,19 @@ func TestLoadConfig(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	var tests = []struct {
+		InputName       string
+		InputClient     *fakeGofigure.ConfigClient
+		InputBucket     string
+		InputItemPath   string
 		ExpectedConfig  collectors.Config
+		ExpectedErr     error
 		TestDescription string
 	}{
 		{
+			InputName:     "",
+			InputClient:   &fakeGofigure.ConfigClient{},
+			InputBucket:   "",
+			InputItemPath: "",
 			ExpectedConfig: collectors.Config{
 				AppName:        "test-newrelic-plugin",
 				NewRelicKey:    "somenewrelickeyhere",
@@ -126,15 +137,46 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
+			ExpectedErr:     nil,
 			TestDescription: "Should successfully load a config from file",
+		},
+		{
+			InputName:       "somenoexistyfile",
+			InputClient:     &fakeGofigure.ConfigClient{},
+			InputBucket:     "somebucket",
+			InputItemPath:   "somepath/config.yaml",
+			ExpectedConfig:  collectors.Config{},
+			ExpectedErr:     nil,
+			TestDescription: "Should successfully load and unmarshall a config file",
+		},
+		{
+			InputName: "somenoexistyfile",
+			InputClient: &fakeGofigure.ConfigClient{
+				Err: errors.New("some error"),
+			},
+			InputBucket:     "somebucket",
+			InputItemPath:   "somepath/config.yaml",
+			ExpectedConfig:  collectors.Config{},
+			ExpectedErr:     errors.New("some error"),
+			TestDescription: "Should return an error when one is encountered from goFigure",
+		},
+		{
+			InputName:       "somenoexistyfile",
+			InputClient:     &fakeGofigure.ConfigClient{},
+			InputBucket:     "",
+			InputItemPath:   "",
+			ExpectedConfig:  collectors.Config{},
+			ExpectedErr:     errors.New("No configs located"),
+			TestDescription: "Should fail to find configs when no config with the given name is found",
 		},
 	}
 
 	for _, test := range tests {
 		g.Describe("loadConfig()", func() {
 			g.It(test.TestDescription, func() {
-				conf := loadConfig()
+				conf, err := loadConfig(test.InputName, test.InputClient, test.InputBucket, test.InputItemPath)
 				g.Assert(conf).Equal(test.ExpectedConfig)
+				g.Assert(err).Equal(test.ExpectedErr)
 			})
 		})
 	}
