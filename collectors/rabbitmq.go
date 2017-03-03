@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 )
@@ -50,7 +49,7 @@ type QueueInfo struct {
 	MessagesUnacknowledged int `json:"messages_unacknowledged"`
 }
 
-func executeAndDecode(runner utilsHTTP.HTTPRunner, httpReq http.Request, record interface{}) error {
+func executeAndDecode(httpReq http.Request, record interface{}) error {
 	code, data, err := runner.CallAPI(log, nil, &httpReq, &http.Client{})
 	if err != nil || code != 200 {
 		log.WithFields(logrus.Fields{
@@ -64,7 +63,7 @@ func executeAndDecode(runner utilsHTTP.HTTPRunner, httpReq http.Request, record 
 	return json.NewDecoder(bytes.NewBuffer(data)).Decode(&record)
 }
 
-func listNodes(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (nodeRecords []NodeInfo, err error) {
+func listNodes(config RabbitmqConfig) (nodeRecords []NodeInfo, err error) {
 	rabbitmqNodeStatsURI := fmt.Sprintf("%v:%v/%v", config.RabbitMQHost, config.RabbitMQPort, "api/nodes")
 	httpReq, err := http.NewRequest("GET", rabbitmqNodeStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -75,7 +74,7 @@ func listNodes(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (nodeRecords 
 		return []NodeInfo{}, err
 	}
 	httpReq.SetBasicAuth(config.RabbitMQUser, config.RabbitMQPassword)
-	err = executeAndDecode(runner, *httpReq, &nodeRecords)
+	err = executeAndDecode(*httpReq, &nodeRecords)
 	if err != nil {
 		return []NodeInfo{}, err
 	}
@@ -83,7 +82,7 @@ func listNodes(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (nodeRecords 
 	return nodeRecords, nil
 }
 
-func listQueues(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (queueRecords []QueueInfo, err error) {
+func listQueues(config RabbitmqConfig) (queueRecords []QueueInfo, err error) {
 	rabbitmqQueuesStatsURI := fmt.Sprintf("%v:%v/%v", config.RabbitMQHost, config.RabbitMQPort, "api/queues")
 	httpReq, err := http.NewRequest("GET", rabbitmqQueuesStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -94,15 +93,15 @@ func listQueues(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) (queueRecord
 		return []QueueInfo{}, err
 	}
 	httpReq.SetBasicAuth(config.RabbitMQUser, config.RabbitMQPassword)
-	err = executeAndDecode(runner, *httpReq, &queueRecords)
+	err = executeAndDecode(*httpReq, &queueRecords)
 	if err != nil {
 		return []QueueInfo{}, err
 	}
 	return queueRecords, nil
 }
 
-func getRabbitmqStatus(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) ([]map[string]interface{}, error) {
-	NodesResponse, err := listNodes(config, runner)
+func getRabbitmqStatus(config RabbitmqConfig) ([]map[string]interface{}, error) {
+	NodesResponse, err := listNodes(config)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"rabbitConfig": config,
@@ -124,7 +123,7 @@ func getRabbitmqStatus(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) ([]ma
 		})
 	}
 
-	QueuesResponse, err := listQueues(config, runner)
+	QueuesResponse, err := listQueues(config)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"error": err,
@@ -150,18 +149,20 @@ func getRabbitmqStatus(config RabbitmqConfig, runner utilsHTTP.HTTPRunner) ([]ma
 }
 
 //RabbitmqCollector gets the rabbits stats.
-func RabbitmqCollector(config Config, stats chan<- []map[string]interface{}, runner utilsHTTP.HTTPRunner) {
+func RabbitmqCollector(config Config, stats chan<- []map[string]interface{}) {
 	var rabbitConf RabbitmqConfig
 	err := mapstructure.Decode(config.Collectors["rabbitmq"].CollectorConfig, &rabbitConf)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
-		}).Error("Unable to decode nginx config into NginxConfig object")
-
+		}).Error("Unable to decode RabbitMq config into RabbitMQConfig object")
 		close(stats)
 	}
-	rabbitResponses, getStatsError := getRabbitmqStatus(rabbitConf, runner)
+	rabbitResponses, getStatsError := getRabbitmqStatus(rabbitConf)
 	if getStatsError != nil {
+		log.WithFields(logrus.Fields{
+			"err": getStatsError,
+		}).Error("Error retreiving rabbitmq stats.")
 		close(stats)
 		return
 	}

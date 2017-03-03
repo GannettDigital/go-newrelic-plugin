@@ -54,7 +54,8 @@ func TestListQueues(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("listQueues()", func() {
 			g.It(test.TestDescription, func() {
-				result, err := listQueues(rabbitMqFakeConfig, test.HTTPRunner)
+				runner = test.HTTPRunner
+				result, err := listQueues(rabbitMqFakeConfig)
 				g.Assert(reflect.DeepEqual(err, nil)).Equal(true)
 				g.Assert(reflect.DeepEqual(result, resultSlice)).Equal(true)
 			})
@@ -108,7 +109,8 @@ func TestListNodes(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("listNodes()", func() {
 			g.It(test.TestDescription, func() {
-				result, err := listNodes(rabbitMqFakeConfig, test.HTTPRunner)
+				runner = test.HTTPRunner
+				result, err := listNodes(rabbitMqFakeConfig)
 				g.Assert(reflect.DeepEqual(err, nil)).Equal(true)
 				g.Assert(reflect.DeepEqual(result, resultSlice)).Equal(true)
 			})
