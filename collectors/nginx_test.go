@@ -61,7 +61,8 @@ func TestNginxCollector(t *testing.T) {
 		g.Describe("NginxCollector()", func() {
 			g.It(test.TestDescription, func() {
 				stats := make(chan map[string]interface{}, 1)
-				NginxCollector(fakeFullConfig, stats, test.HTTPRunner)
+				runner = test.HTTPRunner
+				NginxCollector(fakeFullConfig, stats)
 				close(stats)
 				for stat := range stats {
 					g.Assert(reflect.DeepEqual(stat, test.ExpectedResult)).Equal(true)
@@ -90,7 +91,7 @@ func TestGetNginxStatus(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("getNginxStatus()", func() {
 			g.It(test.TestDescription, func() {
-				result := getNginxStatus(fakeConfig, make(chan map[string]interface{}, 1), test.HTTPRunner)
+				result := getNginxStatus(fakeConfig, make(chan map[string]interface{}, 1))
 				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.Data))).Equal(true)
 			})
 		})

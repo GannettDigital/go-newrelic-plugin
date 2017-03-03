@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 	"github.com/mitchellh/mapstructure"
 )
@@ -24,7 +23,7 @@ Reading: 6 Writing: 179 Waiting: 106
 
 var log = logrus.New()
 
-func NginxCollector(config Config, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) {
+func NginxCollector(config Config, stats chan<- map[string]interface{}) {
 	// decode generic config type map[string]interface{} into NginxConfig
 	var nginxConf NginxConfig
 	err := mapstructure.Decode(config.Collectors["nginx"].CollectorConfig, &nginxConf)
@@ -36,10 +35,10 @@ func NginxCollector(config Config, stats chan<- map[string]interface{}, runner u
 		close(stats)
 	}
 
-	stats <- scrapeStatus(getNginxStatus(nginxConf, stats, runner))
+	stats <- scrapeStatus(getNginxStatus(nginxConf, stats))
 }
 
-func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) string {
+func getNginxStatus(config NginxConfig, stats chan<- map[string]interface{}) string {
 	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxStatusPage, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
