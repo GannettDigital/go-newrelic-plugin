@@ -2,6 +2,12 @@ package collectors
 
 import "github.com/GannettDigital/paas-api-utils/utilsHTTP"
 
+var runner utilsHTTP.HTTPRunner
+
+func init() {
+	runner = utilsHTTP.HTTPRunnerImpl{}
+}
+
 var CollectorArray map[string]Collector
 
 // As we develop new collectors, add to this list here, so that our dispatcher
@@ -25,7 +31,7 @@ func init() {
 
 */
 
-type Collector func(config Config, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner)
+type Collector func(config Config, stats chan<- map[string]interface{})
 
 type Config struct {
 	AppName        string                  `yaml:"appname"`
