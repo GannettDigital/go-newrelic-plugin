@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.7
+
+Michael Dunton - Updating example.go and adding config examples to readme
+
 # 0.0.6
 
 Ryan Grothouse - catch panic so a poorly implemented collector can't nuke our monitor
