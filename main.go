@@ -27,7 +27,7 @@ func main() {
 				// TODO: random delay to offset collections
 				ticker := time.NewTicker(readCollectorDelay(collectorName, config))
 				for _ = range ticker.C {
-					go getResult(collectorName, app, config, collectorValue)
+					getResult(collectorName, app, config, collectorValue)
 				}
 			}(name, collector) // you must close over this variable or it will change on the function when the next iteration occurs https://github.com/golang/go/wiki/CommonMistakes
 		}
@@ -57,16 +57,38 @@ func readCollectorDelay(name string, conf collectors.Config) time.Duration {
 }
 
 func getResult(collectorName string, app newrelicMonitoring.Application, config collectors.Config, collector collectors.Collector) {
-	c := make(chan map[string]interface{}, 1)
+
+	c := make(chan []map[string]interface{}, 1)
+
+	defer func() {
+		// recover from panic if one occured. Set err to nil otherwise.
+		if err := recover(); err != nil {
+			log.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("collector panic'd, bad collector..")
+			// if channel was closed, it will panic, so just collect it and go on our way
+			defer func() {
+				if err := recover(); err != nil {
+					log.WithFields(logrus.Fields{
+						"error": err,
+					}).Info("collector already closed channel")
+				}
+			}()
+			close(c)
+		}
+	}()
+
 	collector(config, c)
 
 	select {
-	case res, success := <-c:
+	case responses, success := <-c:
 		if success {
 			log.WithFields(logrus.Fields{
 				"collector": collectorName,
 			}).Info("received data from collector")
-			sendData(collectorName, app, config, res)
+			for _, response := range responses {
+				sendData(collectorName, app, config, response)
+			}
 		} else {
 			log.WithFields(logrus.Fields{
 				"collector": collectorName,
