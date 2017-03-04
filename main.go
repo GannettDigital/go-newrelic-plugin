@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -30,7 +31,10 @@ func main() {
 		// if config file has enabled the collector indicated by collectorName
 		if config.Collectors[name].Enabled {
 			go func(collectorName string, collectorValue collectors.Collector) {
-				// TODO: random delay to offset collections
+				rand.Seed(time.Now().UnixNano())
+				sleepTime := time.Millisecond * time.Duration(rand.Intn(1000))
+				log.Info(fmt.Sprintf("sleeping %s to offset collector collections", sleepTime))
+				time.Sleep(sleepTime)
 				ticker := time.NewTicker(readCollectorDelay(collectorName, config))
 				for _ = range ticker.C {
 					getResult(collectorName, app, config, collectorValue)
@@ -155,7 +159,6 @@ func convertToInterfaceMap(stringMap map[string]string) map[string]interface{} {
 
 func setupNewRelic(config collectors.Config) newrelicMonitoring.Application {
 
-	// TODO: pull from config
 	// Create an app config.  Application name and New Relic license key are required.
 	cfg := newrelicMonitoring.NewConfig(config.AppName, config.NewRelicKey)
 

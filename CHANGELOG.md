@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.11
+
+Ryan Grothouse - randomize collector start time to make sure multiple collectors don't fire all at once
+
 # 0.0.10
 
 Tom Barber - add Dockerfile to build a docker container for go-newrelic-plugin
