@@ -58,7 +58,8 @@ stats <- []map[string]interface{}{
     "nginx.net.waiting":     toInt(waiting),
     "nginx.net.reading":     toInt(reading),
   },
-}```
+}
+```
 
 ** Important **
 
