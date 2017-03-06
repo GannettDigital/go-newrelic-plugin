@@ -204,7 +204,7 @@ func loadConfig(configName string, client gofigure.Client, bucket string, itemPa
 	vip := viper.New()
 	vip.SetConfigType("yaml")
 	vip.SetConfigName(configName)
-	vip.AddConfigPath("/etc/newrelic_plugins/")
+	vip.AddConfigPath("/opt/gannett/go-newrelic-plugin/")
 	vip.AddConfigPath(".")
 
 	// read in config file
