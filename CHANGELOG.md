@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.12
+
+Ryan Grothouse - In-depth documentation on plugin archiecture, standards and contributing
+
 # 0.0.11
 
 Ryan Grothouse - randomize collector start time to make sure multiple collectors don't fire all at once
