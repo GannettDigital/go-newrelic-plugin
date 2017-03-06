@@ -3,7 +3,7 @@ package collectors
 import "github.com/GannettDigital/paas-api-utils/utilsHTTP"
 
 // ExampleCollector used for reference for collector developers
-func ExampleCollector(config Config, stats chan<- map[string]interface{}, runner utilsHTTP.HTTPRunner) {
+func ExampleCollector(config Config, stats chan<- []map[string]interface{}, runner utilsHTTP.HTTPRunner) {
 	// do something real to collect some stats for your specific technology //
 
 	// Important:
@@ -12,8 +12,10 @@ func ExampleCollector(config Config, stats chan<- map[string]interface{}, runner
 	// close(stats)
 
 	// send your aggregated data back to the publisher
-	stats <- map[string]interface{}{
-		"example.derp.1": 50,
-		"example.herp.2": 1,
+	stats <- []map[string]interface{}{
+		{
+			"example.derp.1": 50,
+			"example.herp.2": 1,
+		},
 	}
 }

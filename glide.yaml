@@ -14,3 +14,7 @@ import:
   version: ^0.0.2
   repo: git@github.com:GannettDigital/logrus-custom-formatter
   vcs: git
+- package: github.com/GannettDigital/goFigure
+  version: ^1.0.4
+  repo: git@github.com:GannettDigital/goFigure
+  vcs: git

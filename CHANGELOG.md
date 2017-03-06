@@ -3,6 +3,30 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.12
+
+Ryan Grothouse - In-depth documentation on plugin archiecture, standards and contributing
+
+# 0.0.11
+
+Ryan Grothouse - randomize collector start time to make sure multiple collectors don't fire all at once
+
+# 0.0.10
+
+Tom Barber - add Dockerfile to build a docker container for go-newrelic-plugin
+
+# 0.0.9
+
+Tom Barber - add ability to attempt to load from s3 config when no local file is found
+
+# 0.0.8
+
+Tom Barber - allow optional global and collector specific key value and environment variable tags to be specified in config
+
+# 0.0.7
+
+Michael Dunton - Updating example.go and adding config examples to readme
+
 # 0.0.6
 
 Ryan Grothouse - catch panic so a poorly implemented collector can't nuke our monitor

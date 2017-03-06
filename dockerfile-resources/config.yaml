@@ -1,0 +1,12 @@
+---
+appname: {NR_APP_NAME}
+newrelickey: {NR_KEY}
+defaultdelayms: 1000
+collectors:
+  nginx:
+    enabled: true
+    delayms: 1000
+    collectorconfig:
+      nginxlistenport: "8140"
+      nginxstatusuri: nginx_status
+      nginxstatuspage: http://127.0.0.1
