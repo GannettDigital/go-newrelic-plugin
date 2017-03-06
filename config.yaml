@@ -28,7 +28,7 @@ collectors:
       rabbitmqhost: http://10.84.100.59
   couchbase:
     enabled: true
-    delayms: 1000
+    delayms: 30000
     collectorconfig:
       couchbaseuser: admin
       couchbasepassword: password
