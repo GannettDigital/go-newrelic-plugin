@@ -118,8 +118,17 @@ func TestLoadConfig(t *testing.T) {
 							"otherthing": "thing",
 							"something":  "stuff"},
 					},
-					"rabbitmq": collectors.CommonConfig{
+					"couchbase": collectors.CommonConfig{
 						Enabled: true,
+						DelayMS: 30000,
+						CollectorConfig: map[string]interface{}{
+							"couchbaseuser":     "admin",
+							"couchbasepassword": "password",
+							"couchbaseport":     "8091",
+							"couchbasehost":     "http://10.84.103.211"},
+					},
+					"rabbitmq": collectors.CommonConfig{
+						Enabled: false,
 						DelayMS: 2000,
 						CollectorConfig: map[string]interface{}{
 							"rabbitmquser":     "scalr",

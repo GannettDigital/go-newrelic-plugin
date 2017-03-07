@@ -60,7 +60,7 @@ func executeAndDecode(httpReq http.Request, record interface{}) error {
 		}).Error("Encountered error calling CallAPI")
 		return err
 	}
-	return json.NewDecoder(bytes.NewBuffer(data)).Decode(&record)
+	return json.Unmarshal(data, &record)
 }
 
 func listNodes(config RabbitmqConfig) (nodeRecords []NodeInfo, err error) {

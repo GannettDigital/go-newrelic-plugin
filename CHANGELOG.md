@@ -2,6 +2,9 @@ go-api-skeleton CHANGELOG
 ==============================
 
 This file is used to list changes made in each version of go-newrelic-plugin.
+# 0.0.14
+
+Michael Dunton - Adding Couchbase support
 
 # 0.0.13
 

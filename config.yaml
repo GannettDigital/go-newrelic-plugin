@@ -19,13 +19,21 @@ collectors:
       nginxstatusuri: nginx_status
       nginxstatuspage: http://localhost
   rabbitmq:
-    enabled: true
+    enabled: false
     delayms: 2000
     collectorconfig:
       rabbitmquser: scalr
       rabbitmqpassword: hiTVPamzPm
       rabbitmqport: "15672"
       rabbitmqhost: http://10.84.100.59
+  couchbase:
+    enabled: true
+    delayms: 30000
+    collectorconfig:
+      couchbaseuser: admin
+      couchbasepassword: password
+      couchbaseport: "8091"
+      couchbasehost: http://10.84.103.211
   haproxy:
     enabled: false
     delayms: 1000

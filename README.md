@@ -95,6 +95,7 @@ gannettNewRelic<CollectorName>
 ## Available Collectors
 * [nginx](#nginx)
 * [rabbitmq](#rabbitmq)
+* [couchbase](#couchbase)
 
 ## Configuration Examples
 
@@ -123,6 +124,19 @@ rabbitmq:
     rabbitmqhost: http://localhost
 ```
 
+
+#### couchbase
+
+```yaml
+rabbitmq:
+  enabled: true
+  delayms: 30000
+  collectorconfig:
+    couchbaseuser: admin
+    couchbasepassword: password
+    couchbaseport: "8091"
+    couchbasehost: http://localhost
+```
 
 #### Contributing
 

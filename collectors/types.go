@@ -11,8 +11,9 @@ func init() {
 	runner = utilsHTTP.HTTPRunnerImpl{}
 
 	CollectorArray = map[string]Collector{
-		"nginx":    NginxCollector,
-		"rabbitmq": RabbitmqCollector,
+		"nginx":     NginxCollector,
+		"rabbitmq":  RabbitmqCollector,
+		"couchbase": CouchbaseCollector,
 	}
 
 }
@@ -63,4 +64,11 @@ type RabbitmqConfig struct {
 	RabbitMQPassword string `yaml:"rabbitmqpassword"`
 	RabbitMQPort     string `yaml:"rabbitmqport"`
 	RabbitMQHost     string `yaml:"rabbitmqhost"`
+}
+
+type CouchbaseConfig struct {
+	CouchbaseUser     string `yaml:"couchbaseuser"`
+	CouchbasePassword string `yaml:"couchbasepassword"`
+	CouchbasePort     string `yaml:"couchbaseport"`
+	CouchbaseHost     string `yaml:"couchbasehost"`
 }
