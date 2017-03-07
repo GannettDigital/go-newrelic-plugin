@@ -16,6 +16,7 @@ func CouchbaseCollector(config Config, stats chan<- []map[string]interface{}) {
 	err := decodeCouchbaseConfig(config, &couchConfig)
 	if err != nil {
 		close(stats)
+		return
 	}
 	couchClusterResponses, getCouchClusterStatsError := getCouchClusterStats(couchConfig)
 	couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(couchConfig)
