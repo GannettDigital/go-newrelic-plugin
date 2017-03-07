@@ -10,17 +10,13 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type CouchbaseBucketInfo struct {
-	Name string `json:"name"`
-}
-
 type CouchbaseBucketStats struct {
 	OP struct {
 		Samples struct {
 			AVGBGWaitTime              []int     `json:"avg_bg_wait_time"`                //seconds
-			AVGDiskCommitTime          []float64 `json:"avg_disk_commit_time"`            //seconds
-			BytesRead                  []float64 `json:"bytes_read"`                      //bytes
-			BytesWritten               []float64 `json:"bytes_written"`                   //bytes
+			AVGDiskCommitTime          []float32 `json:"avg_disk_commit_time"`            //seconds
+			BytesRead                  []float32 `json:"bytes_read"`                      //bytes
+			BytesWritten               []float32 `json:"bytes_written"`                   //bytes
 			CasHits                    []int     `json:"cas_hits"`                        //hits
 			CasMisses                  []int     `json:"cas_misses"`                      //misses
 			CMDGet                     []int     `json:"cmd_get"`                         //gets
@@ -60,7 +56,7 @@ type CouchbaseBucketStats struct {
 			EPOPSUpdate                []int     `json:"ep_ops_update"`                   //operations
 			EPOverhead                 []int64   `json:"ep_overhead"`                     //bytes
 			EPQueueSize                []int     `json:"ep_queue_size"`                   //items
-			EPResidentItemsRate        []float64 `json:"ep_resident_items_rate"`          //items
+			EPResidentItemsRate        []float32 `json:"ep_resident_items_rate"`          //items
 			EPTapReplicaQueueDrain     []int     `json:"ep_tap_replica_queue_drain"`      //items
 			EPTapTotalQueueDrain       []int     `json:"ep_tap_total_queue_drain"`        //items
 			EPTapTotalQueueFill        []int     `json:"ep_tap_total_queue_fill"`         //items
@@ -81,7 +77,7 @@ type CouchbaseBucketStats struct {
 			VBActiveNums               []int     `json:"vb_active_num"`                   //items
 			VBActiveQueueDrain         []int     `json:"vb_active_queue_drain"`           //items
 			VBActiveQueueSize          []int     `json:"vb_active_queue_size"`            //items
-			VBActiveResidentItemsRatio []float64 `json:"vb_active_resident_items_ratio"`  //items
+			VBActiveResidentItemsRatio []float32 `json:"vb_active_resident_items_ratio"`  //items
 			VBActiveNumNonResident     []int     `json:"vb_active_num_non_resident"`      //items
 			VBAvgTotalQueueAge         []int     `json:"vb_avg_total_queue_age"`          //Seconds
 			VBPendingOpsCreate         []int     `json:"vb_pending_ops_create"`           //operations
@@ -127,15 +123,40 @@ type CompleteBucketInfo struct {
 	bucketStats CouchbaseBucketStats
 }
 
-//This might not give us the number we want...Int/Int results in an int
-func reduceIntSample(sampleSet []int) (result int) {
+func avgIntSample(sampleSet []int) (result float32) {
 	var sampleSetLength int = len(sampleSet)
 	if sampleSetLength > 0 {
 		var total int = 0
 		for _, currentSample := range sampleSet {
 			total += currentSample
 		}
-		return total / sampleSetLength
+		return float32(total) / float32(sampleSetLength)
+	} else {
+		return 0
+	}
+}
+
+func avgInt64Sample(sampleSet []int64) (result float32) {
+	var sampleSetLength int = len(sampleSet)
+	if sampleSetLength > 0 {
+		var total int64 = 0
+		for _, currentSample := range sampleSet {
+			total += currentSample
+		}
+		return float32(total) / float32(sampleSetLength)
+	} else {
+		return 0
+	}
+}
+
+func avgFloat32Sample(sampleSet []float32) (result float32) {
+	var sampleSetLength int = len(sampleSet)
+	if sampleSetLength > 0 {
+		var total float32 = 0
+		for _, currentSample := range sampleSet {
+			total += currentSample
+		}
+		return total / float32(sampleSetLength)
 	} else {
 		return 0
 	}
@@ -143,8 +164,81 @@ func reduceIntSample(sampleSet []int) (result int) {
 
 func formatBucketInfoStructToMap(completeBucketInfo CompleteBucketInfo) (bucketInfoMap map[string]interface{}) {
 	return map[string]interface{}{
-		"couchbase.by_bucket.name":             completeBucketInfo.bucketInfo.Name,
-		"couchbase.by_bucket.avg_bg_wait_time": reduceIntSample(completeBucketInfo.bucketStats.OP.Samples.AVGBGWaitTime),
+		"couchbase.by_bucket.name":                            completeBucketInfo.bucketInfo.Name,
+		"couchbase.by_bucket.avg_bg_wait_time":                avgIntSample(completeBucketInfo.bucketStats.OP.Samples.AVGBGWaitTime),
+		"couchbase.by_bucket.avg_disk_commit_time":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.AVGDiskCommitTime),
+		"couchbase.by_bucket.bytes_read":                      avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.BytesRead),
+		"couchbase.by_bucket.bytes_written":                   avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.BytesWritten),
+		"couchbase.by_bucket.cas_hits":                        avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CasHits),
+		"couchbase.by_bucket.cas_misses":                      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CasMisses),
+		"couchbase.by_bucket.cmd_get":                         avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CMDGet),
+		"couchbase.by_bucket.cmd_set":                         avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CMDSet),
+		"couchbase.by_bucket.couch_docs_actual_disk_size":     avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CouchDocsActualDiskSize),
+		"couchbase.by_bucket.couch_docs_data_size":            avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.CouchDocsDataSize),
+		"couchbase.by_bucket.couch_docs_disk_size":            avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.CouchDocsDiskSize),
+		"couchbase.by_bucket.couch_docs_fragmentation":        avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CouchDocsFragmentation),
+		"couchbase.by_bucket.couch_total_disk_size":           avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.CouchTotalDiskSize),
+		"couchbase.by_bucket.couch_views_fragmentation":       avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CouchViewsFragmentation),
+		"couchbase.by_bucket.couch_views_ops":                 avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CouchViewsOps),
+		"couchbase.by_bucket.cpu_idle_ms":                     avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CPUIdleTime),
+		"couchbase.by_bucket.cpu_utilization_rate":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.CPUUtilizationRate),
+		"couchbase.by_bucket.curr_connections":                avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CurrConnections),
+		"couchbase.by_bucket.curr_items":                      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CurrItems),
+		"couchbase.by_bucket.curr_items_tot":                  avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CurrItemsTotal),
+		"couchbase.by_bucket.decr_hits":                       avgIntSample(completeBucketInfo.bucketStats.OP.Samples.DecrHits),
+		"couchbase.by_bucket.decr_misses":                     avgIntSample(completeBucketInfo.bucketStats.OP.Samples.DecrMisses),
+		"couchbase.by_bucket.delete_hits":                     avgIntSample(completeBucketInfo.bucketStats.OP.Samples.DeleteHits),
+		"couchbase.by_bucket.delete_misses":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.DeleteMisses),
+		"couchbase.by_bucket.disk_commit_count":               avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.DiskCommitCount),
+		"couchbase.by_bucket.disk_update_count":               avgIntSample(completeBucketInfo.bucketStats.OP.Samples.DiskUpdateCount),
+		"couchbase.by_bucket.disk_write_queue":                avgIntSample(completeBucketInfo.bucketStats.OP.Samples.DiskWriteQueue),
+		"couchbase.by_bucket.ep_bg_fetched":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPBGFetched),
+		"couchbase.by_bucket.ep_cache_miss_rate":              avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPCacheMissRate),
+		"couchbase.by_bucket.ep_diskqueue_items":              avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPDiskQueueItems),
+		"couchbase.by_bucket.ep_diskqueue_drain":              avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPDiskQueueDrain),
+		"couchbase.by_bucket.ep_diskqueue_fill":               avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPDiskQueueFill),
+		"couchbase.by_bucket.ep_flusher_todo":                 avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPFlusherTodo),
+		"couchbase.by_bucket.ep_item_commit_failed":           avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EpItemCommitFailed),
+		"couchbase.by_bucket.ep_max_size":                     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMaxSize),
+		"couchbase.by_bucket.ep_mem_high_wat":                 avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMemHighWater),
+		"couchbase.by_bucket.ep_num_non_resident":             avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPNumNonResident),
+		"couchbase.by_bucket.ep_num_value_ejects":             avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPNumValueEjects),
+		"couchbase.by_bucket.ep_oom_errors":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPOOMErrors),
+		"couchbase.by_bucket.ep_ops_create":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPOPSCreate),
+		"couchbase.by_bucket.ep_ops_update":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPOPSUpdate),
+		"couchbase.by_bucket.ep_overhead":                     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPOverhead),
+		"couchbase.by_bucket.ep_queue_size":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPQueueSize),
+		"couchbase.by_bucket.ep_resident_items_rate":          avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPResidentItemsRate),
+		"couchbase.by_bucket.ep_tap_replica_queue_drain":      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPTapReplicaQueueDrain),
+		"couchbase.by_bucket.ep_tap_total_queue_drain":        avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPTapTotalQueueDrain),
+		"couchbase.by_bucket.ep_tap_total_queue_fill":         avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPTapTotalQueueFill),
+		"couchbase.by_bucket.ep_tap_total_total_backlog_size": avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPTapTotalTotalBacklogSize),
+		"couchbase.by_bucket.ep_tmp_oom_errors":               avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPTMPOOMErrors),
+		"couchbase.by_bucket.evictions":                       avgIntSample(completeBucketInfo.bucketStats.OP.Samples.Evictions),
+		"couchbase.by_bucket.get_hits":                        avgIntSample(completeBucketInfo.bucketStats.OP.Samples.GetHits),
+		"couchbase.by_bucket.get_misses":                      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.GetMisses),
+		"couchbase.by_bucket.hit_ratio":                       avgIntSample(completeBucketInfo.bucketStats.OP.Samples.HitRatio),
+		"couchbase.by_bucket.incr_hits":                       avgIntSample(completeBucketInfo.bucketStats.OP.Samples.IncrHits),
+		"couchbase.by_bucket.mem_free":                        avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemFree),
+		"couchbase.by_bucket.mem_actual_free":                 avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemActuallFree),
+		"couchbase.by_bucket.mem_total":                       avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemTotal),
+		"couchbase.by_bucket.mem_used":                        avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemUsed),
+		"couchbase.by_bucket.mem_actual_used":                 avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemActuallUsed),
+		"couchbase.by_bucket.misses":                          avgIntSample(completeBucketInfo.bucketStats.OP.Samples.Misses),
+		"couchbase.by_bucket.ops":                             avgIntSample(completeBucketInfo.bucketStats.OP.Samples.Ops),
+		"couchbase.by_bucket.vb_active_num":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBActiveNums),
+		"couchbase.by_bucket.vb_active_queue_drain":           avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBActiveQueueDrain),
+		"couchbase.by_bucket.vb_active_queue_size":            avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBActiveQueueSize),
+		"couchbase.by_bucket.vb_active_resident_items_ratio":  avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveResidentItemsRatio),
+		"couchbase.by_bucket.vb_active_num_non_resident":      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBActiveNumNonResident),
+		"couchbase.by_bucket.vb_avg_total_queue_age":          avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBAvgTotalQueueAge),
+		"couchbase.by_bucket.vb_pending_ops_create":           avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBPendingOpsCreate),
+		"couchbase.by_bucket.vb_pending_queue_fill":           avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBPendingQueueFill),
+		"couchbase.by_bucket.vb_replica_curr_items":           avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaCurrItems),
+		"couchbase.by_bucket.vb_replica_meta_data_memory":     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaMetaDataMemory),
+		"couchbase.by_bucket.vb_replica_num":                  avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaNum),
+		"couchbase.by_bucket.vb_replica_queue_size":           avgIntSample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaQueueSize),
+		"couchbase.by_bucket.xdc_ops":                         avgIntSample(completeBucketInfo.bucketStats.OP.Samples.XDCOPS),
 	}
 }
 
@@ -181,7 +275,7 @@ func getCouchBucketsStats(couchConfig CouchbaseConfig) (allBucketStats []map[str
 }
 
 func getBucketStats(config CouchbaseConfig, bucketUri string) (bucketStats CouchbaseBucketStats, err error) {
-	couchbaseStatsURI := fmt.Sprintf("%v:%v/%v%v", config.CouchbaseHost, config.CouchbasePort, bucketUri, "?zoom=minute")
+	couchbaseStatsURI := fmt.Sprintf("%v:%v%v%v", config.CouchbaseHost, config.CouchbasePort, bucketUri, "?zoom=minute")
 	httpReq, err := http.NewRequest("GET", couchbaseStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -273,9 +367,6 @@ func decodeCouchbaseConfig(config Config, couchConfig *CouchbaseConfig) (err err
 func CouchbaseCollector(config Config, stats chan<- []map[string]interface{}) {
 	var couchConfig CouchbaseConfig
 	err := decodeCouchbaseConfig(config, &couchConfig)
-	log.WithFields(logrus.Fields{
-		"couchConfig": couchConfig,
-	}).Info("couchConfig.")
 	if err != nil {
 		close(stats)
 	}

@@ -120,7 +120,13 @@ func sendData(collectorName string, app newrelicMonitoring.Application, config c
 	tags := processTags(collectorName, config)
 	payload := mergeMaps(tags, stats)
 	// send stats
-	app.RecordCustomEvent(fmt.Sprintf("gannettNewRelic%s", collectorName), payload)
+	log.WithFields(logrus.Fields{
+		"payload": payload,
+	}).Info("payload")
+	err := app.RecordCustomEvent(fmt.Sprintf("gannettNewRelic%s", collectorName), payload)
+	log.WithFields(logrus.Fields{
+		"err": err,
+	}).Info("newRelic err")
 }
 
 // processTags - read all ENV tags, and append collector specific to global for both kv tags and env tags
