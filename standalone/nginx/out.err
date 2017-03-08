@@ -1,0 +1,4 @@
+time="2017-03-08T13:02:49-05:00" level=info msg="executing http call: http://localhost:8140/nginx_status" 
+time="2017-03-08T13:02:49-05:00" level=info msg="http call finished" 
+time="2017-03-08T13:02:49-05:00" level=info msg="reading response body" 
+time="2017-03-08T13:02:49-05:00" level=debug msg="Scraped NGINX values" accepts=29 active=1 handled=29 reading=0 requests=31 waiting=1 writing=1 

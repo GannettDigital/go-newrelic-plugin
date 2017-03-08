@@ -119,12 +119,7 @@ func getNginxStatus(config NginxConfig) string {
 	nginxStatus := fmt.Sprintf("%v:%v/%v", config.NginxHost, config.NginxListenPort, config.NginxStatusURI)
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
-	if err != nil {
-		log.WithFields(log.Fields{
-			"nginxStatus": nginxStatus,
-			"error":       err,
-		}).Error("Encountered error creating http.NewRequest")
-	}
+	fatalIfErr(err)
 	var runner utilsHTTP.HTTPRunner
 	runner = utilsHTTP.HTTPRunnerImpl{}
 	code, data, err := runner.CallAPI(log.New(), nil, httpReq, &http.Client{})
@@ -176,7 +171,7 @@ func scrapeStatus(status string) map[string]interface{} {
 		"reading":  reading,
 		"writing":  writing,
 		"waiting":  waiting,
-	}).Info("Scraped NGINX values")
+	}).Debugf("Scraped NGINX values")
 	return map[string]interface{}{
 		"event_type":            "LoadBalancerSample",
 		"provider":              "nginx",
@@ -199,7 +194,7 @@ func toInt(value string) int {
 		log.WithFields(log.Fields{
 			"valueInt": valueInt,
 			"error":    err,
-		}).Error("Error converting value to int")
+		}).Fatal("Error converting value to int")
 
 		return 0
 	}
