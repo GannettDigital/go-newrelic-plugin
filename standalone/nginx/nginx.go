@@ -12,8 +12,10 @@ import (
 	"strings"
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
+
+var log *logrus.Logger
 
 //NginxConfig is the keeper of the config
 type NginxConfig struct {
@@ -76,11 +78,12 @@ func main() {
 	flag.Parse()
 
 	// Setup logging, redirect logs to stderr and configure the log level.
-	log.SetOutput(os.Stderr)
+	log = logrus.New()
+	log.Out = os.Stderr
 	if *verbose {
-		log.SetLevel(log.DebugLevel)
+		log.Level = logrus.DebugLevel
 	} else {
-		log.SetLevel(log.InfoLevel)
+		log.Level = logrus.InfoLevel
 	}
 
 	// Initialize the output structure
@@ -122,9 +125,9 @@ func getNginxStatus(config NginxConfig) string {
 	fatalIfErr(err)
 	var runner utilsHTTP.HTTPRunner
 	runner = utilsHTTP.HTTPRunnerImpl{}
-	code, data, err := runner.CallAPI(log.New(), nil, httpReq, &http.Client{})
+	code, data, err := runner.CallAPI(log, nil, httpReq, &http.Client{})
 	if err != nil || code != 200 {
-		log.WithFields(log.Fields{
+		log.WithFields(logrus.Fields{
 			"code":                   code,
 			"data":                   string(data),
 			"httpReq":                httpReq,
@@ -163,7 +166,7 @@ func scrapeStatus(status string) map[string]interface{} {
 	contents = strings.Fields(multi)
 	waiting := contents[1]
 
-	log.WithFields(log.Fields{
+	log.WithFields(logrus.Fields{
 		"active":   active,
 		"accepts":  accepts,
 		"handled":  handled,
@@ -191,7 +194,7 @@ func toInt(value string) int {
 	}
 	valueInt, err := strconv.Atoi(value)
 	if err != nil {
-		log.WithFields(log.Fields{
+		log.WithFields(logrus.Fields{
 			"valueInt": valueInt,
 			"error":    err,
 		}).Fatal("Error converting value to int")
