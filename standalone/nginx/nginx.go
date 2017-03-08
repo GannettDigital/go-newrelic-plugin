@@ -18,6 +18,12 @@ import (
 var log *logrus.Logger
 var runner utilsHTTP.HTTPRunner
 
+//Constants
+const NAME string = "nginx"
+const PROVIDER string = "nginx" //we might want to make this an env tied to nginx version or app name maybe...
+const VERSION string = "1.0.0"
+const PROTOCOL_VERSION string = "1"
+
 //NginxConfig is the keeper of the config
 type NginxConfig struct {
 	NginxListenPort string
@@ -81,7 +87,13 @@ func main() {
 	// Setup the plugin's command line parameters
 	verbose := flag.Bool("v", false, "Print more information to logs")
 	pretty := flag.Bool("p", false, "Print pretty formatted JSON")
+	version := flag.Bool("version", false, "Print the version and exit")
 	flag.Parse()
+
+	if *version {
+		fmt.Println(VERSION)
+		os.Exit(1)
+	}
 
 	// Setup logging, redirect logs to stderr and configure the log level.
 	log.Out = os.Stderr
@@ -93,28 +105,31 @@ func main() {
 
 	// Initialize the output structure
 	var data = PluginData{
-		Name:            "nginx",
-		ProtocolVersion: "1",
-		PluginVersion:   "1.0.0",
-		Status:          "OK",
+		Name:            NAME,
+		ProtocolVersion: PROTOCOL_VERSION,
+		PluginVersion:   VERSION,
 		Inventory:       make(map[string]InventoryData),
 		Metrics:         make([]MetricData, 0),
 		Events:          make([]EventData, 0),
 	}
 
-	nginxListenPort := os.Getenv("NGINXLISTENPORT")
-	nginxStatusURI := os.Getenv("NGINXSTATUSURI")
-	nginxHost := os.Getenv("NGINXHOST")
 	var nginxConf = NginxConfig{
-		NginxListenPort: nginxListenPort,
-		NginxHost:       nginxHost,
-		NginxStatusURI:  nginxStatusURI,
+		NginxListenPort: os.Getenv("NGINXLISTENPORT"),
+		NginxHost:       os.Getenv("NGINXHOST"),
+		NginxStatusURI:  os.Getenv("NGINXSTATUSURI"),
 	}
+	validateConfig(nginxConf)
 
 	var metric = scrapeStatus(getNginxStatus(nginxConf))
 
 	data.Metrics = append(data.Metrics, metric)
 	fatalIfErr(OutputJSON(data, *pretty))
+}
+
+func validateConfig(nginxConf NginxConfig) {
+	if nginxConf.NginxHost == "" || nginxConf.NginxListenPort == "" || nginxConf.NginxStatusURI == "" {
+		log.Fatal("Config Yaml is missing values. Please check the config to continue")
+	}
 }
 
 func fatalIfErr(err error) {
@@ -180,7 +195,7 @@ func scrapeStatus(status string) map[string]interface{} {
 	}).Debugf("Scraped NGINX values")
 	return map[string]interface{}{
 		"event_type":            "LoadBalancerSample",
-		"provider":              "nginx",
+		"provider":              PROVIDER,
 		"nginx.net.connections": toInt(active),
 		"nginx.net.accepts":     toInt(accepts),
 		"nginx.net.handled":     toInt(handled),
