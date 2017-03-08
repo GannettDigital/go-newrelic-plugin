@@ -16,6 +16,7 @@ import (
 )
 
 var log *logrus.Logger
+var runner utilsHTTP.HTTPRunner
 
 //NginxConfig is the keeper of the config
 type NginxConfig struct {
@@ -71,6 +72,11 @@ func OutputJSON(data interface{}, pretty bool) error {
 	return nil
 }
 
+func init() {
+	runner = utilsHTTP.HTTPRunnerImpl{}
+	log = logrus.New()
+}
+
 func main() {
 	// Setup the plugin's command line parameters
 	verbose := flag.Bool("v", false, "Print more information to logs")
@@ -78,7 +84,6 @@ func main() {
 	flag.Parse()
 
 	// Setup logging, redirect logs to stderr and configure the log level.
-	log = logrus.New()
 	log.Out = os.Stderr
 	if *verbose {
 		log.Level = logrus.DebugLevel
@@ -123,8 +128,6 @@ func getNginxStatus(config NginxConfig) string {
 	httpReq, err := http.NewRequest("GET", nginxStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
 	fatalIfErr(err)
-	var runner utilsHTTP.HTTPRunner
-	runner = utilsHTTP.HTTPRunnerImpl{}
 	code, data, err := runner.CallAPI(log, nil, httpReq, &http.Client{})
 	if err != nil || code != 200 {
 		log.WithFields(logrus.Fields{
@@ -197,7 +200,7 @@ func toInt(value string) int {
 		log.WithFields(logrus.Fields{
 			"valueInt": valueInt,
 			"error":    err,
-		}).Fatal("Error converting value to int")
+		}).Debug("Error converting value to int")
 
 		return 0
 	}
