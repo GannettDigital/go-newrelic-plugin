@@ -15,6 +15,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+//NginxConfig is the keeper of the config
 type NginxConfig struct {
 	NginxListenPort string
 	NginxStatusURI  string
@@ -192,17 +193,16 @@ func scrapeStatus(status string) map[string]interface{} {
 func toInt(value string) int {
 	if value == "" {
 		return 0
-	} else {
-		valueInt, err := strconv.Atoi(value)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"valueInt": valueInt,
-				"error":    err,
-			}).Error("Error converting value to int")
-
-			return 0
-		}
-
-		return valueInt
 	}
+	valueInt, err := strconv.Atoi(value)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"valueInt": valueInt,
+			"error":    err,
+		}).Error("Error converting value to int")
+
+		return 0
+	}
+
+	return valueInt
 }
