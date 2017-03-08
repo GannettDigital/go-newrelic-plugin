@@ -1,0 +1,13 @@
+name: com.gannettdigital.nginx
+description: Reports Nginx metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./go/nginx
+    interval: 15
+    env:
+      NGINXLISTENPORT: "8140"
+      NGINXSTATUSURI: nginx_status
+      NGINXHOST: http://localhost

@@ -2,6 +2,11 @@ go-api-skeleton CHANGELOG
 ==============================
 
 This file is used to list changes made in each version of go-newrelic-plugin.
+
+# 0.0.15
+
+Michael Dunton - Creating standalone instance of nginx plugin for newrelic intra sdk
+
 # 0.0.14
 
 Michael Dunton - Adding Couchbase support
