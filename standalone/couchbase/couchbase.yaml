@@ -8,4 +8,7 @@ source:
      - ./gannett_couchbase
     interval: 15
     env:
-      KEY: "VALUE"
+      COUCHBASE_USER: admin
+      COUCHBASE_PASSWORD: password
+      COUCHBASE_PORT: "8091"
+      COUCHBASE_HOST: http://localhost

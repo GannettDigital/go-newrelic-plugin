@@ -3,6 +3,11 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+
+# 0.0.18
+
+Michael Dunton - Couchbase Standalone plugin for newrelic-infra
+
 # 0.0.17
 
 Michael Dunton - Rabbitmq Standalone plugin for newrelic-infra
