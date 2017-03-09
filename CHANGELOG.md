@@ -3,13 +3,17 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.17
+
+Michael Dunton - Rabbitmq Standalone plugin for newrelic-infra
+
 # 0.0.16
 
 Michael Dunton - Create a skeleton app for the standalone plugins
 
 # 0.0.15
 
-Michael Dunton - Creating standalone instance of nginx plugin for newrelic intra sdk
+Michael Dunton - Creating standalone instance of nginx plugin for newrelic-infra sdk
 
 # 0.0.14
 
