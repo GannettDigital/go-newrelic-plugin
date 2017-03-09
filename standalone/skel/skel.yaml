@@ -1,0 +1,11 @@
+name: com.gannettdigital.skel
+description: Reports Skel metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./gannett_skel
+    interval: 15
+    env:
+      KEY: "VALUE"
