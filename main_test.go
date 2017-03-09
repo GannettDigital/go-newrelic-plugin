@@ -125,16 +125,16 @@ func TestLoadConfig(t *testing.T) {
 							"couchbaseuser":     "admin",
 							"couchbasepassword": "password",
 							"couchbaseport":     "8091",
-							"couchbasehost":     "http://10.84.103.211"},
+							"couchbasehost":     "http://localhost"},
 					},
 					"rabbitmq": collectors.CommonConfig{
 						Enabled: false,
 						DelayMS: 2000,
 						CollectorConfig: map[string]interface{}{
-							"rabbitmquser":     "scalr",
-							"rabbitmqpassword": "hiTVPamzPm",
+							"rabbitmquser":     "secure",
+							"rabbitmqpassword": "password",
 							"rabbitmqport":     "15672",
-							"rabbitmqhost":     "http://10.84.100.59"},
+							"rabbitmqhost":     "http://localhost"},
 					},
 					"nginx": collectors.CommonConfig{
 						Enabled: false,

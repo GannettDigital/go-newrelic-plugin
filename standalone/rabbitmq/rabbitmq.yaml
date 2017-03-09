@@ -8,7 +8,7 @@ source:
      - ./gannett_rabbitmq
     interval: 15
     env:
-      RABBITMQ_USER: scalr
-      RABBITMQ_PASSWORD: hiTVPamzPm
+      RABBITMQ_USER: secure
+      RABBITMQ_PASSWORD: password
       RABBITMQ_PORT: "15672"
-      RABBITMQ_HOST: http://10.84.100.59
+      RABBITMQ_HOST: http://localhost
