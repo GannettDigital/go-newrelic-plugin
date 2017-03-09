@@ -22,10 +22,10 @@ collectors:
     enabled: false
     delayms: 2000
     collectorconfig:
-      rabbitmquser: scalr
-      rabbitmqpassword: hiTVPamzPm
+      rabbitmquser: secure
+      rabbitmqpassword: password
       rabbitmqport: "15672"
-      rabbitmqhost: http://10.84.100.59
+      rabbitmqhost: http://localhost
   couchbase:
     enabled: true
     delayms: 30000
@@ -33,7 +33,7 @@ collectors:
       couchbaseuser: admin
       couchbasepassword: password
       couchbaseport: "8091"
-      couchbasehost: http://10.84.103.211
+      couchbasehost: http://localhost
   haproxy:
     enabled: false
     delayms: 1000
