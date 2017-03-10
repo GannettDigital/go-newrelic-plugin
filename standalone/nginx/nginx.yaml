@@ -5,9 +5,10 @@ os: linux
 
 source:
   - command:
-     - ./go/nginx
+     - ./bin/nginx
+    prefix: gannett
     interval: 15
     env:
-      NGINXLISTENPORT: "8140"
+      NGINXLISTENPORT: 8140
       NGINXSTATUSURI: nginx_status
       NGINXHOST: http://localhost

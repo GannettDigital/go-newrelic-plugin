@@ -5,7 +5,8 @@ os: linux
 
 source:
   - command:
-     - ./gannett_skel
+     - ./bin/skel
+    prefix: gannett
     interval: 15
     env:
       KEY: "VALUE"
