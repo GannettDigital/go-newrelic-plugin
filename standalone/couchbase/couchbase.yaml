@@ -5,7 +5,8 @@ os: linux
 
 source:
   - command:
-     - ./gannett_couchbase
+     - ./bin/couchbase
+    prefix: gannett
     interval: 15
     env:
       COUCHBASE_USER: admin

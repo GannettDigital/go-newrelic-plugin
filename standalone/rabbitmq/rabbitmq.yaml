@@ -5,7 +5,8 @@ os: linux
 
 source:
   - command:
-     - ./gannett_rabbitmq
+     - ./bin/rabbitmq
+    prefix: gannett
     interval: 15
     env:
       RABBITMQ_USER: secure
