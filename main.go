@@ -45,6 +45,10 @@ func init() {
 		os.Exit(1)
 	}
 
+	if opts.ListTypes {
+		ListTypes()
+		os.Exit(1)
+	}
 	if opts.Verbose {
 		log.Level = logrus.DebugLevel
 	} else {
@@ -67,7 +71,17 @@ func main() {
 
 	if !typeFound {
 		log.Error(fmt.Sprintf("collector %s not found!", opts.Type))
+		ListTypes()
 		os.Exit(1)
 	}
+
+}
+
+func ListTypes() {
+	concat := ""
+	for name, _ := range collectors {
+		concat = concat + name + " "
+	}
+	log.Info("available types: ", concat)
 
 }

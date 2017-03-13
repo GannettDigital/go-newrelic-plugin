@@ -10,6 +10,7 @@ type Opts struct {
 	Verbose     bool   `long:"verbose" description:"Print more information to logs"`
 	PrettyPrint bool   `long:"pretty-print" description:"Print pretty formatted JSON"`
 	Version     bool   `long:"version" description:"Print version information and exit"`
+	ListTypes   bool   `long:"list-types" description:"Print the available types"`
 }
 
 // Collector - definition of a collector
