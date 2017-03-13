@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.1.0
+
+Ryan Grothouse - modified code to work with newrelics agent updates
+
 # 0.0.20
 
 Ryan Grothouse - remove standalone nginx code to its own repo
