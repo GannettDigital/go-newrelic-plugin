@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.1.1
+
+Ryan Grothosue - bump paas-api-ci version
+
 # 0.1.0
 
 Ryan Grothouse - modified code to work with newrelics agent updates
