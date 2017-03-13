@@ -26,7 +26,7 @@ node {
     --region=\"${region}\" \
     --ci-job-number=${env.BUILD_ID} \
     --skip-deploy \
-    --skip-docker \ 
+    --skip-docker \
     --skip-swagger \
     --skip-source-check"
   }
