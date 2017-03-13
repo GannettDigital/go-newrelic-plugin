@@ -8,7 +8,7 @@ import (
 	"github.com/GannettDigital/go-newrelic-plugin/nginx"
 	"github.com/GannettDigital/go-newrelic-plugin/rabbitmq"
 	"github.com/GannettDigital/go-newrelic-plugin/types"
-	status "github.com/GannettDigital/paas-api-state-module"
+	status "github.com/GannettDigital/goStateModule"
 	"github.com/Sirupsen/logrus"
 	flags "github.com/jessevdk/go-flags"
 )
