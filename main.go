@@ -14,7 +14,7 @@ import (
 )
 
 var log *logrus.Logger
-var Opts types.Opts
+var opts types.Opts
 var version string
 
 // list of available collectors.
@@ -33,19 +33,19 @@ func init() {
 	if status.GetInfo().Version == "" {
 		version = "0.0.0"
 	}
-	_, err := flags.Parse(&Opts)
+	_, err := flags.Parse(&opts)
 	if err != nil {
-		if !Opts.Version {
+		if !opts.Version {
 			os.Exit(1)
 		}
 	}
 
-	if Opts.Version {
+	if opts.Version {
 		fmt.Println(fmt.Sprintf("version: %s \nbuilt at: %s", version, status.GetInfo().BuiltAt))
 		os.Exit(1)
 	}
 
-	if Opts.Verbose {
+	if opts.Verbose {
 		log.Level = logrus.DebugLevel
 	} else {
 		log.Level = logrus.InfoLevel
@@ -58,15 +58,15 @@ func main() {
 	typeFound := false
 	// main routine
 	for name, collector := range collectors {
-		if Opts.Type == name {
+		if opts.Type == name {
 			log.Info("Collector Type: ", name)
 			typeFound = true
-			collector(log, Opts, version)
+			collector(log, opts, version)
 		}
 	}
 
 	if !typeFound {
-		log.Error(fmt.Sprintf("collector %s not found!", Opts.Type))
+		log.Error(fmt.Sprintf("collector %s not found!", opts.Type))
 		os.Exit(1)
 	}
 
