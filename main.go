@@ -77,9 +77,10 @@ func main() {
 
 }
 
+// ListTypes - list the types available
 func ListTypes() {
 	concat := ""
-	for name, _ := range collectors {
+	for name := range collectors {
 		concat = concat + name + " "
 	}
 	log.Info("available types: ", concat)
