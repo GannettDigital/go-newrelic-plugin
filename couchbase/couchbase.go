@@ -1,25 +1,23 @@
-package main
+package couchbase
 
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"sync"
 
+	"github.com/GannettDigital/go-newrelic-plugin/types"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
 
-var log *logrus.Logger
 var runner utilsHTTP.HTTPRunner
 
 const EVENT_TYPE string = "DataStoreSample"
 const NAME string = "couchbase"
 const PROVIDER string = "couchbase" //we might want to make this an env tied to nginx version or app name maybe...
-const VERSION string = "1.0.0"
 const PROTOCOL_VERSION string = "1"
 
 //CouchbaseConfig is the keeper of the config
@@ -190,19 +188,19 @@ func OutputJSON(data interface{}, pretty bool) error {
 	return nil
 }
 
-func validateConfig(config CouchbaseConfig) {
+func validateConfig(log *logrus.Logger, config CouchbaseConfig) {
 	if config.CouchbaseHost == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
 
-func fatalIfErr(err error) {
+func fatalIfErr(log *logrus.Logger, err error) {
 	if err != nil {
 		log.WithError(err).Fatal("can't continue")
 	}
 }
 
-func executeAndDecode(httpReq http.Request, record interface{}) error {
+func executeAndDecode(log *logrus.Logger, httpReq http.Request, record interface{}) error {
 	code, data, err := runner.CallAPI(log, nil, &httpReq, &http.Client{})
 	if err != nil || code != 200 {
 		log.WithFields(logrus.Fields{
@@ -218,34 +216,15 @@ func executeAndDecode(httpReq http.Request, record interface{}) error {
 
 func init() {
 	runner = utilsHTTP.HTTPRunnerImpl{}
-	log = logrus.New()
 }
 
-func main() {
-	// Setup the plugin's command line parameters
-	verbose := flag.Bool("v", false, "Print more information to logs")
-	pretty := flag.Bool("p", false, "Print pretty formatted JSON")
-	version := flag.Bool("version", false, "Print the version and exit")
-	flag.Parse()
-
-	if *version {
-		fmt.Println(VERSION)
-		os.Exit(1)
-	}
-
-	// Setup logging, redirect logs to stderr and configure the log level.
-	log.Out = os.Stderr
-	if *verbose {
-		log.Level = logrus.DebugLevel
-	} else {
-		log.Level = logrus.InfoLevel
-	}
+func Run(log *logrus.Logger, opts types.Opts, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
 		Name:            NAME,
 		ProtocolVersion: PROTOCOL_VERSION,
-		PluginVersion:   VERSION,
+		PluginVersion:   version,
 		Inventory:       make(map[string]InventoryData),
 		Metrics:         make([]MetricData, 0),
 		Events:          make([]EventData, 0),
@@ -257,10 +236,10 @@ func main() {
 		CouchbasePort:     os.Getenv("COUCHBASE_PORT"),
 		CouchbaseHost:     os.Getenv("COUCHBASE_HOST"),
 	}
-	validateConfig(config)
+	validateConfig(log, config)
 
-	couchClusterResponses, getCouchClusterStatsError := getCouchClusterStats(config)
-	couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(config)
+	couchClusterResponses, getCouchClusterStatsError := getCouchClusterStats(log, config)
+	couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(log, config)
 	for _, currentError := range []interface{}{getCouchClusterStatsError, getCouchBucketStatsError} {
 		if getCouchClusterStatsError != nil {
 			log.WithFields(logrus.Fields{
@@ -271,7 +250,7 @@ func main() {
 
 	data.Metrics = append(data.Metrics, couchClusterResponses...)
 	data.Metrics = append(data.Metrics, couchBucketResponses...)
-	fatalIfErr(OutputJSON(data, *pretty))
+	fatalIfErr(log, OutputJSON(data, opts.PrettyPrint))
 }
 
 func avgIntSample(sampleSet []int) (result float32) {
@@ -400,8 +379,8 @@ func formatBucketInfoEPStatsStructToMap(completeBucketInfo CompleteBucketInfo) (
 	}
 }
 
-func getCouchBucketsStats(couchConfig CouchbaseConfig) (allBucketStats []MetricData, err error) {
-	allBucketStatsInfos, err := getAllBucketsInfo(couchConfig)
+func getCouchBucketsStats(log *logrus.Logger, couchConfig CouchbaseConfig) (allBucketStats []MetricData, err error) {
+	allBucketStatsInfos, err := getAllBucketsInfo(log, couchConfig)
 	if err != nil {
 		return []MetricData{}, err
 	}
@@ -412,7 +391,7 @@ func getCouchBucketsStats(couchConfig CouchbaseConfig) (allBucketStats []MetricD
 	for _, currentBucket := range allBucketStatsInfos {
 		go func(currentBucket CouchbaseBucketStatsURI) {
 			defer wg.Done()
-			bucketStats, err := getBucketStats(couchConfig, currentBucket.StatsObject.URI)
+			bucketStats, err := getBucketStats(log, couchConfig, currentBucket.StatsObject.URI)
 			if err != nil {
 				log.WithFields(logrus.Fields{
 					"currentBucket": currentBucket,
@@ -433,7 +412,7 @@ func getCouchBucketsStats(couchConfig CouchbaseConfig) (allBucketStats []MetricD
 	return allBucketStats, nil
 }
 
-func getBucketStats(config CouchbaseConfig, bucketURI string) (bucketStats CouchbaseBucketStats, err error) {
+func getBucketStats(log *logrus.Logger, config CouchbaseConfig, bucketURI string) (bucketStats CouchbaseBucketStats, err error) {
 	couchbaseStatsURI := fmt.Sprintf("%v:%v%v%v", config.CouchbaseHost, config.CouchbasePort, bucketURI, "?zoom=minute")
 	httpReq, err := http.NewRequest("GET", couchbaseStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -444,14 +423,14 @@ func getBucketStats(config CouchbaseConfig, bucketURI string) (bucketStats Couch
 		return CouchbaseBucketStats{}, err
 	}
 	httpReq.SetBasicAuth(config.CouchbaseUser, config.CouchbasePassword)
-	err = executeAndDecode(*httpReq, &bucketStats)
+	err = executeAndDecode(log, *httpReq, &bucketStats)
 	if err != nil {
 		return CouchbaseBucketStats{}, err
 	}
 	return bucketStats, nil
 }
 
-func getAllBucketsInfo(config CouchbaseConfig) (bucketStatsInfos []CouchbaseBucketStatsURI, err error) {
+func getAllBucketsInfo(log *logrus.Logger, config CouchbaseConfig) (bucketStatsInfos []CouchbaseBucketStatsURI, err error) {
 	couchbaseStatsURI := fmt.Sprintf("%v:%v/%v", config.CouchbaseHost, config.CouchbasePort, "pools/default/buckets")
 	httpReq, err := http.NewRequest("GET", couchbaseStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -462,14 +441,14 @@ func getAllBucketsInfo(config CouchbaseConfig) (bucketStatsInfos []CouchbaseBuck
 		return []CouchbaseBucketStatsURI{}, err
 	}
 	httpReq.SetBasicAuth(config.CouchbaseUser, config.CouchbasePassword)
-	err = executeAndDecode(*httpReq, &bucketStatsInfos)
+	err = executeAndDecode(log, *httpReq, &bucketStatsInfos)
 	if err != nil {
 		return []CouchbaseBucketStatsURI{}, err
 	}
 	return bucketStatsInfos, nil
 }
 
-func getClusterInfo(config CouchbaseConfig) (clusterRecord CouchbaseClusterInfo, err error) {
+func getClusterInfo(log *logrus.Logger, config CouchbaseConfig) (clusterRecord CouchbaseClusterInfo, err error) {
 	couchbaseStatsURI := fmt.Sprintf("%v:%v/%v", config.CouchbaseHost, config.CouchbasePort, "pools/default")
 	httpReq, err := http.NewRequest("GET", couchbaseStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -480,15 +459,15 @@ func getClusterInfo(config CouchbaseConfig) (clusterRecord CouchbaseClusterInfo,
 		return CouchbaseClusterInfo{}, err
 	}
 	httpReq.SetBasicAuth(config.CouchbaseUser, config.CouchbasePassword)
-	err = executeAndDecode(*httpReq, &clusterRecord)
+	err = executeAndDecode(log, *httpReq, &clusterRecord)
 	if err != nil {
 		return CouchbaseClusterInfo{}, err
 	}
 	return clusterRecord, nil
 }
 
-func getCouchClusterStats(config CouchbaseConfig) ([]MetricData, error) {
-	clusterResponse, err := getClusterInfo(config)
+func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricData, error) {
+	clusterResponse, err := getClusterInfo(log, config)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"CouchbaseConfig": config,

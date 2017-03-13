@@ -1,23 +1,21 @@
-package main
+package rabbitmq
 
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
 
+	"github.com/GannettDigital/go-newrelic-plugin/types"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
 
-var log *logrus.Logger
 var runner utilsHTTP.HTTPRunner
 
 const NAME string = "rabbitmq"
 const PROVIDER string = "rabbitmq" //we might want to make this an env tied to nginx version or app name maybe...
-const VERSION string = "1.0.0"
 const PROTOCOL_VERSION string = "1"
 const EVENT_TYPE string = "QueueSample"
 
@@ -90,7 +88,11 @@ type QueueInfo struct {
 	MessagesUnacknowledged int `json:"messages_unacknowledged"`
 }
 
-func executeAndDecode(httpReq http.Request, record interface{}) error {
+func init() {
+	runner = utilsHTTP.HTTPRunnerImpl{}
+}
+
+func executeAndDecode(log *logrus.Logger, httpReq http.Request, record interface{}) error {
 	code, data, err := runner.CallAPI(log, nil, &httpReq, &http.Client{})
 	if err != nil || code != 200 {
 		log.WithFields(logrus.Fields{
@@ -129,48 +131,25 @@ func OutputJSON(data interface{}, pretty bool) error {
 	return nil
 }
 
-func validateConfig(config RabbitmqConfig) {
+func validateConfig(log *logrus.Logger, config RabbitmqConfig) {
 	if config.rabbitmqHost == "" || config.rabbitmqPassword == "" || config.rabbitmqPort == "" || config.rabbitmqUser == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
 
-func fatalIfErr(err error) {
+func fatalIfErr(log *logrus.Logger, err error) {
 	if err != nil {
 		log.WithError(err).Fatal("can't continue")
 	}
 }
 
-func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
-	log = logrus.New()
-}
-
-func main() {
-	// Setup the plugin's command line parameters
-	verbose := flag.Bool("v", false, "Print more information to logs")
-	pretty := flag.Bool("p", false, "Print pretty formatted JSON")
-	version := flag.Bool("version", false, "Print the version and exit")
-	flag.Parse()
-
-	if *version {
-		fmt.Println(VERSION)
-		os.Exit(1)
-	}
-
-	// Setup logging, redirect logs to stderr and configure the log level.
-	log.Out = os.Stderr
-	if *verbose {
-		log.Level = logrus.DebugLevel
-	} else {
-		log.Level = logrus.InfoLevel
-	}
+func Run(log *logrus.Logger, opts types.Opts, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
 		Name:            NAME,
 		ProtocolVersion: PROTOCOL_VERSION,
-		PluginVersion:   VERSION,
+		PluginVersion:   version,
 		Inventory:       make(map[string]InventoryData),
 		Metrics:         make([]MetricData, 0),
 		Events:          make([]EventData, 0),
@@ -182,16 +161,16 @@ func main() {
 		rabbitmqPort:     os.Getenv("RABBITMQ_PORT"),
 		rabbitmqHost:     os.Getenv("RABBITMQ_HOST"),
 	}
-	validateConfig(config)
+	validateConfig(log, config)
 
-	metrics, err := getRabbitmqStatus(config)
-	fatalIfErr(err)
+	metrics, err := getRabbitmqStatus(log, config)
+	fatalIfErr(log, err)
 
 	data.Metrics = append(data.Metrics, metrics...)
-	fatalIfErr(OutputJSON(data, *pretty))
+	fatalIfErr(log, OutputJSON(data, opts.PrettyPrint))
 }
 
-func listNodes(config RabbitmqConfig) (nodeRecords []NodeInfo, err error) {
+func listNodes(log *logrus.Logger, config RabbitmqConfig) (nodeRecords []NodeInfo, err error) {
 	rabbitmqNodeStatsURI := fmt.Sprintf("%v:%v/%v", config.rabbitmqHost, config.rabbitmqPort, "api/nodes")
 	httpReq, err := http.NewRequest("GET", rabbitmqNodeStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -202,7 +181,7 @@ func listNodes(config RabbitmqConfig) (nodeRecords []NodeInfo, err error) {
 		return []NodeInfo{}, err
 	}
 	httpReq.SetBasicAuth(config.rabbitmqUser, config.rabbitmqPassword)
-	err = executeAndDecode(*httpReq, &nodeRecords)
+	err = executeAndDecode(log, *httpReq, &nodeRecords)
 	if err != nil {
 		return []NodeInfo{}, err
 	}
@@ -210,7 +189,7 @@ func listNodes(config RabbitmqConfig) (nodeRecords []NodeInfo, err error) {
 	return nodeRecords, nil
 }
 
-func listQueues(config RabbitmqConfig) (queueRecords []QueueInfo, err error) {
+func listQueues(log *logrus.Logger, config RabbitmqConfig) (queueRecords []QueueInfo, err error) {
 	rabbitmqQueuesStatsURI := fmt.Sprintf("%v:%v/%v", config.rabbitmqHost, config.rabbitmqPort, "api/queues")
 	httpReq, err := http.NewRequest("GET", rabbitmqQueuesStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -221,15 +200,15 @@ func listQueues(config RabbitmqConfig) (queueRecords []QueueInfo, err error) {
 		return []QueueInfo{}, err
 	}
 	httpReq.SetBasicAuth(config.rabbitmqUser, config.rabbitmqPassword)
-	err = executeAndDecode(*httpReq, &queueRecords)
+	err = executeAndDecode(log, *httpReq, &queueRecords)
 	if err != nil {
 		return []QueueInfo{}, err
 	}
 	return queueRecords, nil
 }
 
-func getRabbitmqStatus(config RabbitmqConfig) ([]MetricData, error) {
-	NodesResponse, err := listNodes(config)
+func getRabbitmqStatus(log *logrus.Logger, config RabbitmqConfig) ([]MetricData, error) {
+	NodesResponse, err := listNodes(log, config)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"rabbitConfig": config,
@@ -253,7 +232,7 @@ func getRabbitmqStatus(config RabbitmqConfig) ([]MetricData, error) {
 		})
 	}
 
-	QueuesResponse, err := listQueues(config)
+	QueuesResponse, err := listQueues(log, config)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"error": err,

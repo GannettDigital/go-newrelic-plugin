@@ -1,19 +1,16 @@
-package main
+package skel
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 
+	"github.com/GannettDigital/go-newrelic-plugin/types"
 	"github.com/Sirupsen/logrus"
 )
 
-var log *logrus.Logger
-
 const NAME string = "skel"
 const PROVIDER string = "skel" //we might want to make this an env tied to nginx version or app name maybe...
-const VERSION string = "1.0.0"
 const PROTOCOL_VERSION string = "1"
 
 //SkelConfig is the keeper of the config
@@ -68,35 +65,13 @@ func OutputJSON(data interface{}, pretty bool) error {
 	return nil
 }
 
-func init() {
-	log = logrus.New()
-}
-
-func main() {
-	// Setup the plugin's command line parameters
-	verbose := flag.Bool("v", false, "Print more information to logs")
-	pretty := flag.Bool("p", false, "Print pretty formatted JSON")
-	version := flag.Bool("version", false, "Print the version and exit")
-	flag.Parse()
-
-	if *version {
-		fmt.Println(VERSION)
-		os.Exit(1)
-	}
-
-	// Setup logging, redirect logs to stderr and configure the log level.
-	log.Out = os.Stderr
-	if *verbose {
-		log.Level = logrus.DebugLevel
-	} else {
-		log.Level = logrus.InfoLevel
-	}
+func Run(log *logrus.Logger, opts types.Opts, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
 		Name:            NAME,
 		ProtocolVersion: PROTOCOL_VERSION,
-		PluginVersion:   VERSION,
+		PluginVersion:   version,
 		Inventory:       make(map[string]InventoryData),
 		Metrics:         make([]MetricData, 0),
 		Events:          make([]EventData, 0),
@@ -105,15 +80,15 @@ func main() {
 	var config = SkelConfig{
 		SkelHost: os.Getenv("KEY"),
 	}
-	validateConfig(config)
+	validateConfig(log, config)
 
-	var metric = getMetric(config)
+	var metric = getMetric(log, config)
 
 	data.Metrics = append(data.Metrics, metric)
-	fatalIfErr(OutputJSON(data, *pretty))
+	fatalIfErr(log, OutputJSON(data, opts.PrettyPrint))
 }
 
-func getMetric(config SkelConfig) map[string]interface{} {
+func getMetric(log *logrus.Logger, config SkelConfig) map[string]interface{} {
 	return map[string]interface{}{
 		"event_type": "LoadBalancerSample",
 		"provider":   PROVIDER,
@@ -121,13 +96,13 @@ func getMetric(config SkelConfig) map[string]interface{} {
 	}
 }
 
-func validateConfig(config SkelConfig) {
+func validateConfig(log *logrus.Logger, config SkelConfig) {
 	if config.SkelHost == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
 
-func fatalIfErr(err error) {
+func fatalIfErr(log *logrus.Logger, err error) {
 	if err != nil {
 		log.WithError(err).Fatal("can't continue")
 	}
