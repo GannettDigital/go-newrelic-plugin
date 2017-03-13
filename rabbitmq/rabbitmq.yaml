@@ -1,0 +1,15 @@
+name: com.gannettdigital.rabbitmq
+description: Reports Rabbitmq metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/rabbitmq
+    prefix: gannett
+    interval: 15
+    env:
+      RABBITMQ_USER: secure
+      RABBITMQ_PASSWORD: password
+      RABBITMQ_PORT: "15672"
+      RABBITMQ_HOST: http://localhost

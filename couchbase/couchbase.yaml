@@ -1,0 +1,15 @@
+name: com.gannettdigital.couchbase
+description: Reports couchbase metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/couchbase
+    prefix: gannett
+    interval: 15
+    env:
+      COUCHBASE_USER: admin
+      COUCHBASE_PASSWORD: password
+      COUCHBASE_PORT: "8091"
+      COUCHBASE_HOST: http://localhost
