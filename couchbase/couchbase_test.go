@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
+	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
 )
 
@@ -54,7 +55,7 @@ func TestGetCouchBucketsStats(t *testing.T) {
 		g.Describe("TestGetCouchBucketsStats()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(couchbaseFakeConfig)
+				couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchBucketStatsError).Equal(nil)
 				g.Assert(len(couchBucketResponses)).Equal(2)
 			})
@@ -90,7 +91,7 @@ func TestGetCouchClusterStats(t *testing.T) {
 		g.Describe("TestGetCouchBucketsStats()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				couchBucketResponses, getCouchBucketStatsError := getCouchClusterStats(couchbaseFakeConfig)
+				couchBucketResponses, getCouchBucketStatsError := getCouchClusterStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchBucketStatsError).Equal(nil)
 				g.Assert(len(couchBucketResponses)).Equal(1)
 				g.Assert(couchBucketResponses[0]["couchbase.cluster.hdd.free"]).Equal(int64(55555))
@@ -152,7 +153,7 @@ func TestGetAllBucketsInfo(t *testing.T) {
 		g.Describe("getAllBucketsInfo()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				result, err := getAllBucketsInfo(couchbaseFakeConfig)
+				result, err := getAllBucketsInfo(logrus.New(), couchbaseFakeConfig)
 				g.Assert(err == nil).Equal(test.TestResults.ErrorShouldBeNil)
 				g.Assert(reflect.DeepEqual(len(result), test.TestResults.ClusterInfoShouldHave)).Equal(true)
 			})
