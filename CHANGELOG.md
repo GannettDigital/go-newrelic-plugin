@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.0.20
+
+Ryan Grothouse - remove standalone nginx code to its own repo
+
 # 0.0.19
 
 Michael Dunton - Adding prefix to yaml configs
