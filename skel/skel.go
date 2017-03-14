@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GannettDigital/go-newrelic-plugin/types"
 	"github.com/Sirupsen/logrus"
 )
 
@@ -65,7 +64,7 @@ func OutputJSON(data interface{}, pretty bool) error {
 	return nil
 }
 
-func Run(log *logrus.Logger, opts types.Opts, version string) {
+func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
@@ -85,7 +84,7 @@ func Run(log *logrus.Logger, opts types.Opts, version string) {
 	var metric = getMetric(log, config)
 
 	data.Metrics = append(data.Metrics, metric)
-	fatalIfErr(log, OutputJSON(data, opts.PrettyPrint))
+	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
 func getMetric(log *logrus.Logger, config SkelConfig) map[string]interface{} {

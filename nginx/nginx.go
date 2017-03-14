@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GannettDigital/go-newrelic-plugin/types"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
@@ -84,7 +83,7 @@ func init() {
 	runner = utilsHTTP.HTTPRunnerImpl{}
 }
 
-func Run(log *logrus.Logger, opts types.Opts, version string) {
+func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
@@ -106,7 +105,7 @@ func Run(log *logrus.Logger, opts types.Opts, version string) {
 	var metric = scrapeStatus(log, getNginxStatus(log, nginxConf))
 
 	data.Metrics = append(data.Metrics, metric)
-	fatalIfErr(log, OutputJSON(data, opts.PrettyPrint))
+	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
 func validateConfig(log *logrus.Logger, nginxConf Config) {

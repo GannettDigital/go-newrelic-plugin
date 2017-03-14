@@ -8,7 +8,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/GannettDigital/go-newrelic-plugin/types"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
@@ -218,7 +217,7 @@ func init() {
 	runner = utilsHTTP.HTTPRunnerImpl{}
 }
 
-func Run(log *logrus.Logger, opts types.Opts, version string) {
+func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
@@ -250,7 +249,7 @@ func Run(log *logrus.Logger, opts types.Opts, version string) {
 
 	data.Metrics = append(data.Metrics, couchClusterResponses...)
 	data.Metrics = append(data.Metrics, couchBucketResponses...)
-	fatalIfErr(log, OutputJSON(data, opts.PrettyPrint))
+	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
 func avgIntSample(sampleSet []int) (result float32) {

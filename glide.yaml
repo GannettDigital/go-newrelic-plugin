@@ -22,3 +22,4 @@ import:
   repo: git@github.com:GannettDigital/goStateModule.git
   version: ^2.0.0
   vcs: git
+- package: github.com/spf13/cobra
