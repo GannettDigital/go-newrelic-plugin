@@ -10,7 +10,7 @@ package cmd
 // )
 //
 // func init() {
-// 	RootCmd.AddCommand(couchbaseCmd)
+// 	RootCmd.AddCommand(skelCmd)
 // }
 //
 // var skelCmd = &cobra.Command{

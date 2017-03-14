@@ -5,7 +5,7 @@ This file is used to list changes made in each version of go-newrelic-plugin.
 
 # 0.2.0
 
-Ryan Grothouse - refactore to use cobra for cli parsing of commands
+Ryan Grothouse - refactor to use cobra for cli parsing of commands
 
 # 0.1.1
 
