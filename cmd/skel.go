@@ -17,6 +17,7 @@ package cmd
 // 	Use:   "skel",
 // 	Short: "execute a skel collection",
 // 	Run: func(cmd *cobra.Command, args []string) {
-// 		skel.Run(log, PrettyPrint, status.GetInfo().Version)
+//    log.Info("skel collection")
+// 		skel.Run(log, prettyPrint, status.GetInfo().Version)
 // 	},
 // }

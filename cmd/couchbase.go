@@ -14,6 +14,7 @@ var couchbaseCmd = &cobra.Command{
 	Use:   "couchbase",
 	Short: "execute a couchbase collection",
 	Run: func(cmd *cobra.Command, args []string) {
-		couchbase.Run(log, PrettyPrint, status.GetInfo().Version)
+		log.Info("couchbase collection")
+		couchbase.Run(log, prettyPrint, status.GetInfo().Version)
 	},
 }

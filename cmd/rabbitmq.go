@@ -14,6 +14,7 @@ var rabbitmqCmd = &cobra.Command{
 	Use:   "rabbitmq",
 	Short: "execute a rabbitmq collection",
 	Run: func(cmd *cobra.Command, args []string) {
-		rabbitmq.Run(log, PrettyPrint, status.GetInfo().Version)
+		log.Info("rabbitmq collection")
+		rabbitmq.Run(log, prettyPrint, status.GetInfo().Version)
 	},
 }

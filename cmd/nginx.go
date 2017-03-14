@@ -14,6 +14,7 @@ var nginxCmd = &cobra.Command{
 	Use:   "nginx",
 	Short: "execute an nginx collection",
 	Run: func(cmd *cobra.Command, args []string) {
-		nginx.Run(log, PrettyPrint, status.GetInfo().Version)
+		log.Info("nginx collection")
+		nginx.Run(log, prettyPrint, status.GetInfo().Version)
 	},
 }

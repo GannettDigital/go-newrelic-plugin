@@ -8,13 +8,19 @@ import (
 )
 
 var log *logrus.Logger
-var PrettyPrint bool
+var prettyPrint bool
+var verbose bool
 
 func init() {
 	log = logrus.New()
 	// Setup logging, redirect logs to stderr and configure the log level.
 	log.Out = os.Stderr
-	RootCmd.PersistentFlags().BoolVar(&PrettyPrint, "pretty-print", false, "pretty print output")
+	RootCmd.PersistentFlags().BoolVar(&prettyPrint, "pretty-print", false, "pretty print output")
+	RootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
+
+	if verbose {
+		log.Level = logrus.DebugLevel
+	}
 }
 
 var RootCmd = &cobra.Command{
