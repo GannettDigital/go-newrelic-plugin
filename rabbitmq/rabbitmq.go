@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GannettDigital/go-newrelic-plugin/types"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
@@ -143,7 +142,7 @@ func fatalIfErr(log *logrus.Logger, err error) {
 	}
 }
 
-func Run(log *logrus.Logger, opts types.Opts, version string) {
+func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
@@ -167,7 +166,7 @@ func Run(log *logrus.Logger, opts types.Opts, version string) {
 	fatalIfErr(log, err)
 
 	data.Metrics = append(data.Metrics, metrics...)
-	fatalIfErr(log, OutputJSON(data, opts.PrettyPrint))
+	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
 func listNodes(log *logrus.Logger, config RabbitmqConfig) (nodeRecords []NodeInfo, err error) {
