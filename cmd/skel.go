@@ -17,6 +17,6 @@ package cmd
 // 	Use:   "skel",
 // 	Short: "execute a skel collection",
 // 	Run: func(cmd *cobra.Command, args []string) {
-// 		couchbase.Run(log, PrettyPrint, status.GetInfo().Version)
+// 		skel.Run(log, PrettyPrint, status.GetInfo().Version)
 // 	},
 // }
