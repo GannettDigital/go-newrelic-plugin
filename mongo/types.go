@@ -30,3 +30,9 @@ type pluginData struct {
 	Events          []eventData              `json:"events"`
 	Status          string                   `json:"status"`
 }
+
+// https://docs.mongodb.com/manual/reference/command/serverStatus/#dbcmd.serverStatus
+
+type serverStatus struct {
+	Name string `json:"name"`
+}

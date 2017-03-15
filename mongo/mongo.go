@@ -1,10 +1,12 @@
 package mongo
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
+	"gopkg.in/mgo.v2"
 )
 
 const NAME string = "mongo"
@@ -24,13 +26,19 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 
 	var config = mongoConfig{
-		MongoDBUser:     os.Getenv("KEY"),
-		MongoDBPassword: os.Getenv("KEY"),
-		MongoDBHost:     os.Getenv("KEY"),
-		MongoDBPort:     os.Getenv("KEY"),
-		MongoDB:         os.Getenv("KEY"),
+		MongoDBUser:     os.Getenv("MONGODB_USER"),
+		MongoDBPassword: os.Getenv("MONGODB_PASSWORD"),
+		MongoDBHost:     os.Getenv("MONGODB_HOST"),
+		MongoDBPort:     os.Getenv("MONGODB_PORT"),
+		MongoDB:         os.Getenv("MONGODB_DB"),
 	}
 	validateConfig(log, config)
+	mongoURL := fmt.Sprintf("mongodb://%v:%v@%v:%v/%v", config.MongoDBUser, config.MongoDBPassword, config.MongoDBHost, config.MongoDBPort, config.MongoDB)
+	session, err := mgo.Dial(mongoURL)
+	fatalIfErr(log, err)
+	buildInfo, err := session.BuildInfo()
+	fatalIfErr(log, err)
+	fmt.Println(buildInfo)
 
 	var metric = getMetric(log, config)
 	data.Metrics = append(data.Metrics, metric)
