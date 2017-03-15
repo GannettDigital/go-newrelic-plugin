@@ -33,6 +33,82 @@ type pluginData struct {
 
 // https://docs.mongodb.com/manual/reference/command/serverStatus/#dbcmd.serverStatus
 
+type serverStatusAsserts struct {
+	Regular   int `bson:"regular"`
+	Warning   int `bson:"warning"`
+	Msg       int `bson:"msg"`
+	User      int `bson:"user"`
+	Rollovers int `bson:"rollovers"`
+}
+
+type serverStatusBackgroundFlushing struct {
+	Flushes   int `bson:"flushes"`
+	TotalMS   int `bson:"total_ms"`
+	AverageMS int `bson:"average_ms"`
+	LastMS    int `bson:"last_ms"`
+}
+
+type serverStatusConnections struct {
+	Current      int   `bson:"current"`
+	Available    int   `bson:"available"`
+	TotalCreated int64 `bson:"totalCreated"`
+}
+
+type serverStatusDur struct {
+	Commits            int `bson:"commits"`
+	JournaledMB        int `bson:"journaledMB"`
+	WriteToDataFilesMB int `bson:"writeToDataFilesMB"`
+	Compression        int `bson:"compression"`
+	commitsInWriteLock int `bson:"commitsInWriteLock"`
+	EarlyCommits       int `bson:"earlyCommits"`
+	TimeMS             struct {
+		DT                 int `bson:"dt"`
+		PrepLogBuffer      int `bson:"prepLogBuffer"`
+		WriteToJournal     int `bson:"writeToJournal"`
+		WriteToDataFiles   int `bson:"writeToDataFiles"`
+		RemapPrivateView   int `bson:"remapPrivateView"`
+		Commits            int `bson:"commits"`
+		CommitsInWriteLock int `bson:"commitsInWriteLock"`
+	} `bson:"timeMs"`
+}
+
+type severStatsExtraInfo struct {
+	PageFaults int `bson:"page_faults"`
+}
+
+type serverStatsGlobalLock struct {
+	TotalTime    int `bson:"totalTime"`
+	CurrentQueue struct {
+		Total   int `bson:"total"`
+		Readers int `bson:"readers"`
+		Writers int `bson:"writers"`
+	} `bson:"currentQueue"`
+	ActiveClients struct {
+		Total   int `bson:"total"`
+		Readers int `bson:"readers"`
+		Writers int `bson:"writers"`
+	} `bson:"activeClients"`
+}
+
+type serverStatsNetwork struct {
+	BytesIn     int64 `bson:"bytesIn"`
+	BytesOut    int64 `bson:"bytesOut"`
+	NumRequests int64 `bson:"numRequests"`
+}
+
 type serverStatus struct {
-	Name string `json:"name"`
+	Host               string
+	Version            string
+	Process            string
+	Pid                int
+	Uptime             int
+	UptimeMillis       int                            `bson:"uptimeMillis"`
+	UptimeEstimate     int                            `bson:"uptimeEstimate"`
+	Asserts            serverStatusAsserts            `bson:"asserts"`
+	BackgroundFlushing serverStatusBackgroundFlushing `bson:"backgroundFlushing"`
+	Connections        serverStatusConnections        `bson:"connections"`
+	Dur                serverStatusDur                `bson:"dur"`
+	ExtraInfo          severStatsExtraInfo            `bson:"extra_info"`
+	GlobalLock         serverStatsGlobalLock          `bson:"globalLock"`
+	Network            serverStatsNetwork             `bson:"network"`
 }

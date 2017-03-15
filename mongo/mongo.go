@@ -34,11 +34,13 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 	validateConfig(log, config)
 	mongoURL := fmt.Sprintf("mongodb://%v:%v@%v:%v/%v", config.MongoDBUser, config.MongoDBPassword, config.MongoDBHost, config.MongoDBPort, config.MongoDB)
+	fmt.Println(mongoURL)
 	session, err := mgo.Dial(mongoURL)
 	fatalIfErr(log, err)
-	buildInfo, err := session.BuildInfo()
+	var serverStatusResult serverStatus
+	err = session.Run("serverStatus", &serverStatusResult)
 	fatalIfErr(log, err)
-	fmt.Println(buildInfo)
+	fmt.Println(serverStatusResult)
 
 	var metric = getMetric(log, config)
 	data.Metrics = append(data.Metrics, metric)
@@ -54,6 +56,7 @@ func getMetric(log *logrus.Logger, config mongoConfig) map[string]interface{} {
 
 func validateConfig(log *logrus.Logger, config mongoConfig) {
 	if config.MongoDBUser == "" || config.MongoDBPassword == "" || config.MongoDBHost == "" || config.MongoDBPort == "" || config.MongoDB == "" {
+		log.Error(config)
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
