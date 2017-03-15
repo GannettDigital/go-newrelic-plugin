@@ -1,0 +1,15 @@
+name: com.gannettdigital.nginx
+description: Reports redis metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/go-newrelic-plugin
+     - redis
+    interval: 15
+    env:
+      REDISHOST: localhost # Optional: default to localhost
+      REDISPORT: 6379 # Optional: default to 6379
+      REDISPASS: "" # Optional: default to ""
+      REDISDB: "0" # Optional: default to 0
