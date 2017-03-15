@@ -1,13 +1,13 @@
 # go-newrelic-plugin
 
-This repository holds the go-newrelic-plugin which uses combines collectors into one binary and makes them available to the newrelic-infra agent.
+This repository holds the go-newrelic-plugin which combines collectors into one binary and makes them available to the newrelic-infra agent.
 
 ## How it Works
 
 There are two parts to the architecture of the plugin.
 
 ### Commands
-Commands live under the top level folder `cmd` These files are all apart of the same package `cmd` each command should have a corresponding collector(more on that later). We are using a package called  [cobra](https://github.com/spf13/cobra) to parse the commands and flags. This allows us t0 bundle all the collectors into one binary and also gives us an awesome help command.
+Commands live under the top level folder `cmd` These files are all apart of the same package `cmd` each command should have a corresponding collector(more on that later). We are using a package called  [cobra](https://github.com/spf13/cobra) to parse the commands and flags. This allows us to bundle all the collectors into one binary and also gives us an awesome help command.
 
 
 ```
@@ -67,6 +67,9 @@ The important thing to note with the config is the env section. All of your conf
 ###### Naming
 Your collector should be named after the technology you are gathering metrics for. If you were developing nginx, you collector would live in a file called `nginx.go` and live in a folder `nginx`
 
+###### Exported Functions
+Your collectors module should export a function called `Run` and accepts 3 parameters `Run(log *logrus.Logger, prettyPrint bool, version string)`
+
 ###### Errors
 In the event that your collector has an error in retrieving stats and you are unable to report stats back, you should os.Exit(-1) or anything but zero to tell the newrelic agent their was an issue and to disregard any reported stats.
 
@@ -78,11 +81,9 @@ In the event that your collector has an error in retrieving stats and you are un
 
 #### Contributing
 
-1. Create a go file, named after your collector. You can copy example.go as a starting point
+1. Create a directory and go file, named after your collector. You can copy ./skel as a starting point
 2. Follow the function naming standards as defined above
-3. Add config items to the config struct in `types.go`
-4. Add your collector to the collector array in `types.go`
+3. Add your metrics to the plugin data interface
 5. Update the following README sections
   - Available Collectors
-  - Configuration example
 6. Submit a PR
