@@ -1,142 +1,80 @@
 # go-newrelic-plugin
 
-This repository holds the go-newrelic-plugin which uses [New Relic Go Agent](https://github.com/newrelic/go-agent) to send [custom events](https://docs.newrelic.com/docs/insights/new-relic-insights/custom-events/inserting-custom-events-new-relic-apm-agents) to Insights. It was developed to address a feature gap between datadog and newrelic.
+This repository holds the go-newrelic-plugin which uses combines collectors into one binary and makes them available to the newrelic-infra agent.
 
-**How it Works**
+## How it Works
 
 There are two parts to the architecture of the plugin.
 
-### Dispatcher
-
-The dispatcher is the main component of the plugin. Its responsibilities include:
-  - Reading from the config file
-  - Setting up the connection to newrelirc
-  - Orchestrating the timing and calls to the collectors (for enabled collectors)
-  - Receiving results from a collector and reporting to newrelic
-    - The Agent will only send custom events to Insights every sixty seconds after `RecordCustomEvents` is called.
+### Commands
+Commands live under the top level folder `cmd` These files are all apart of the same package `cmd` each command should have a corresponding collector(more on that later). We are using a package called  [cobra](https://github.com/spf13/cobra) to parse the commands and flags. This allows us t0 bundle all the collectors into one binary and also gives us an awesome help command.
 
 
-The dispatcher is responsible for spinning off collector go routines on a timer and providing them a channel for them to report the stats back on. A new go routine is created per collector and per individual collection.
+```
+-$ go run main.go help
+A set of plugins to integrate custom checks into the newrelic infrastructure
 
-The dispatcher was designed to be developed once and should not need to be continually updated with the development of collectors.
+Usage:
+  go-newrelic-plugin [command]
+
+Available Commands:
+  couchbase   execute a couchbase collection
+  help        Help about any command
+  nginx       execute an nginx collection
+  rabbitmq    execute a rabbitmq collection
+  version     Print the version of go-newrelic-plugin
+
+Flags:
+      --pretty-print   pretty print output
+      --verbose        verbose output
+```
+
+All of the commands besides [root.go]('./cmd/root.go') follow the same basic pattern. Import your collector and call the `Run` function. You can model your command function off of the skel.go command. Just make sure you update the `Use` and `Short` keys. `Use` is the name of the command and it should match the name of your collector. `Short` is a description of your collector. Both of these will show up in the help command output.
 
 ### Collectors
 
-Collectors are the work horses of the agent. They are designed to collect the stats for a given technology and report back to the dispatcher. In general, collector development is where contributors will be spending their time, and you generally don't need to know how the dispatcher works.
+Collectors are designed to collect the stats for a given technology and report back to the newrelic infrastructure app. In general, collector development is where contributors will be spending their time.
 
-To become a collector, you must develop a method that is of type `Collector`. The following is the Collector Type.
-
-```type Collector func(config Config, stats chan<- []map[string]interface{})```
-
-In other words, you must create a function that matches a signature of `func(config Config, stats chan<- []map[string]interface{})`. Doing so allows your function to be of type `Collector` and can allow the dispatcher to hook into your code.
+Each collector is its own package. Take a look at the [skel package](''./skel/skel.go') The entry point to this package is `Run(log *logrus.Logger, prettyPrint bool, version string)`
+Your collector's Run method will be called everytime New Relic requests stats.
 
 Once your function is created, you can begin development of the logic for collecting and reporting stats of your specific technology.
 
-#### Arguments
 ##### Config
-
-This is the main configuration, read by the dispatcher. You will have to get at your specific Collector Config like so:
-
+New Relic will pass in environment variables that you configure through a yaml config file. See ./skel/skel.yaml for an example
 ```
-var nginxConf NginxConfig
-err := mapstructure.Decode(config.Collectors["nginx"].CollectorConfig, &nginxConf)
+name: 'Name of your collector'
+description: 'Short Description of your collector'
+protocol_version: 'New Relics collection protocol'
+os: 'Os this collector supports'
+
+source:
+  - command:
+     - 'Location of your binary not really import for collector development'
+    prefix: 'Application prefix for newrelic'
+    interval: 'How often the agent checks for stats'
+    env:
+      KEY: "VALUE"
 ```
+The important thing to note with the config is the env section. All of your config values should go here.
 
-##### stats
+**Important**: In order to test your application you should export the variables you setup in your ~/.profile of ~/.bash_profile
 
-The stats argument is a channel. Channels in go are used to exchange data between go routines. Here, it is used to communicate your gathered metrics back to the dispatcher, where they will be merged with tags and sent to newrelic. The channel is of type `[]map[string]interface{}`. Basically, this is an array of `hashes` (Key => Value pairs). If an individual event has multiple unique collections, those should each be separate items in your array. The dispatcher will send those up as unique newrelic events. An example of this is the rabbitmq collector, where each queue has its own stats.
 
-Example of how to send metrics back to the collector using the stats channel:
-```
-stats <- []map[string]interface{}{
-  {
-    "nginx.net.connections": toInt(active),
-    "nginx.net.accepts":     toInt(accepts),
-    "nginx.net.handled":     toInt(handled),
-    "nginx.net.requests":    toInt(requests),
-    "nginx.net.writing":     toInt(writing),
-    "nginx.net.waiting":     toInt(waiting),
-    "nginx.net.reading":     toInt(reading),
-  },
-}
-```
 
-** Important **
 
-In the event that your collector has an error in retrieving stats and you are unable to report stats back, you must close the stats channel, to signal to the dispatcher that you had an error and the go routine should be cleaned up. Failing to do this, will leave go routines hanging around:
-
-```
-close(stats)
-```
-
-##### Standards
+### Standards
 ###### Naming
-Your collector should be named after the technology you are gathering metrics for. If you were developing nginx, you collector would live in a file called `nginx.go` and your function would have a name of:
+Your collector should be named after the technology you are gathering metrics for. If you were developing nginx, you collector would live in a file called `nginx.go` and live in a folder `nginx`
 
-```
-func NginxCollector(...
-```
-**Note:** It's important that you function name starts with a capital letter. In go, this signifies that the function is `exported` and can be used from external packages. The dispatcher will need this.
-
-
-The metrics you report should be namespaced with the name of the collector:
-
-```
-"<collector>.stat1"
-```
-
-The dispatcher will report your metrics with an event name of:
-
-```
-gannettNewRelic<CollectorName>
-```
+###### Errors
+In the event that your collector has an error in retrieving stats and you are unable to report stats back, you should os.Exit(-1) or anything but zero to tell the newrelic agent their was an issue and to disregard any reported stats.
 
 
 ## Available Collectors
-* [nginx](#nginx)
-* [rabbitmq](#rabbitmq)
-* [couchbase](#couchbase)
-
-## Configuration Examples
-
-#### nginx
-
-```yaml
-nginx:
-  enabled: false
-  delayms: 1000
-  collectorconfig:
-    nginxlistenport: "8140"
-    nginxstatusuri: nginx_status
-    nginxstatuspage: http://localhost
-```
-
-#### rabbitMQ
-
-```yaml
-rabbitmq:
-  enabled: true
-  delayms: 1000
-  collectorconfig:
-    rabbitmquser: scalr
-    rabbitmqpassword: secure
-    rabbitmqport: "15672"
-    rabbitmqhost: http://localhost
-```
-
-
-#### couchbase
-
-```yaml
-rabbitmq:
-  enabled: true
-  delayms: 30000
-  collectorconfig:
-    couchbaseuser: admin
-    couchbasepassword: password
-    couchbaseport: "8091"
-    couchbasehost: http://localhost
-```
+* [nginx]('./nginx/nginx.go')
+* [rabbitmq]('./rabbitmq/rabbitmq.go')
+* [couchbase]('./couchbase/couchbase.go')
 
 #### Contributing
 
