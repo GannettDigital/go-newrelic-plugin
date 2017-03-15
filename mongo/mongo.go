@@ -37,10 +37,19 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	fmt.Println(mongoURL)
 	session, err := mgo.Dial(mongoURL)
 	fatalIfErr(log, err)
+	databaseNames, err := session.DatabaseNames()
+	fatalIfErr(log, err)
+	databaseStatsArray := make([]dbStats, len(databaseNames))
+	for index, databaseName := range databaseNames {
+		currentDatabase := session.DB(databaseName)
+		currentDatabase.Run("dbStats", &databaseStatsArray[index])
+	}
+
 	var serverStatusResult serverStatus
 	err = session.Run("serverStatus", &serverStatusResult)
 	fatalIfErr(log, err)
 	fmt.Println(serverStatusResult)
+	fmt.Println(databaseStatsArray)
 
 	var metric = getMetric(log, config)
 	data.Metrics = append(data.Metrics, metric)

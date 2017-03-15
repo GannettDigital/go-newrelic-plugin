@@ -204,3 +204,15 @@ type serverStatus struct {
 	Mem                serverStatsMem                 `bson:"mem"`
 	Metrics            serverStatsMetrics             `bson:"metrics"`
 }
+
+type dbStats struct {
+	DB          string `bson:"db"`
+	Collections int    `bson:"collections"`
+	Objects     int    `bson:"objects"`
+	AvgObjSize  int64  `bson:"avgObjSize"`
+	DataSize    int64  `bson:"dataSize"`
+	StorageSize int64  `bson:"storageSize"`
+	NumExtents  int    `bson:"numExtents"`
+	Indexes     int    `bson:"indexes"`
+	IndexSize   int64  `bson:"indexSize"`
+}
