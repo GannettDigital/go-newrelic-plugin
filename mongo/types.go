@@ -96,6 +96,92 @@ type serverStatsNetwork struct {
 	NumRequests int64 `bson:"numRequests"`
 }
 
+type serverStatsOpcounters struct {
+	Insert  int `bson:"insert"`
+	Query   int `bson:"query"`
+	Update  int `bson:"update"`
+	Delete  int `bson:"delete"`
+	Getmore int `bson:"getmore"`
+	Command int `bson:"command"`
+}
+
+type serverStatsStorageEngine struct {
+	Name                   string `bson:"name"`
+	SupportsCommittedReads bool   `bson:"supportsCommittedReads"`
+	Persistent             bool   `bson:"persistent"`
+}
+
+type serverStatsWiredTiger struct {
+	Cache struct {
+		BytesCurrentlyInCache                            int64 `bson:"bytes currently in the cache"`
+		FailedEvictionPagesExceedingTheInMemoryMaximumps int64 `bson:"failed eviction of pages that exceeded the in-memory maximum"`
+		InMemoryPageSplits                               int   `bson:"in-memory page splits"`
+		MaximumBytesConfigured                           int64 `bson:"maximum bytes configured"`
+		MaximumPageSizeAtEviction                        int64 `bson:"maximum page size at eviction"`
+		ModifiedPagesEvicted                             int   `bson:"modified pages evicted"`
+		PagesCurrentlyHeldInTheCache                     int   `bson:"pages currently held in the cache"`
+		PagesEvictedByApplicationThreads                 int   `bson:"pages evicted by application threads"`
+		PagesEvictedBecauseTheyExeceededTheInMemoryMax   int   `bson:"pages evicted because they exceeded the in-memory maximum"`
+		TrackedDirtyBytesInTheCache                      int64 `bson:"tracked dirty bytes in the cache"`
+		UnmodifiedPagesEvicted                           int   `bson:"unmodified pages evicted"`
+	} `bson:"cache"`
+	ConcurrentTransations struct {
+		Write struct {
+			Out          int `bson:"out"`
+			Available    int `bson:"available"`
+			TotalTickets int `bson:"totalTickets"`
+		} `bson:"write"`
+		Read struct {
+			Out          int `bson:"out"`
+			Available    int `bson:"available"`
+			TotalTickets int `bson:"totalTickets"`
+		} `bson:"read"`
+	} `bson:"concurrentTransactions"`
+}
+
+type serverStatsMem struct {
+	Bits              int64 `bson:"bits"`
+	Resident          int64 `bson:"resident"`
+	Virtual           int64 `bson:"virtual"`
+	Supported         int64 `bson:"supported"`
+	Mapped            int64 `bson:"mapped"`
+	MappedWithJournal int64 `bson:"mappedWithJournal"`
+}
+
+type serverStatsMetrics struct {
+	Cursor struct {
+		TimedOut int64 `bson:"timedOut"`
+		Open     struct {
+			NoTimeout int64 `bson:"noTimeout"`
+			Pinned    int64 `bson:"pinned"`
+			Total     int64 `bson:"total"`
+		} `bson:"open"`
+	} `bson:"cursor"`
+	Document struct {
+		Deleted  int64 `bson:"deleted"`
+		Inserted int64 `bson:"inserted"`
+		Updated  int64 `bson:"updated"`
+		Returned int64 `bson:"returned"`
+	} `bson:"document"`
+	GetLastError struct {
+		Wtimeouts int64 `bson:"wtimeouts"`
+		Wtime     struct {
+			Num         int64 `bson:"num"`
+			TotalMillis int64 `bson:"totalMillis"`
+		} `bson:"wtime"`
+	} `bson:"getLastError"`
+	Operation struct {
+		Fastmod        int64 `bson:"fastmod"`
+		Idhack         int64 `bson:"idhack"`
+		ScanAndOrder   int64 `bson:"scanAndOrder"`
+		WriteConflicts int64 `bson:"writeConflicts"`
+	} `bson:"operation"`
+	QueryExecutor struct {
+		Scanned        int64 `bson:"scanned"`
+		ScannedObjects int64 `bson:"scannedObjects"`
+	} `bson:"queryExecutor"`
+}
+
 type serverStatus struct {
 	Host               string
 	Version            string
@@ -111,4 +197,10 @@ type serverStatus struct {
 	ExtraInfo          severStatsExtraInfo            `bson:"extra_info"`
 	GlobalLock         serverStatsGlobalLock          `bson:"globalLock"`
 	Network            serverStatsNetwork             `bson:"network"`
+	OpCounters         serverStatsOpcounters          `bson:"opcounters"`
+	OpCountersRepl     serverStatsOpcounters          `bson:"opcountersRepl"`
+	StorageEngine      serverStatsStorageEngine       `bson:"storageEngine"`
+	WiredTiger         serverStatsWiredTiger          `bson:"wiredTiger"`
+	Mem                serverStatsMem                 `bson:"mem"`
+	Metrics            serverStatsMetrics             `bson:"metrics"`
 }
