@@ -178,7 +178,7 @@ func formatMetric(log *logrus.Logger, rawMetric string) map[string]interface{} {
 		"event_type":                           EVENTTYPE,
 		"providor":                             PROVIDER,
 		"redis.redis_version":                  rawData["redis_version"],
-		"redis.redis_git_sha1":                 rawData["00000000"],
+		"redis.redis_git_sha1":                 rawData["redis_git_sha1"],
 		"redis.redis_git_dirty":                toInt(log, rawData["redis_git_dirty"]),
 		"redis.redis_build_id":                 rawData["redis_build_id"],
 		"redis.redis_mode":                     rawData["redis_mode"],
