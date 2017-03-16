@@ -34,7 +34,6 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 	validateConfig(log, config)
 	mongoURL := fmt.Sprintf("mongodb://%v:%v@%v:%v/%v", config.MongoDBUser, config.MongoDBPassword, config.MongoDBHost, config.MongoDBPort, config.MongoDB)
-	fmt.Println(mongoURL)
 	session, err := mgo.Dial(mongoURL)
 	fatalIfErr(log, err)
 	databaseNames, err := session.DatabaseNames()
@@ -48,19 +47,11 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var serverStatusResult serverStatus
 	err = session.Run("serverStatus", &serverStatusResult)
 	fatalIfErr(log, err)
-	fmt.Println(serverStatusResult)
-	fmt.Println(databaseStatsArray)
-
-	var metric = getMetric(log, config)
-	data.Metrics = append(data.Metrics, metric)
-	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
-}
-
-func getMetric(log *logrus.Logger, config mongoConfig) map[string]interface{} {
-	return map[string]interface{}{
-		"event_type": EVENT_TYPE,
-		"provider":   PROVIDER,
+	data.Metrics = append(data.Metrics, formatServerStatsStructToMap(serverStatusResult))
+	for _, databaseStatsStruct := range databaseStatsArray {
+		data.Metrics = append(data.Metrics, formatDBStatsStructToMap(databaseStatsStruct))
 	}
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
 func validateConfig(log *logrus.Logger, config mongoConfig) {
