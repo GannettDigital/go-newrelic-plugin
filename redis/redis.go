@@ -142,11 +142,7 @@ func ValidateConfig(log *logrus.Logger, redisConf *Config) {
 }
 
 func readStats(log *logrus.Logger, client RedisClientImpl, redisConf Config) string {
-	cmd := client.Info()
-	fmt.Println("****")
-	fmt.Println(cmd)
-	fmt.Println("****")
-	output, err := cmd.Result()
+	output, err := client.Info().Result()
 	if err != nil {
 		log.WithError(err).Fatal("Error making stats call to redis")
 	}
