@@ -1,0 +1,14 @@
+name: com.gannettdigital.jenkins
+description: Reports Jenkins metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./go/jenkins
+    prefix: gannett
+    interval: 30
+    env:
+      JENKINS_HOST: http://localhost:8080
+      JENKINS_API_USER: null
+      JENKINS_API_KEY: null
