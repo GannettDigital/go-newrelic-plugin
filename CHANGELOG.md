@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.2.2
+
+Ryan Grothouse - fixed bug with protocolVersion key
+
 # 0.2.1
 
 Michael Dunton  - PAAS-5087 Update Standards For contributing
