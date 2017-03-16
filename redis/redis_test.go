@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	redis "gopkg.in/redis.v5"
+
+	"github.com/GannettDigital/go-newrelic-plugin/redis/fake"
 	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
 )
@@ -51,6 +54,39 @@ func TestOutputJSON(t *testing.T) {
 	}
 }
 
+func TestRun(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		InputLog        *logrus.Logger
+		InputClient     RedisClientImpl
+		InputConfig     Config
+		InputPretty     bool
+		InputVersion    string
+		TestDescription string
+	}{
+		{
+			InputLog: logrus.New(),
+			InputClient: &fake.RedisClient{
+				InfoRes: &redis.StringCmd{},
+			},
+			InputConfig:     Config{},
+			InputPretty:     false,
+			InputVersion:    "0.0.1",
+			TestDescription: "Should successfully perform a run without error",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("Run()", func() {
+			g.It(test.TestDescription, func() {
+				Run(test.InputLog, test.InputClient, test.InputConfig, test.InputPretty, test.InputVersion)
+				g.Assert(true).IsTrue()
+			})
+		})
+	}
+}
+
 func TestInitRedisClient(t *testing.T) {
 	g := goblin.Goblin(t)
 
@@ -72,7 +108,7 @@ func TestInitRedisClient(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("initRedisClient()", func() {
 			g.It(test.TestDescription, func() {
-				initRedisClient(test.InputConfig)
+				InitRedisClient(test.InputConfig)
 				g.Assert(true).IsTrue()
 			})
 		})
@@ -144,8 +180,39 @@ func TestValidateConfig(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("validateConfig()", func() {
 			g.It(test.TestDescription, func() {
-				validateConfig(test.InputLog, &test.InputConfig)
+				ValidateConfig(test.InputLog, &test.InputConfig)
 				g.Assert(test.InputConfig).Equal(test.ExpectedConfig)
+			})
+		})
+	}
+}
+
+func TestReadStats(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		InputLog        *logrus.Logger
+		InputClient     *fake.RedisClient
+		InputConfig     Config
+		ExpectedRes     string
+		TestDescription string
+	}{
+		{
+			InputLog: logrus.New(),
+			InputClient: &fake.RedisClient{
+				InfoRes: &redis.StringCmd{},
+			},
+			InputConfig:     Config{},
+			ExpectedRes:     "",
+			TestDescription: "Should successfully read stats from redis",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("readStats()", func() {
+			g.It(test.TestDescription, func() {
+				res := readStats(test.InputLog, test.InputClient, test.InputConfig)
+				g.Assert(res).Equal(test.ExpectedRes)
 			})
 		})
 	}

@@ -3,7 +3,6 @@ package redis
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -23,6 +22,11 @@ const EVENTTYPE string = "RedisInfo"
 
 // ProtocolVersion -
 const ProtocolVersion string = "1"
+
+// RedisClientImpl - interface used for mocking
+type RedisClientImpl interface {
+	Info(section ...string) *redis.StringCmd
+}
 
 // Config is the keeper of the config
 type Config struct {
@@ -55,9 +59,6 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-// Client objec to use in communication with redis
-var redisClient *redis.Client
-
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
 // If the pretty attribute is set to true, the JSON will be idented for easy reading.
 func OutputJSON(data interface{}, pretty bool) error {
@@ -84,7 +85,7 @@ func OutputJSON(data interface{}, pretty bool) error {
 }
 
 // Run -
-func Run(log *logrus.Logger, prettyPrint bool, version string) {
+func Run(log *logrus.Logger, client RedisClientImpl, redisConf Config, prettyPrint bool, version string) {
 	// Initialize the output structure
 	var data = PluginData{
 		Name:            NAME,
@@ -95,24 +96,15 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	var redisConf = Config{
-		RedisHost: os.Getenv("REDISHOST"),
-		RedisPort: os.Getenv("REDISPORT"),
-		RedisPass: os.Getenv("REDISPASS"),
-		RedisDB:   os.Getenv("REDISDB"),
-	}
-	validateConfig(log, &redisConf)
-
-	initRedisClient(redisConf)
-
-	var metric = formatMetric(log, readStats(log, redisConf))
+	var metric = formatMetric(log, readStats(log, client, redisConf))
 
 	data.Metrics = append(data.Metrics, metric)
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func initRedisClient(conf Config) {
-	redisClient = redis.NewClient(&redis.Options{
+// InitRedisClient - function to create a redis client
+func InitRedisClient(conf Config) RedisClientImpl {
+	return redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", conf.RedisHost, conf.RedisPort),
 		Password: conf.RedisPass,
 		DB:       conf.DBID,
@@ -125,7 +117,8 @@ func fatalIfErr(log *logrus.Logger, err error) {
 	}
 }
 
-func validateConfig(log *logrus.Logger, redisConf *Config) {
+// ValidateConfig - function to validate the config and set defaults
+func ValidateConfig(log *logrus.Logger, redisConf *Config) {
 	if redisConf.RedisHost == "" {
 		redisConf.RedisHost = "localhost"
 	}
@@ -148,8 +141,12 @@ func validateConfig(log *logrus.Logger, redisConf *Config) {
 	}
 }
 
-func readStats(log *logrus.Logger, redisConf Config) string {
-	output, err := redisClient.Info().Result()
+func readStats(log *logrus.Logger, client RedisClientImpl, redisConf Config) string {
+	cmd := client.Info()
+	fmt.Println("****")
+	fmt.Println(cmd)
+	fmt.Println("****")
+	output, err := cmd.Result()
 	if err != nil {
 		log.WithError(err).Fatal("Error making stats call to redis")
 	}
