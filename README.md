@@ -82,6 +82,7 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 * [nginx]('./nginx/nginx.go')
 * [rabbitmq]('./rabbitmq/rabbitmq.go')
 * [couchbase]('./couchbase/couchbase.go')
+* [redis]('./redis/redis.go')
 
 #### Contributing
 
