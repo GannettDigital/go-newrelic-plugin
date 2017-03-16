@@ -51,7 +51,7 @@ type EventData map[string]interface{}
 // PluginData defines the format of the output JSON that plugins will return
 type PluginData struct {
 	Name            string                   `json:"name"`
-	ProtocolVersion string                   `json:"ProtocolVersion"`
+	ProtocolVersion string                   `json:"protocol_version"`
 	PluginVersion   string                   `json:"plugin_version"`
 	Metrics         []MetricData             `json:"metrics"`
 	Inventory       map[string]InventoryData `json:"inventory"`
