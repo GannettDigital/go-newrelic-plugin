@@ -23,3 +23,5 @@ import:
   version: ^2.0.0
   vcs: git
 - package: github.com/spf13/cobra
+- package: github.com/bndr/gojenkins
+- package: github.com/jarcoal/httpmock
