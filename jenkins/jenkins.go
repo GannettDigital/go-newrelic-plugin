@@ -2,6 +2,7 @@ package jenkins
 
 import (
   "encoding/json"
+  "errors"
   "fmt"
   "os"
   "strings"
@@ -87,7 +88,10 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
     JenkinsAPIUser:  os.Getenv("JENKINS_API_USER"),
     JenkinsAPIKey:   os.Getenv("JENKINS_API_KEY"),
   }
-  validateConfig(log, config)
+  validErr := validateConfig(log, config)
+  if validErr != nil {
+    log.Fatal("config: " + fmt.Sprint(validErr))
+  }
 
   jenkins, jenkinsErr := getJenkins(config).Init()
   if jenkinsErr != nil {
@@ -101,16 +105,17 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
   fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func validateConfig(log *logrus.Logger, config JenkinsConfig) {
+func validateConfig(log *logrus.Logger, config JenkinsConfig) error {
   if config.JenkinsHost == "" {
-    log.Fatal("config: JENKINS_HOST must be set")
+    return errors.New("JENKINS_HOST must be set")
   }
   if config.JenkinsAPIUser != "" && config.JenkinsAPIKey == "" {
-    log.Fatal("config: you must also set JENKINS_API_KEY when JENKINS_API_USER is set")
+    return errors.New("you must also set JENKINS_API_KEY when JENKINS_API_USER is set")
   }
   if config.JenkinsAPIUser == "" && config.JenkinsAPIKey != "" {
-    log.Fatal("config: you must also set JENKINS_API_USER when JENKINS_API_KEY is set")
+    return errors.New("you must also set JENKINS_API_USER when JENKINS_API_KEY is set")
   }
+  return nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
