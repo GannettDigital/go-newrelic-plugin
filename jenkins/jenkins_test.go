@@ -1,252 +1,308 @@
 package jenkins
 
 import (
-  "encoding/json"
-  "fmt"
-  // "net/http"
+  "bytes"
+  "net/http"
   "reflect"
+  "regexp"
+  "strings"
   "testing"
-
-  // fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
+  "time"
 
   "github.com/bndr/gojenkins"
   "github.com/Sirupsen/logrus"
   "github.com/franela/goblin"
+  "github.com/jarcoal/httpmock"
 )
 
-var fakeJenkinsConfig JenkinsConfig
+var (
+  fakeLog           *logrus.Logger
+  fakeLogReporter   = new(bytes.Buffer)
+  fakeJenkinsConfig JenkinsConfig
+  fakeJenkins       *gojenkins.Jenkins
+  fakeJenkinsErr    error
+)
 
 func init() {
+  fakeLog = logrus.New()
+  fakeLog.Level = logrus.PanicLevel
+  fakeLog.Out = fakeLogReporter
+
   fakeJenkinsConfig = JenkinsConfig{
-    JenkinsHost:     "http://jenkins.test",
+    JenkinsHost:    "http://jenkins.mock",
     JenkinsAPIUser: "test",
     JenkinsAPIKey:  "test",
   }
+
+  fakeJenkins = gojenkins.CreateJenkins(
+    fakeJenkinsConfig.JenkinsHost,
+    fakeJenkinsConfig.JenkinsAPIUser,
+    fakeJenkinsConfig.JenkinsAPIKey,
+  )
+
+  fakeJenkinsTransport := httpmock.NewMockTransport()
+  registerResponders(fakeJenkinsTransport)
+  fakeJenkins.Requester.Client = &http.Client{
+    Transport: fakeJenkinsTransport,
+  }
+
+  fakeJenkins, fakeJenkinsErr = fakeJenkins.Init()
+  if fakeJenkinsErr != nil {
+    fakeLog.WithError(fakeJenkinsErr).Fatal("Error mocking connection to Jenkins")
+  }
 }
 
-func TestJenkins(t *testing.T) {
+func TestValidateConfig(t *testing.T) {
   g := goblin.Goblin(t)
-
-
-  g.Describe("jenkins", func() {
-    var (
-      fakeLog     *logrus.Logger
-      fakeJenkins gojenkins.Jenkins
-      fakeJobs    []gojenkins.Job
-      fakeNodes   []gojenkins.Node
-    )
-
-    g.Before(func() {
-      fakeJenkins = gojenkins.Jenkins{}
-      fakeJobs = mockJobs()
-      fakeNodes = mockNodes()
+  g.Describe("jenkins validateConfig()", func() {
+    g.It("should return an error when JenkinsHost is not set", func() {
+      e := validateConfig(fakeLog, JenkinsConfig{})
+      g.Assert(e == nil).Equal(false)
     })
-
-    // core collector things
-    g.Describe("JenkinsCollector()", func() {
-
-    })
-    g.Describe("getJenkins()", func() {
-
-    })
-    g.Describe("getJenkinsData()", func() {
-
-    })
-
-    // job things
-    g.Describe("getAllJobStats()", func() {
-
-    })
-    g.Describe("findChildJobs()", func() {
-
-    })
-    g.Describe("getJobStats()", func() {
-      expected := []map[string]interface{}{
-        {
-          "jenkins.job.name": "some-job",
-          "jenkins.job.health": 90,
-          "jenkins.job.build.number": 1,
-          "jenkins.job.build.revision": "abcdef1",
-          "jenkins.job.build.date": 14832288000000,
-          "jenkins.job.build.result": "passed",
-          "jenkins.job.build.duration": 5,
-          "jenkins.job.build.artifacts": 1,
-          "jenkins.job.tests.duration": 2,
-          "jenkins.job.tests.suites": 1,
-          "jenkins.job.tests.total": 3,
-          "jenkins.job.tests.passed": 2,
-          "jenkins.job.tests.failed": 1,
-          "jenkins.job.tests.skipped": 0,
-        },
-        {
-          "jenkins.node.name": "job-without-tests",
-          "jenkins.job.health": 90,
-          "jenkins.job.build.number": 1,
-          "jenkins.job.build.revision": "abcdef1",
-          "jenkins.job.build.date": 14832288000000,
-          "jenkins.job.build.result": "passed",
-          "jenkins.job.build.duration": 5,
-          "jenkins.job.build.artifacts": 1,
-        },
-        {
-          "jenkins.job.name": "job-folder",
-        },
-      }
-
-      for i, test := range fakeJobs {
-        g.It("should return statistics about a Job object", func() {
-          res := getJobStats(test)
-          g.Assert(reflect.DeepEqual(res, expected[i])).Equal(true)
-        })
-      }
-    })
-
-    // node things
-    g.Describe("getAllNodeStats()", func() {
-      expected := []map[string]interface{}{
-        {
-          "jenkins.node.name": "test-node-0",
-          "jenkins.node.online": true,
-          "jenkins.node.idle": true,
-          "jenkins.node.executors": 2,
-        },
-        {
-          "jenkins.node.name": "test-node-1",
-          "jenkins.node.online": true,
-          "jenkins.node.idle": false,
-          "jenkins.node.executors": 4,
-        },
-        {
-          "jenkins.node.name": "test-node-2",
-          "jenkins.node.online": false,
-          "jenkins.node.idle": true,
-          "jenkins.node.executors": 0,
-        },
-      }
-      g.It("should return statistics about many Nodes", func() {
-        res, err := getAllNodeStats(&fakeJenkins)
-        g.Assert(err).Equal(nil)
-        g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
+    g.It("should return nil when JenkinsHost is set and JenkinsAPIUser and JenkinsAPIKey are not", func() {
+      e := validateConfig(fakeLog, JenkinsConfig{
+        JenkinsHost: "foo",
       })
+      g.Assert(e == nil).Equal(true)
     })
-    g.Describe("getNodeStats()", func() {
-      fakeNodes := mockNodes()
-      expected := []map[string]interface{}{
-        {
-          "jenkins.node.name": "test-node-0",
-          "jenkins.node.online": true,
-          "jenkins.node.idle": true,
-          "jenkins.node.executors": 2,
-        },
-        {
-          "jenkins.node.name": "test-node-1",
-          "jenkins.node.online": true,
-          "jenkins.node.idle": false,
-          "jenkins.node.executors": 4,
-        },
-        {
-          "jenkins.node.name": "test-node-2",
-          "jenkins.node.online": false,
-          "jenkins.node.idle": true,
-          "jenkins.node.executors": 0,
-        },
-      }
-      for i := range expected {
-        g.It("should return statistics about a Node object", func() {
-          res := getNodeStats(fakeNodes[i])
-          g.Assert(reflect.DeepEqual(res, expected[i])).Equal(true)
-        })
-      }
-    })
-
-    // helpers
-    g.Describe("getFullJobName()", func() {
-      var tests = []struct{
-        Job      gojenkins.Job
-        FullName string
-      }{
-        {
-          Job:      gojenkins.Job{Base: "/job/foo"},
-          FullName: "foo",
-        },
-        {
-          Job:      gojenkins.Job{Base: "/job/foo/job/bar"},
-          FullName: "foo/bar",
-        },
-        {
-          Job:      gojenkins.Job{Base: "/job/foo/job/bar/job/baz"},
-          FullName: "foo/bar/baz",
-        },
-      }
-      for _, test := range tests {
-        g.It("should return full job name", func() {
-          res := getFullJobName(test.Job)
-          g.Assert(res).Equal(test.FullName)
-        })
-      }
-    })
-    g.Describe("mergeMaps()", func() {
-      mapA, mapB, expected := map[string]interface{}{
-        "thing1": "stuff",
-        "thing2": "morestuff",
-      }, map[string]interface{}{
-        "thing2": "otherstuff",
-        "thing3": "alsostuff",
-      }, map[string]interface{}{
-        "thing1": "stuff",
-        "thing2": "otherstuff",
-        "thing3": "alsostuff",
-      }
-      g.It("merges two maps into one map", func() {
-        res := mergeMaps(mapA, mapB)
-        g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
+    g.It("should return an error when JenkinsAPIUser is set but JenkinsAPIKey is not", func() {
+      e := validateConfig(fakeLog, JenkinsConfig{
+        JenkinsHost: "foo",
+        JenkinsAPIUser: "bar",
       })
+      g.Assert(e == nil).Equal(false)
+    })
+    g.It("should return an error when JenkinsAPIKey is set but JenkinsAPIUser is not", func() {
+      e := validateConfig(fakeLog, JenkinsConfig{
+        JenkinsHost: "foo",
+        JenkinsAPIKey: "bar",
+      })
+      g.Assert(e == nil).Equal(false)
+    })
+    g.It("should return nil when all of the keys are set", func() {
+      e := validateConfig(fakeLog, JenkinsConfig{
+        JenkinsHost: "foo",
+        JenkinsAPIUser: "bar",
+        JenkinsAPIKey: "baz",
+      })
+      g.Assert(e == nil).Equal(true)
     })
   })
 }
 
-func mockJobs() (fakeJobs []gojenkins.Job) {
-  /* fakeJobResponsesJSON := [][]byte{
-    []byte("{\"name\":\"some-job\",\"displayName\":\"some-job\",\"url\":\"http://jenkins.test/job/some-job/\",\"healthReport\":[{\"score\":80},{\"score\":100}],\"lastBuild\":{\"number\":1,\"url\":\"http://jenkins.test/job/some-job/1/\"}}"),
-    []byte("{\"name\":\"job-without-tests\",\"displayName\":\"job-without-tests\",\"url\":\"http://jenkins.test/job/job-without-tests/\",\"healthReport\":[{\"score\":80},{\"score\":100}],\"lastBuild\":{\"number\":1,\"\":\"http://jenkins.test/job/job-without-tests/1/\"}}"),
-    []byte("{\"name\":\"job-folder\",\"displayName\":\"job-folder\",\"url\":\"http://jenkins.test/job/job-folder/\",\"healthReport\":[],\"jobs\":[{\"name\":\"sub-job-1\",\"url\":\"http://jenkins.test/job/job-folder/job/sub-job-1/\"}]}"),
-  }
-  fakeBuildResponsesResultJSON := [][]byte{
-    []byte("{\"artifacts\":[{}],\"number\":1,\"id\":\"1\",\"result\":\"SUCCESS\",\"timestamp\":14832288000000,\"duration\":5,\"url\":\"http://jenkins.test/job/some-job/1/\",\"changeSet\":{\"kind\":\"git\",\"items\":[{\"commitId\":\"abcdef1\"}]}}"),
-    []byte("{\"artifacts\":[{}],\"number\":1,\"id\":\"1\",\"result\":\"SUCCESS\",\"timestamp\":14832288000000,\"duration\":5,\"url\":\"http://jenkins.test/job/some-job/1/\",\"changeSet\":{\"kind\":\"git\",\"items\":[{\"commitId\":\"abcdef1\"}]}}"),
-    nil,
-  }
-  fakeTestResultJSON := [][]byte{
-    []byte("{\"duration\":2,\"passCount\":2,\"failCount\":1,\"skipCount\":0,\"suites\":[{\"cases\":[{}, {}, {}]}]}"),
-    nil,
-    nil,
-  }
-
-  for i := range fakeJobResponsesJSON {
-    var fakeJobResponse gojenkins.JobResponse
-    var fakeJob gojenkins.Job
-
-    json.Unmarshal(fakeJobResponsesJSON[i], &fakeJobResponse)
-    fakeJob = gojenkins.Job{Raw: &fakeJobResponse}
-    fakeJobs = append(fakeJobs, fakeJob)
-  } */
-
-  return fakeJobs
+func TestGetMetrics(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getMetrics()", func() {
+    res, err := getMetrics(fakeLog, fakeJenkins)
+    g.It("should return metric data", func() {
+      g.Assert(err == nil).Equal(true)
+    })
+    g.It("should have 'event_type' keys on everything", func() {
+      for _, metric := range res {
+        g.Assert(metric["event_type"] != nil).Equal(true)
+      }
+    })
+    g.It("should have 'entity_name' keys on everything", func() {
+      for _, metric := range res {
+        g.Assert(metric["entity_name"] != nil).Equal(true)
+      }
+    })
+    g.It("should have 'provider' keys on everything", func() {
+      for _, metric := range res {
+        g.Assert(metric["entity_name"] != nil).Equal(true)
+      }
+    })
+  })
 }
 
-func mockNodes() (fakeNodes []gojenkins.Node) {
-  fakeNodeResponses := [][]byte{
-    []byte("{\"displayName\":\"test-node-0\",\"executors\":[{},{}],\"idle\":true,\"offline\":false,\"numExecutors\":2}"),
-    []byte("{\"displayName\":\"test-node-1\",\"executors\":[{},{},{},{}],\"idle\":false,\"offline\":false,\"numExecutors\":4}"),
-    []byte("{\"displayName\":\"test-node-2\",\"executors\":[],\"idle\":true,\"offline\":true,\"numExecutors\":0}"),
+func TestGetJenkins(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getJenkins()", func() {
+    res := getJenkins(fakeJenkinsConfig)
+    g.It("should connect to the right Jenkins", func() {
+      g.Assert(res.Server).Equal("http://jenkins.mock")
+    })
+    g.It("should have authorization data", func() {
+      g.Assert(res.Requester.BasicAuth.Username).Equal("test")
+      g.Assert(res.Requester.BasicAuth.Password).Equal("test")
+    })
+  })
+}
+
+func TestGetAllJobStats(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getAllJobStats()", func() {
+    g.It("should return statistics about many Jobs", func() {
+      res, err := getAllJobStats(fakeLog, fakeJenkins)
+      g.Assert(err).Equal(nil)
+      g.Assert(len(res) == 4).Equal(true)
+    })
+  })
+}
+
+func TestFindChildJobs(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins findChildJobs()", func() {
+    g.It("should recursively find child jobs", func() {
+      job, jobErr := fakeJenkins.GetJob("baz")
+      res, err := findChildJobs(fakeJenkins, job)
+      g.Assert(jobErr).Equal(nil)
+      g.Assert(err).Equal(nil)
+      g.Assert(len(res) == 1).Equal(true)
+    })
+  })
+}
+
+func TestGetJobStats(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getJobStats()", func() {
+    expected := []JobMetric{
+      {
+        EntityName: "foo",
+        Health: 90,
+        BuildNumber: 1,
+        BuildRevision: "abcdef1",
+        BuildDate: time.Unix(1483228800, 0),
+        BuildResult: "passed",
+        BuildDurationSecond: 5,
+        BuildArtifacts: 1,
+        TestsDurationSecond: 2,
+        TestsSuites: 1,
+        Tests: 3,
+        TestsPassed: 2,
+        TestsFailed: 1,
+        TestsSkipped: 0,
+      },
+      {
+        EntityName: "bar",
+        Health: 90,
+        BuildNumber: 1,
+        BuildRevision: "abcdef1",
+        BuildDate: time.Unix(1483228800, 0),
+        BuildResult: "passed",
+        BuildDurationSecond: 5,
+        BuildArtifacts: 1,
+      },
+      {
+        EntityName: "baz",
+      },
+    }
+    g.It("should return statistics about a Job object", func() {
+      for _, ex := range expected {
+        job, err := fakeJenkins.GetJob(ex.EntityName)
+        res := getJobStats(*job)
+        g.Assert(err).Equal(nil)
+        g.Assert(reflect.DeepEqual(res, ex)).Equal(true)
+      }
+    })
+  })
+}
+
+func TestGetAllNodesStats(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getAllNodeStats()", func() {
+    res, err := getAllNodeStats(fakeLog, fakeJenkins)
+    g.It("should return statistics about many Nodes", func() {
+      g.Assert(err).Equal(nil)
+      g.Assert(len(res) == 3).Equal(true)
+    })
+  })
+}
+
+func TestGetNodeStats(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getNodeStats()", func() {
+    expected := []NodeMetric{
+      {
+        EntityName: "test-0",
+        Online: true,
+        Idle: true,
+        Executors: 2,
+      },
+      {
+        EntityName: "test-1",
+        Online: true,
+        Idle: false,
+        Executors: 4,
+      },
+      {
+        EntityName: "test-2",
+        Online: false,
+        Idle: true,
+        Executors: 0,
+      },
+    }
+    g.It("should return statistics about a Node object", func() {
+      for _, ex := range expected {
+        node, err := fakeJenkins.GetNode(ex.EntityName)
+        res := getNodeStats(*node)
+        g.Assert(err).Equal(nil)
+        g.Assert(reflect.DeepEqual(res, ex)).Equal(true)
+      }
+    })
+  })
+}
+
+func TestGetFullJobName(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getFullJobName()", func() {
+    var tests = []struct{
+      Job      gojenkins.Job
+      FullName string
+    }{
+      {
+        Job:      gojenkins.Job{Base: "/job/foo"},
+        FullName: "foo",
+      },
+      {
+        Job:      gojenkins.Job{Base: "/job/foo/job/bar"},
+        FullName: "foo/bar",
+      },
+      {
+        Job:      gojenkins.Job{Base: "/job/foo/job/bar/job/baz"},
+        FullName: "foo/bar/baz",
+      },
+    }
+    g.It("should return full job name", func() {
+      for _, test := range tests {
+        res := getFullJobName(test.Job)
+        g.Assert(res).Equal(test.FullName)
+      }
+    })
+  })
+}
+
+// hash map of HTTP requests to mock
+func registerResponders(transport *httpmock.MockTransport) {
+  responses := map[string]string{
+    "/": "{\"jobs\":[{\"name\":\"foo\",\"url\":\"http://jenkins.mock/job/foo/\"},{\"name\":\"bar\",\"url\":\"http://jenkins.mock/job/bar/\"},{\"name\":\"baz\",\"url\":\"http://jenkins.mock/job/baz/\"}]}",
+
+    "/job/foo": "{\"name\":\"foo\",\"displayName\":\"foo\",\"url\":\"http://jenkins.mock/job/foo/\",\"builds\":[{\"number\":1,\"url\":\"http://jenkins.mock/job/foo/1/\"}],\"lastBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/foo/1/\"},\"healthReport\":[{\"score\":100},{\"score\":80}],\"previousBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/foo/1/\"}}",
+    "/job/bar": "{\"name\":\"bar\",\"displayName\":\"bar\",\"url\":\"http://jenkins.mock/job/bar/\",\"builds\":[{\"number\":1,\"url\":\"http://jenkins.mock/job/bar/1/\"}],\"lastBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/bar/1/\"},\"healthReport\":[{\"score\":100},{\"score\":80}],\"previousBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/bar/1/\"}}",
+    "/job/baz": "{\"name\":\"baz\",\"displayName\":\"baz\",\"url\":\"http://jenkins.mock/job/baz/\",\"jobs\":[{\"name\":\"qux\",\"url\":\"http://jenkins.mock/job/baz/job/qux/\",\"color\":\"blue\"}],\"healthReport\":[{\"score\":100}]}",
+    "/job/baz/job/qux": "{\"name\":\"qux\",\"displayName\":\"qux\",\"url\":\"http://jenkins.mock/job/baz/job/qux/\",\"builds\":[{\"number\":1,\"url\":\"http://jenkins.mock/job/baz/job/qux/1/\"}],\"lastBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/baz/job/qux/1/\"},\"healthReport\":[{\"score\":100},{\"score\":80}],\"previousBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/baz/job/qux/1/\"}}",
+
+    "/job/foo/1": "{\"id\":\"1\",\"number\":1,\"timestamp\":1483228800000,\"url\":\"http://jenkins.mock/job/foo/1/\",\"duration\":5,\"result\":\"PASSED\",\"actions\":[{\"_class\":\"hudson.plugins.git.util.BuildData\",\"lastBuiltRevision\":{\"SHA1\":\"abcdef1\"}}],\"changeSet\":{\"kind\":\"git\",\"items\":[{}]},\"artifacts\":[{}]}",
+    "/job/bar/1": "{\"id\":\"1\",\"number\":1,\"timestamp\":1483228800000,\"url\":\"http://jenkins.mock/job/bar/1/\",\"duration\":5,\"result\":\"PASSED\",\"actions\":[{\"_class\":\"hudson.plugins.git.util.BuildData\",\"lastBuiltRevision\":{\"SHA1\":\"abcdef1\"}}],\"changeSet\":{\"kind\":\"git\",\"items\":[{}]},\"artifacts\":[{}]}",
+    "/job/baz/job/qux/1": "{\"id\":\"1\",\"number\":1,\"timestamp\":1483228800000,\"url\":\"http://jenkins.mock/job/baz/1/\",\"duration\":5,\"result\":\"PASSED\",\"actions\":[{\"_class\":\"hudson.plugins.git.util.BuildData\",\"lastBuiltRevision\":{\"SHA1\":\"abcdef1\"}}],\"changeSet\":{\"kind\":\"git\",\"items\":[{}]},\"artifacts\":[{}]}",
+
+    "/job/foo/1/testReport": "{\"duration\":2,\"empty\":false,\"passCount\":2,\"failCount\":1,\"skipCount\":0,\"suites\":[{\"cases\":[{},{},{}],\"duration\":2,\"name\":\"test\",\"id\":null}]}",
+
+    "/computer": "{\"displayName\":\"nodes\",\"busyExecutors\":0,\"totalExecutors\":6,\"computer\":[{\"displayName\":\"test-0\",\"executors\":[{},{}],\"idle\":true,\"offline\":false},{\"displayName\":\"test-1\",\"executors\":[{},{},{},{}],\"idle\":false,\"offline\":false},{\"displayName\":\"test-2\",\"executors\":[],\"idle\":true,\"offline\":true}]}",
+    "/computer/test-0": "{\"displayName\":\"test-0\",\"executors\":[{},{}],\"idle\":true,\"offline\":false}",
+    "/computer/test-1": "{\"displayName\":\"test-1\",\"executors\":[{},{},{},{}],\"idle\":false,\"offline\":false}",
+    "/computer/test-2": "{\"displayName\":\"test-2\",\"executors\":[],\"idle\":true,\"offline\":true}",
   }
 
-  for i := range fakeNodeResponses {
-    var fakeNodeResponse gojenkins.NodeResponse
-    json.Unmarshal(fakeNodeResponses[i], &fakeNodeResponse)
-    fakeNode := gojenkins.Node{Raw: &fakeNodeResponse, Base:fmt.Sprintf("/computer/test-node-%v", string(i))}
-    fakeNodes = append(fakeNodes, fakeNode)
+  re := regexp.MustCompile("([^:])//+")
+  for endpoint, response := range responses {
+    url := re.ReplaceAllString(strings.Join([]string{fakeJenkinsConfig.JenkinsHost, endpoint, "api", "json"}, "/"), "$1/")
+    transport.RegisterResponder("GET", url, httpmock.NewStringResponder(200, response))
   }
 
-  return fakeNodes
+  transport.RegisterNoResponder(func(req *http.Request) (*http.Response, error) {
+    fakeLog.WithField("request", req).Warn("Unmocked HTTP request")
+    response := httpmock.NewStringResponse(501, "[]")
+    return response, nil
+  })
 }
