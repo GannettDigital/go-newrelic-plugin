@@ -6,6 +6,7 @@ import (
   "fmt"
   "os"
   "strings"
+  "time"
 
   "github.com/bndr/gojenkins"
   "github.com/Sirupsen/logrus"
@@ -42,6 +43,34 @@ type PluginData struct {
   Inventory       map[string]InventoryData `json:"inventory"`
   Events          []EventData              `json:"events"`
   Status          string                   `json:"status"`
+}
+
+type JobMetric struct {
+  EntityName          string    `json:"entity_name"`
+  EventType           string    `json:"event_type"`
+  Provider            string    `json:"provider"`
+  Health              int       `json:"jenkins.job.health"`
+  BuildNumber         int       `json:"jenkins.job.buildNumber"`
+  BuildRevision       string    `json:"jenkins.job.buildRevision"`
+  BuildDate           time.Time `json:"jenkins.job.buildDate"`
+  BuildResult         string    `json:"jenkins.job.buildResult"`
+  BuildDurationSecond int       `json:"jenkins.job.buildDurationSecond"`
+  BuildArtifacts      int       `json:"jenkins.job.buildArtifacts"`
+  TestsDurationSecond int       `json:"jenkins.job.testsDurationSecond"`
+  TestsSuites         int       `json:"jenkins.job.testsSuites"`
+  Tests               int       `json:"jenkins.job.tests"`
+  TestsPassed         int       `json:"jenkins.job.testsPassed"`
+  TestsFailed         int       `json:"jenkins.job.testsFailed"`
+  TestsSkipped        int       `json:"jenkins.job.testsSkipped"`
+}
+
+type NodeMetric struct {
+  EntityName string `json:"entity_name"`
+  EventType  string `json:"event_type"`
+  Provider   string `json:"provider"`
+  Online     bool   `json:"jenkins.node.online"`
+  Idle       bool   `json:"jenkins.node.idle"`
+  Executors  int    `json:"jenkins.node.executors"`
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -125,28 +154,44 @@ func fatalIfErr(log *logrus.Logger, err error) {
 }
 
 func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) (records []MetricData, err error) {
-  nodeData, err := getAllNodeStats(log, jenkins)
-  if err != nil {
-    return nil, err
-  }
-  for _, node := range nodeData {
-    record := mergeMaps(map[string]interface{}{
-      "event_type": "LoadBalancerSample",
-      "provider": "jenkins.node",
-    }, node)
-    records = append(records, record)
-  }
-
   jobData, err := getAllJobStats(log, jenkins)
   if err != nil {
     return nil, err
   }
   for _, job := range jobData {
-    record := mergeMaps(map[string]interface{}{
+    records = append(records, MetricData{
+      "entity_name": job.EntityName,
       "event_type": "DatastoreSample",
       "provider": "jenkins.job",
-    }, job)
-    records = append(records, record)
+      "jenkins.job.health": job.Health,
+      "jenkins.job.buildNumber": job.BuildNumber,
+      "jenkins.job.buildRevision": job.BuildRevision,
+      "jenkins.job.buildDate": job.BuildDate,
+      "jenkins.job.buildResult": job.BuildResult,
+      "jenkins.job.buildDurationSecond": job.BuildDurationSecond,
+      "jenkins.job.buildArtifacts": job.BuildArtifacts,
+      "jenkins.job.testsDurationSecond": job.TestsDurationSecond,
+      "jenkins.job.testsSuites": job.TestsSuites,
+      "jenkins.job.tests": job.Tests,
+      "jenkins.job.testsPassed": job.TestsPassed,
+      "jenkins.job.testsFailed": job.TestsFailed,
+      "jenkins.job.testsSkipped": job.TestsSkipped,
+    })
+  }
+
+  nodeData, err := getAllNodeStats(log, jenkins)
+  if err != nil {
+    return nil, err
+  }
+  for _, node := range nodeData {
+    records = append(records, MetricData{
+      "entity_name": node.EntityName,
+      "event_type": "LoadBalancerSample",
+      "provider": "jenkins.node",
+      "jenkins.node.online": node.Online,
+      "jenkins.node.idle": node.Idle,
+      "jenkins.node.executors": node.Executors,
+    })
   }
 
   return records, nil
@@ -161,11 +206,11 @@ func getJenkins(config JenkinsConfig) (*gojenkins.Jenkins) {
 }
 
 // gets job information
-func getAllJobStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (jobRecords []map[string]interface{}, err error) {
+func getAllJobStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (jobRecords []JobMetric, err error) {
   jobs, err := jenkins.GetAllJobs()
   if err != nil {
     log.WithError(err).Error("Error getting job statistics")
-    return nil, err
+    return jobRecords, err
   }
 
   for _, job := range jobs {
@@ -205,10 +250,8 @@ func findChildJobs(jenkins *gojenkins.Jenkins, job *gojenkins.Job) (childJobs []
 }
 
 // gets stats from an individual job
-func getJobStats(job gojenkins.Job) (record map[string]interface{}) {
-  record = map[string]interface{}{
-    "entity_name": getFullJobName(job),
-  }
+func getJobStats(job gojenkins.Job) (record JobMetric) {
+  record.EntityName = getFullJobName(job)
 
   healthReport, health := job.Raw.HealthReport, 0
   if healthReport != nil && len(healthReport) > 0 {
@@ -216,22 +259,17 @@ func getJobStats(job gojenkins.Job) (record map[string]interface{}) {
       health += int(report.Score)
     }
     health /= len(healthReport)
-
-    record = mergeMaps(record, map[string]interface{}{
-      "jenkins.job.health": health,
-    })
+    record.Health = health
   }
 
   build, buildErr := job.GetLastBuild()
   if buildErr == nil {
-    record = mergeMaps(record, map[string]interface{}{
-      "jenkins.job.buildNumber": build.GetBuildNumber(),
-      "jenkins.job.buildRevision": build.GetRevision(),
-      "jenkins.job.buildDate": build.GetTimestamp().Unix(),
-      "jenkins.job.buildResult": strings.ToLower(build.GetResult()),
-      "jenkins.job.buildDurationSecond": build.GetDuration(),
-      "jenkins.job.buildArtifacts": len(build.GetArtifacts()),
-    })
+    record.BuildNumber = int(build.GetBuildNumber())
+    record.BuildRevision = build.GetRevision()
+    record.BuildDate = build.GetTimestamp()
+    record.BuildResult = strings.ToLower(build.GetResult())
+    record.BuildDurationSecond = int(build.GetDuration())
+    record.BuildArtifacts = len(build.GetArtifacts())
 
     tests, testsErr := build.GetResultSet()
     if testsErr == nil {
@@ -239,14 +277,12 @@ func getJobStats(job gojenkins.Job) (record map[string]interface{}) {
       for _, suite := range tests.Suites {
         totalTests += len(suite.Cases)
       }
-      record = mergeMaps(record, map[string]interface{}{
-        "jenkins.job.testsDurationSecond": tests.Duration,
-        "jenkins.job.tests": totalTests,
-        "jenkins.job.testsSuites": len(tests.Suites),
-        "jenkins.job.testsPassed": tests.PassCount,
-        "jenkins.job.testsFailed": tests.FailCount,
-        "jenkins.job.testsSkipped": tests.SkipCount,
-      })
+      record.TestsDurationSecond = int(tests.Duration)
+      record.Tests = totalTests
+      record.TestsSuites = len(tests.Suites)
+      record.TestsPassed = int(tests.PassCount)
+      record.TestsFailed = int(tests.FailCount)
+      record.TestsSkipped = int(tests.SkipCount)
     }
   }
 
@@ -254,7 +290,7 @@ func getJobStats(job gojenkins.Job) (record map[string]interface{}) {
 }
 
 // gets node information
-func getAllNodeStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (nodeRecords []map[string]interface{}, err error) {
+func getAllNodeStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (nodeRecords []NodeMetric, err error) {
   nodes, err := jenkins.GetAllNodes()
   if err != nil {
     log.WithError(err).Error("Error getting node statistics")
@@ -269,12 +305,12 @@ func getAllNodeStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (nodeRecord
 }
 
 // gets stats from a node
-func getNodeStats(node gojenkins.Node) map[string]interface{} {
-  return map[string]interface{}{
-    "entity_name": node.GetName(),
-    "jenkins.node.online": !node.Raw.Offline,
-    "jenkins.node.idle": node.Raw.Idle,
-    "jenkins.node.executors": len(node.Raw.Executors),
+func getNodeStats(node gojenkins.Node) NodeMetric {
+  return NodeMetric{
+    EntityName: node.GetName(),
+    Online: !node.Raw.Offline,
+    Idle: node.Raw.Idle,
+    Executors: len(node.Raw.Executors),
   }
 }
 
@@ -282,12 +318,4 @@ func getNodeStats(node gojenkins.Node) map[string]interface{} {
 // it is included as "fullName" in the API, but gojenkins Job struct doesn't look for it
 func getFullJobName(job gojenkins.Job) string {
   return strings.Trim(strings.Replace(job.Base, "/job/", "/", -1), "/")
-}
-
-// merge two maps
-func mergeMaps(global map[string]interface{}, specific map[string]interface{}) map[string]interface{} {
-  for key, value := range specific {
-    global[key] = value
-  }
-  return global
 }
