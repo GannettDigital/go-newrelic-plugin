@@ -89,7 +89,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
   }
   validateConfig(log, config)
 
-  jenkins, jenkinsErr := getJenkins(config)
+  jenkins, jenkinsErr := getJenkins(config).Init()
   if jenkinsErr != nil {
     log.WithError(jenkinsErr).Fatal("Error connecting to Jenkins")
   }
@@ -147,12 +147,12 @@ func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) (records []Metri
   return records, nil
 }
 
-func getJenkins(config JenkinsConfig) (*gojenkins.Jenkins, error) {
+func getJenkins(config JenkinsConfig) (*gojenkins.Jenkins) {
   return gojenkins.CreateJenkins(
     config.JenkinsHost,
     config.JenkinsAPIUser,
     config.JenkinsAPIKey,
-  ).Init()
+  )
 }
 
 // gets job information
