@@ -25,3 +25,4 @@ import:
 - package: github.com/spf13/cobra
 - package: github.com/bndr/gojenkins
 - package: github.com/jarcoal/httpmock
+- package: gopkg.in/redis.v5
