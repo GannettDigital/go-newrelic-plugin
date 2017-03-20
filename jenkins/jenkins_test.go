@@ -303,7 +303,7 @@ func TestFindChildJobs(t *testing.T) {
       res, err := findChildJobs(fakeJenkins, job)
       g.Assert(jobErr).Equal(nil)
       g.Assert(err).Equal(nil)
-      g.Assert(len(res) == 1).Equal(true)
+      g.Assert(len(res)).Equal(1)
       g.Assert(res[0].GetName()).Equal("qux")
     })
   })
@@ -348,9 +348,6 @@ func registerResponders(transport *httpmock.MockTransport) {
     { "GET", "/job/foo/1", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
     { "GET", "/job/bar/1", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
     { "GET", "/job/baz/job/qux/1", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
-    { "GET", "/job/foo/lastBuild", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
-    { "GET", "/job/bar/lastBuild", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
-    { "GET", "/job/baz/job/qux/lastBuild", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
 
     { "GET", "/job/foo/1/testReport", 200, `{"duration":2,"empty":false,"passCount":2,"failCount":1,"skipCount":0,"suites":[{"cases":[{},{},{}],"duration":2,"name":"test","id":null}]}` },
     { "GET", "/job/bar/1/testReport", 404, `{}` },
