@@ -1,7 +1,6 @@
 package jenkins
 
 import (
-  "bytes"
   "net/http"
   "reflect"
   "regexp"
@@ -16,41 +15,13 @@ import (
 )
 
 var (
-  fakeLog           *logrus.Logger
-  fakeLogReporter   = new(bytes.Buffer)
-  fakeJenkinsConfig JenkinsConfig
-  fakeJenkins       *gojenkins.Jenkins
-  fakeJenkinsErr    error
-)
-
-func init() {
-  fakeLog = logrus.New()
-  fakeLog.Level = logrus.PanicLevel
-  fakeLog.Out = fakeLogReporter
-
+  fakeLog           = logrus.New()
   fakeJenkinsConfig = JenkinsConfig{
     JenkinsHost:    "http://jenkins.mock",
     JenkinsAPIUser: "test",
     JenkinsAPIKey:  "test",
   }
-
-  fakeJenkins = gojenkins.CreateJenkins(
-    fakeJenkinsConfig.JenkinsHost,
-    fakeJenkinsConfig.JenkinsAPIUser,
-    fakeJenkinsConfig.JenkinsAPIKey,
-  )
-
-  fakeJenkinsTransport := httpmock.NewMockTransport()
-  registerResponders(fakeJenkinsTransport)
-  fakeJenkins.Requester.Client = &http.Client{
-    Transport: fakeJenkinsTransport,
-  }
-
-  fakeJenkins, fakeJenkinsErr = fakeJenkins.Init()
-  if fakeJenkinsErr != nil {
-    fakeLog.WithError(fakeJenkinsErr).Fatal("Error mocking connection to Jenkins")
-  }
-}
+)
 
 func TestValidateConfig(t *testing.T) {
   g := goblin.Goblin(t)
@@ -90,8 +61,45 @@ func TestValidateConfig(t *testing.T) {
   })
 }
 
+func TestGetFullJobName(t *testing.T) {
+  g := goblin.Goblin(t)
+  g.Describe("jenkins getFullJobName()", func() {
+    var tests = map[string]gojenkins.Job{
+      "foo":         gojenkins.Job{Base: "/job/foo"},
+      "foo/bar":     gojenkins.Job{Base: "/job/foo/job/bar"},
+      "foo/bar/baz": gojenkins.Job{Base: "/job/foo/job/bar/job/baz"},
+    }
+    g.It("should return job name prefixed by parent job names", func() {
+      for expected, job := range tests {
+        res := getFullJobName(job)
+        g.Assert(res).Equal(expected)
+      }
+    })
+  })
+}
+
+func TestGetJenkins(t *testing.T) {
+  g := goblin.Goblin(t)
+  fakeJenkins := fakeJenkins()
+  g.Describe("jenkins getJenkins()", func() {
+    res := getJenkins(fakeJenkinsConfig)
+    g.It("should connect to the right Jenkins", func() {
+      g.Assert(res.Server).Equal("http://jenkins.mock")
+    })
+    g.It("should have authorization data", func() {
+      g.Assert(res.Requester.BasicAuth.Username).Equal("test")
+      g.Assert(res.Requester.BasicAuth.Password).Equal("test")
+    })
+    g.It("should be using httpmock.MockTransport for requests while testing", func() {
+      t := reflect.TypeOf(fakeJenkins.Requester.Client.Transport)
+      g.Assert(t.String()).Equal("*httpmock.MockTransport")
+    })
+  })
+}
+
 func TestGetMetrics(t *testing.T) {
   g := goblin.Goblin(t)
+  fakeJenkins := fakeJenkins()
   g.Describe("jenkins getMetrics()", func() {
     res, err := getMetrics(fakeLog, fakeJenkins)
     g.It("should return metric data", func() {
@@ -115,46 +123,9 @@ func TestGetMetrics(t *testing.T) {
   })
 }
 
-func TestGetJenkins(t *testing.T) {
-  g := goblin.Goblin(t)
-  g.Describe("jenkins getJenkins()", func() {
-    res := getJenkins(fakeJenkinsConfig)
-    g.It("should connect to the right Jenkins", func() {
-      g.Assert(res.Server).Equal("http://jenkins.mock")
-    })
-    g.It("should have authorization data", func() {
-      g.Assert(res.Requester.BasicAuth.Username).Equal("test")
-      g.Assert(res.Requester.BasicAuth.Password).Equal("test")
-    })
-  })
-}
-
-func TestGetAllJobStats(t *testing.T) {
-  g := goblin.Goblin(t)
-  g.Describe("jenkins getAllJobStats()", func() {
-    g.It("should return statistics about many Jobs", func() {
-      res, err := getAllJobStats(fakeLog, fakeJenkins)
-      g.Assert(err).Equal(nil)
-      g.Assert(len(res) == 4).Equal(true)
-    })
-  })
-}
-
-func TestFindChildJobs(t *testing.T) {
-  g := goblin.Goblin(t)
-  g.Describe("jenkins findChildJobs()", func() {
-    g.It("should recursively find child jobs", func() {
-      job, jobErr := fakeJenkins.GetJob("baz")
-      res, err := findChildJobs(fakeJenkins, job)
-      g.Assert(jobErr).Equal(nil)
-      g.Assert(err).Equal(nil)
-      g.Assert(len(res) == 1).Equal(true)
-    })
-  })
-}
-
 func TestGetJobStats(t *testing.T) {
   g := goblin.Goblin(t)
+  fakeJenkins := fakeJenkins()
   g.Describe("jenkins getJobStats()", func() {
     expected := []JobMetric{
       {
@@ -198,19 +169,67 @@ func TestGetJobStats(t *testing.T) {
   })
 }
 
-func TestGetAllNodesStats(t *testing.T) {
+func TestGetAllJobStats(t *testing.T) {
   g := goblin.Goblin(t)
-  g.Describe("jenkins getAllNodeStats()", func() {
-    res, err := getAllNodeStats(fakeLog, fakeJenkins)
-    g.It("should return statistics about many Nodes", func() {
-      g.Assert(err).Equal(nil)
-      g.Assert(len(res) == 3).Equal(true)
+  fakeJenkins := fakeJenkins()
+  g.Describe("jenkins getAllJobStats()", func() {
+    expected := []JobMetric{
+      {
+        EntityName: "foo",
+        Health: 90,
+        BuildNumber: 1,
+        BuildRevision: "abcdef1",
+        BuildDate: time.Unix(1483228800, 0),
+        BuildResult: "passed",
+        BuildDurationSecond: 5,
+        BuildArtifacts: 1,
+        TestsDurationSecond: 2,
+        TestsSuites: 1,
+        Tests: 3,
+        TestsPassed: 2,
+        TestsFailed: 1,
+        TestsSkipped: 0,
+      },
+      {
+        EntityName: "bar",
+        Health: 90,
+        BuildNumber: 1,
+        BuildRevision: "abcdef1",
+        BuildDate: time.Unix(1483228800, 0),
+        BuildResult: "passed",
+        BuildDurationSecond: 5,
+        BuildArtifacts: 1,
+      },
+      {
+        EntityName: "baz",
+      },
+      {
+        EntityName: "baz/qux",
+        Health: 90,
+        BuildNumber: 1,
+        BuildRevision: "abcdef1",
+        BuildDate: time.Unix(1483228800, 0),
+        BuildResult: "passed",
+        BuildDurationSecond: 5,
+        BuildArtifacts: 1,
+      },
+    }
+    g.It("should return statistics about many Jobs", func() {
+      _, warmupErr := fakeJenkins.GetAllJobs()
+      res, err := getAllJobStats(fakeLog, fakeJenkins)
+      for i := range expected {
+        g.Assert(warmupErr).Equal(nil)
+        g.Assert(err).Equal(nil)
+        g.Assert(len(res) == len(expected)).Equal(true)
+        g.Assert(reflect.DeepEqual(res[i], expected[i])).Equal(true)
+      }
     })
   })
 }
 
 func TestGetNodeStats(t *testing.T) {
   g := goblin.Goblin(t)
+  fakeJenkins := fakeJenkins()
   g.Describe("jenkins getNodeStats()", func() {
     expected := []NodeMetric{
       {
@@ -243,66 +262,118 @@ func TestGetNodeStats(t *testing.T) {
   })
 }
 
-func TestGetFullJobName(t *testing.T) {
+func TestGetAllNodeStats(t *testing.T) {
   g := goblin.Goblin(t)
-  g.Describe("jenkins getFullJobName()", func() {
-    var tests = []struct{
-      Job      gojenkins.Job
-      FullName string
-    }{
+  fakeJenkins := fakeJenkins()
+  g.Describe("jenkins getAllNodeStats()", func() {
+    expected := []NodeMetric{
       {
-        Job:      gojenkins.Job{Base: "/job/foo"},
-        FullName: "foo",
+        EntityName: "test-0",
+        Online: true,
+        Idle: true,
+        Executors: 2,
       },
       {
-        Job:      gojenkins.Job{Base: "/job/foo/job/bar"},
-        FullName: "foo/bar",
+        EntityName: "test-1",
+        Online: true,
+        Idle: false,
+        Executors: 4,
       },
       {
-        Job:      gojenkins.Job{Base: "/job/foo/job/bar/job/baz"},
-        FullName: "foo/bar/baz",
+        EntityName: "test-2",
+        Online: false,
+        Idle: true,
+        Executors: 0,
       },
     }
-    g.It("should return full job name", func() {
-      for _, test := range tests {
-        res := getFullJobName(test.Job)
-        g.Assert(res).Equal(test.FullName)
-      }
+    g.It("should return statistics about many Nodes", func() {
+      res, err := getAllNodeStats(fakeLog, fakeJenkins)
+      g.Assert(err).Equal(nil)
+      g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
     })
   })
 }
 
+func TestFindChildJobs(t *testing.T) {
+  g := goblin.Goblin(t)
+  fakeJenkins := fakeJenkins()
+  g.Describe("jenkins findChildJobs()", func() {
+    g.It("should recursively find child jobs", func() {
+      job, jobErr := fakeJenkins.GetJob("baz")
+      res, err := findChildJobs(fakeJenkins, job)
+      g.Assert(jobErr).Equal(nil)
+      g.Assert(err).Equal(nil)
+      g.Assert(len(res) == 1).Equal(true)
+      g.Assert(res[0].GetName()).Equal("qux")
+    })
+  })
+}
+
+func fakeJenkins() *gojenkins.Jenkins {
+  jenkins := gojenkins.CreateJenkins(
+    fakeJenkinsConfig.JenkinsHost,
+    fakeJenkinsConfig.JenkinsAPIUser,
+    fakeJenkinsConfig.JenkinsAPIKey,
+  )
+
+  fakeJenkinsTransport := httpmock.NewMockTransport()
+  registerResponders(fakeJenkinsTransport)
+  jenkins.Requester.Client = &http.Client{
+    Transport: fakeJenkinsTransport,
+  }
+
+  jenkins, err := jenkins.Init()
+  if err != nil {
+    fakeLog.WithError(err).Fatal("Error mocking connection to Jenkins")
+  }
+
+  return jenkins
+}
+
 // hash map of HTTP requests to mock
 func registerResponders(transport *httpmock.MockTransport) {
-  responses := map[string]string{
-    "/": "{\"jobs\":[{\"name\":\"foo\",\"url\":\"http://jenkins.mock/job/foo/\"},{\"name\":\"bar\",\"url\":\"http://jenkins.mock/job/bar/\"},{\"name\":\"baz\",\"url\":\"http://jenkins.mock/job/baz/\"}]}",
+  responses := []struct{
+    Method   string
+    Endpoint string
+    Code     int
+    Response string
+  }{
+    { "GET", "/", 200, `{"jobs":[{"name":"foo","url":"http://jenkins.mock/job/foo/"},{"name":"bar","url":"http://jenkins.mock/job/bar/"},{"name":"baz","url":"http://jenkins.mock/job/baz/"}]}` },
 
-    "/job/foo": "{\"name\":\"foo\",\"displayName\":\"foo\",\"url\":\"http://jenkins.mock/job/foo/\",\"builds\":[{\"number\":1,\"url\":\"http://jenkins.mock/job/foo/1/\"}],\"lastBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/foo/1/\"},\"healthReport\":[{\"score\":100},{\"score\":80}],\"previousBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/foo/1/\"}}",
-    "/job/bar": "{\"name\":\"bar\",\"displayName\":\"bar\",\"url\":\"http://jenkins.mock/job/bar/\",\"builds\":[{\"number\":1,\"url\":\"http://jenkins.mock/job/bar/1/\"}],\"lastBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/bar/1/\"},\"healthReport\":[{\"score\":100},{\"score\":80}],\"previousBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/bar/1/\"}}",
-    "/job/baz": "{\"name\":\"baz\",\"displayName\":\"baz\",\"url\":\"http://jenkins.mock/job/baz/\",\"jobs\":[{\"name\":\"qux\",\"url\":\"http://jenkins.mock/job/baz/job/qux/\",\"color\":\"blue\"}],\"healthReport\":[{\"score\":100}]}",
-    "/job/baz/job/qux": "{\"name\":\"qux\",\"displayName\":\"qux\",\"url\":\"http://jenkins.mock/job/baz/job/qux/\",\"builds\":[{\"number\":1,\"url\":\"http://jenkins.mock/job/baz/job/qux/1/\"}],\"lastBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/baz/job/qux/1/\"},\"healthReport\":[{\"score\":100},{\"score\":80}],\"previousBuild\":{\"number\":1,\"url\":\"http://jenkins.mock/job/baz/job/qux/1/\"}}",
+    { "GET", "/job/foo", 200, `{"name":"foo","displayName":"foo","builds":[{"number":1,"url":"http://jenkins.mock/job/foo/1/"}],"lastBuild":{"number":1,"url":"http://jenkins.mock/job/foo/1/"},"healthReport":[{"score":100},{"score":80}],"previousBuild":{"number":1,"url":"http://jenkins.mock/job/foo/1/"}}` },
+    { "GET", "/job/bar", 200, `{"name":"bar","displayName":"bar","builds":[{"number":1,"url":"http://jenkins.mock/job/bar/1/"}],"lastBuild":{"number":1,"url":"http://jenkins.mock/job/bar/1/"},"healthReport":[{"score":100},{"score":80}],"previousBuild":{"number":1,"url":"http://jenkins.mock/job/bar/1/"}}` },
+    { "GET", "/job/baz", 200, `{"name":"baz","displayName":"baz","jobs":[{"name":"qux","url":"http://jenkins.mock/job/baz/job/qux/","color":"blue"}]}` },
+    { "GET", "/job/baz/job/qux", 200, `{"name":"qux","displayName":"qux","builds":[{"number":1,"url":"http://jenkins.mock/job/baz/job/qux/1/"}],"lastBuild":{"number":1,"url":"http://jenkins.mock/job/baz/job/qux/1/"},"healthReport":[{"score":100},{"score":80}],"previousBuild":{"number":1,"url":"http://jenkins.mock/job/baz/job/qux/1/"}}` },
 
-    "/job/foo/1": "{\"id\":\"1\",\"number\":1,\"timestamp\":1483228800000,\"url\":\"http://jenkins.mock/job/foo/1/\",\"duration\":5,\"result\":\"PASSED\",\"actions\":[{\"_class\":\"hudson.plugins.git.util.BuildData\",\"lastBuiltRevision\":{\"SHA1\":\"abcdef1\"}}],\"changeSet\":{\"kind\":\"git\",\"items\":[{}]},\"artifacts\":[{}]}",
-    "/job/bar/1": "{\"id\":\"1\",\"number\":1,\"timestamp\":1483228800000,\"url\":\"http://jenkins.mock/job/bar/1/\",\"duration\":5,\"result\":\"PASSED\",\"actions\":[{\"_class\":\"hudson.plugins.git.util.BuildData\",\"lastBuiltRevision\":{\"SHA1\":\"abcdef1\"}}],\"changeSet\":{\"kind\":\"git\",\"items\":[{}]},\"artifacts\":[{}]}",
-    "/job/baz/job/qux/1": "{\"id\":\"1\",\"number\":1,\"timestamp\":1483228800000,\"url\":\"http://jenkins.mock/job/baz/1/\",\"duration\":5,\"result\":\"PASSED\",\"actions\":[{\"_class\":\"hudson.plugins.git.util.BuildData\",\"lastBuiltRevision\":{\"SHA1\":\"abcdef1\"}}],\"changeSet\":{\"kind\":\"git\",\"items\":[{}]},\"artifacts\":[{}]}",
+    { "GET", "/job/foo/1", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
+    { "GET", "/job/bar/1", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
+    { "GET", "/job/baz/job/qux/1", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
+    { "GET", "/job/foo/lastBuild", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
+    { "GET", "/job/bar/lastBuild", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
+    { "GET", "/job/baz/job/qux/lastBuild", 200, `{"id":"1","number":1,"timestamp":1483228800000,"duration":5,"result":"PASSED","actions":[{"_class":"hudson.plugins.git.util.BuildData","lastBuiltRevision":{"SHA1":"abcdef1"}}],"changeSet":{"kind":"git","items":[{}]},"artifacts":[{}]}` },
 
-    "/job/foo/1/testReport": "{\"duration\":2,\"empty\":false,\"passCount\":2,\"failCount\":1,\"skipCount\":0,\"suites\":[{\"cases\":[{},{},{}],\"duration\":2,\"name\":\"test\",\"id\":null}]}",
+    { "GET", "/job/foo/1/testReport", 200, `{"duration":2,"empty":false,"passCount":2,"failCount":1,"skipCount":0,"suites":[{"cases":[{},{},{}],"duration":2,"name":"test","id":null}]}` },
+    { "GET", "/job/bar/1/testReport", 404, `{}` },
+    { "GET", "/job/baz/job/qux/1/testReport", 404, `{}` },
 
-    "/computer": "{\"displayName\":\"nodes\",\"busyExecutors\":0,\"totalExecutors\":6,\"computer\":[{\"displayName\":\"test-0\",\"executors\":[{},{}],\"idle\":true,\"offline\":false},{\"displayName\":\"test-1\",\"executors\":[{},{},{},{}],\"idle\":false,\"offline\":false},{\"displayName\":\"test-2\",\"executors\":[],\"idle\":true,\"offline\":true}]}",
-    "/computer/test-0": "{\"displayName\":\"test-0\",\"executors\":[{},{}],\"idle\":true,\"offline\":false}",
-    "/computer/test-1": "{\"displayName\":\"test-1\",\"executors\":[{},{},{},{}],\"idle\":false,\"offline\":false}",
-    "/computer/test-2": "{\"displayName\":\"test-2\",\"executors\":[],\"idle\":true,\"offline\":true}",
+    { "GET", "/computer", 200, `{"displayName":"Nodes","busyExecutors":0,"totalExecutors":6,"computer":[{"displayName":"test-0","executors":[{},{}],"idle":true,"offline":false},{"displayName":"test-1","executors":[{},{},{},{}],"idle":false,"offline":false},{"displayName":"test-2","executors":[],"idle":true,"offline":true}]}` },
+    { "GET", "/computer/test-0", 200, `{"displayName":"test-0","executors":[{},{}],"idle":true,"offline":false}` },
+    { "GET", "/computer/test-1", 200, `{"displayName":"test-1","executors":[{},{},{},{}],"idle":false,"offline":false}` },
+    { "GET", "/computer/test-2", 200, `{"displayName":"test-2","executors":[],"idle":true,"offline":true}` },
   }
 
   re := regexp.MustCompile("([^:])//+")
-  for endpoint, response := range responses {
-    url := re.ReplaceAllString(strings.Join([]string{fakeJenkinsConfig.JenkinsHost, endpoint, "api", "json"}, "/"), "$1/")
-    transport.RegisterResponder("GET", url, httpmock.NewStringResponder(200, response))
+  for _, r := range responses {
+    url := re.ReplaceAllString(strings.Join([]string{fakeJenkinsConfig.JenkinsHost, r.Endpoint, "api", "json"}, "/"), "$1/")
+    transport.RegisterResponder(r.Method, url, httpmock.NewStringResponder(r.Code, r.Response))
   }
 
   transport.RegisterNoResponder(func(req *http.Request) (*http.Response, error) {
-    fakeLog.WithField("request", req).Warn("Unmocked HTTP request")
-    response := httpmock.NewStringResponse(501, "[]")
+    response := httpmock.NewStringResponse(501, "{}")
+    fakeLog.WithFields(logrus.Fields{
+      "request": req,
+      "response": response,
+    }).Warn("Unmocked HTTP request")
     return response, nil
   })
 }
