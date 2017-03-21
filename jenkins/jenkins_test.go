@@ -19,8 +19,8 @@ var (
   fakeLog           = logrus.New()
   fakeJenkinsConfig = JenkinsConfig{
     JenkinsHost:    "http://jenkins.mock",
-    JenkinsAPIUser: "test",
-    JenkinsAPIKey:  "test",
+    JenkinsAPIUser: "test-user",
+    JenkinsAPIKey:  "test-pw",
   }
 )
 
@@ -28,36 +28,36 @@ func TestValidateConfig(t *testing.T) {
   g := goblin.Goblin(t)
   g.Describe("jenkins validateConfig()", func() {
     g.It("should return an error when JenkinsHost is not set", func() {
-      e := validateConfig(fakeLog, JenkinsConfig{})
-      g.Assert(e == nil).Equal(false)
+      err := validateConfig(fakeLog, JenkinsConfig{})
+      g.Assert(err == nil).IsFalse()
     })
     g.It("should return nil when JenkinsHost is set and JenkinsAPIUser and JenkinsAPIKey are not", func() {
-      e := validateConfig(fakeLog, JenkinsConfig{
+      err := validateConfig(fakeLog, JenkinsConfig{
         JenkinsHost: "foo",
       })
-      g.Assert(e == nil).Equal(true)
+      g.Assert(err).Equal(nil)
     })
     g.It("should return an error when JenkinsAPIUser is set but JenkinsAPIKey is not", func() {
-      e := validateConfig(fakeLog, JenkinsConfig{
+      err := validateConfig(fakeLog, JenkinsConfig{
         JenkinsHost: "foo",
         JenkinsAPIUser: "bar",
       })
-      g.Assert(e == nil).Equal(false)
+      g.Assert(err == nil).IsFalse()
     })
     g.It("should return an error when JenkinsAPIKey is set but JenkinsAPIUser is not", func() {
-      e := validateConfig(fakeLog, JenkinsConfig{
+      err := validateConfig(fakeLog, JenkinsConfig{
         JenkinsHost: "foo",
         JenkinsAPIKey: "bar",
       })
-      g.Assert(e == nil).Equal(false)
+      g.Assert(err == nil).IsFalse()
     })
     g.It("should return nil when all of the keys are set", func() {
-      e := validateConfig(fakeLog, JenkinsConfig{
+      err := validateConfig(fakeLog, JenkinsConfig{
         JenkinsHost: "foo",
         JenkinsAPIUser: "bar",
         JenkinsAPIKey: "baz",
       })
-      g.Assert(e == nil).Equal(true)
+      g.Assert(err).Equal(nil)
     })
   })
 }
@@ -88,12 +88,12 @@ func TestGetJenkins(t *testing.T) {
       g.Assert(res.Server).Equal("http://jenkins.mock")
     })
     g.It("should have authorization data", func() {
-      g.Assert(res.Requester.BasicAuth.Username).Equal("test")
-      g.Assert(res.Requester.BasicAuth.Password).Equal("test")
+      g.Assert(res.Requester.BasicAuth.Username).Equal("test-user")
+      g.Assert(res.Requester.BasicAuth.Password).Equal("test-pw")
     })
     g.It("should be using httpmock.MockTransport for requests while testing", func() {
-      t := reflect.TypeOf(fakeJenkins.Requester.Client.Transport)
-      g.Assert(t.String()).Equal("*httpmock.MockTransport")
+      transport := reflect.TypeOf(fakeJenkins.Requester.Client.Transport)
+      g.Assert(transport.String()).Equal("*httpmock.MockTransport")
     })
   })
 }
@@ -105,21 +105,21 @@ func TestGetMetrics(t *testing.T) {
     res, err := getMetrics(fakeLog, fakeJenkins)
     g.It("should return metric data", func() {
       g.Assert(err).Equal(nil)
-      g.Assert(len(res) > 0).Equal(true)
+      g.Assert(len(res) > 0).IsTrue()
     })
     g.It("should have 'event_type' keys on everything", func() {
       for _, metric := range res {
-        g.Assert(metric["event_type"] != nil).Equal(true)
+        g.Assert(metric["event_type"] != nil).IsTrue()
       }
     })
     g.It("should have 'entity_name' keys on everything", func() {
       for _, metric := range res {
-        g.Assert(metric["entity_name"] != nil).Equal(true)
+        g.Assert(metric["entity_name"] != nil).IsTrue()
       }
     })
     g.It("should have 'provider' keys on everything", func() {
       for _, metric := range res {
-        g.Assert(metric["entity_name"] != nil).Equal(true)
+        g.Assert(metric["entity_name"] != nil).IsTrue()
       }
     })
   })
@@ -165,7 +165,7 @@ func TestGetJobStats(t *testing.T) {
         job, err := fakeJenkins.GetJob(ex.EntityName)
         res := getJobStats(*job)
         g.Assert(err).Equal(nil)
-        g.Assert(reflect.DeepEqual(res, ex)).Equal(true)
+        g.Assert(reflect.DeepEqual(res, ex)).IsTrue()
       }
     })
   })
@@ -220,8 +220,8 @@ func TestGetAllJobStats(t *testing.T) {
       res, err := getAllJobStats(fakeLog, fakeJenkins)
       for i := range expected {
         g.Assert(err).Equal(nil)
-        g.Assert(len(res) == len(expected)).Equal(true)
-        g.Assert(reflect.DeepEqual(res[i], expected[i])).Equal(true)
+        g.Assert(len(res)).Equal(len(expected))
+        g.Assert(reflect.DeepEqual(res[i], expected[i])).IsTrue()
       }
     })
   })
@@ -256,7 +256,7 @@ func TestGetNodeStats(t *testing.T) {
         node, err := fakeJenkins.GetNode(ex.EntityName)
         res := getNodeStats(*node)
         g.Assert(err).Equal(nil)
-        g.Assert(reflect.DeepEqual(res, ex)).Equal(true)
+        g.Assert(reflect.DeepEqual(res, ex)).IsTrue()
       }
     })
   })
@@ -289,7 +289,7 @@ func TestGetAllNodeStats(t *testing.T) {
     g.It("should return statistics about many Nodes", func() {
       res, err := getAllNodeStats(fakeLog, fakeJenkins)
       g.Assert(err).Equal(nil)
-      g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
+      g.Assert(reflect.DeepEqual(res, expected)).IsTrue()
     })
   })
 }
@@ -298,20 +298,17 @@ func TestFindChildJobs(t *testing.T) {
   g := goblin.Goblin(t)
   fakeJenkins := fakeJenkins()
   g.Describe("jenkins findChildJobs()", func() {
-    var expected []*gojenkins.Job
-    parent, parentErr := fakeJenkins.GetJob("baz")
-    if parentErr != nil {
-      g.Fail(parentErr)
-    }
-    expectedInner, expectedInnerErr := parent.GetInnerJob("qux")
-    if expectedInnerErr != nil {
-      g.Fail(expectedInnerErr)
-    }
-    expected = append(expected, expectedInner)
     g.It("should recursively find child jobs", func() {
+      parent, parentErr := fakeJenkins.GetJob("baz")
+      g.Assert(parentErr).Equal(nil)
+
+      expectedInner, expectedInnerErr := parent.GetInnerJob("qux")
+      g.Assert(expectedInnerErr).Equal(nil)
+      expected := []*gojenkins.Job{expectedInner}
+
       res, err := findChildJobs(fakeJenkins, parent)
       g.Assert(err).Equal(nil)
-      g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
+      g.Assert(reflect.DeepEqual(res, expected)).IsTrue()
     })
   })
 }
@@ -367,8 +364,7 @@ func registerResponders(transport *httpmock.MockTransport) {
   }
 
   extraslash := regexp.MustCompile("([^:])//+")
-  for r := range responses {
-    match := responses[r]
+  for _, match := range responses {
     url := extraslash.ReplaceAllString(strings.Join([]string{fakeJenkinsConfig.JenkinsHost, match.Endpoint, "api", "json"}, "/"), "$1/")
     transport.RegisterResponder(match.Method, url, func(req *http.Request) (*http.Response, error) {
       resp := httpmock.NewStringResponse(match.Code, match.Response)
