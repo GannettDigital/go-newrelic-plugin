@@ -298,13 +298,20 @@ func TestFindChildJobs(t *testing.T) {
   g := goblin.Goblin(t)
   fakeJenkins := fakeJenkins()
   g.Describe("jenkins findChildJobs()", func() {
+    var expected []*gojenkins.Job
+    parent, parentErr := fakeJenkins.GetJob("baz")
+    if parentErr != nil {
+      g.Fail(parentErr)
+    }
+    expectedInner, expectedInnerErr := parent.GetInnerJob("qux")
+    if expectedInnerErr != nil {
+      g.Fail(expectedInnerErr)
+    }
+    expected = append(expected, expectedInner)
     g.It("should recursively find child jobs", func() {
-      job, jobErr := fakeJenkins.GetJob("baz")
-      res, err := findChildJobs(fakeJenkins, job)
-      g.Assert(jobErr).Equal(nil)
+      res, err := findChildJobs(fakeJenkins, parent)
       g.Assert(err).Equal(nil)
-      g.Assert(len(res)).Equal(1)
-      g.Assert(res[0].GetName()).Equal("qux")
+      g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
     })
   })
 }
