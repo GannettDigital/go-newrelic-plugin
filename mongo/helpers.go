@@ -1,5 +1,21 @@
 package mongo
 
+import (
+	"gopkg.in/mgo.v2"
+)
+
+func NewSession(mongoUrl string) Session {
+	mgoSession, err := mgo.Dial(mongoUrl)
+	if err != nil {
+		panic(err)
+	}
+	return MongoSession{mgoSession}
+}
+
+func NewMockSession() Session {
+	return MockSession{}
+}
+
 func formatDBStatsStructToMap(dbStats dbStats) (dbInfoMap map[string]interface{}) {
 	return map[string]interface{}{
 		"event_type":           "LoadBalancerSample",
@@ -43,7 +59,7 @@ func formatServerStatsStructToMap(serverStatus serverStatus) (dbInfoMap map[stri
 		"mongo.dur.earlyCommits":                                                  serverStatus.Dur.EarlyCommits,
 		"mongo.dur.journalMB":                                                     serverStatus.Dur.JournaledMB,
 		"mongo.dur.writeToDataFilesMb":                                            serverStatus.Dur.WriteToDataFilesMB,
-		"mongo.dur.commitsInWriteLock":                                            serverStatus.Dur.commitsInWriteLock,
+		"mongo.dur.commitsInWriteLock":                                            serverStatus.Dur.CommitsInWriteLock,
 		"mongo.dur.timems.dt":                                                     serverStatus.Dur.TimeMS.DT,
 		"mongo.dur.timems.prepLogBuffer":                                          serverStatus.Dur.TimeMS.PrepLogBuffer,
 		"mongo.dur.timems.writeToJournal":                                         serverStatus.Dur.TimeMS.WriteToJournal,

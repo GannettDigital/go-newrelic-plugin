@@ -1,7 +1,66 @@
 package mongo
 
-//MongoConfig is the keeper of the config
-type mongoConfig struct {
+import (
+	"gopkg.in/mgo.v2"
+)
+
+// Session is an interface to access to the Session struct.
+type Session interface {
+	DB(name string) DataLayer
+	DatabaseNames() ([]string, error)
+	Run(selector interface{}, update interface{}) error
+	Close()
+}
+
+// MongoSession is currently a Mongo session.
+type MongoSession struct {
+	*mgo.Session
+}
+
+// DB shadows *mgo.DB to returns a DataLayer interface instead of *mgo.Database.
+func (s MongoSession) DB(name string) DataLayer {
+	return &MongoDatabase{Database: s.Session.DB(name)}
+}
+
+type DataLayer interface {
+	Run(selector interface{}, update interface{}) error
+}
+
+// MongoDatabase wraps a mgo.Database to embed methods in models.
+type MongoDatabase struct {
+	*mgo.Database
+}
+
+type MockSession struct{}
+
+// Close mocks mgo.Session.Close().
+func (fs MockSession) Close() {}
+
+// DB mocks mgo.Session.DB().
+func (fs MockSession) DB(name string) DataLayer {
+	mockDatabase := MockDatabase{}
+	return mockDatabase
+}
+
+// DatabaseNames mocks mgo.Session.DatabaseNames().
+func (fs MockSession) DatabaseNames() ([]string, error) {
+	return []string{}, nil
+}
+
+func (fs MockSession) Run(selector interface{}, update interface{}) error {
+	return nil
+}
+
+// MockDatabase satisfies DataLayer and act as a mock.
+type MockDatabase struct{}
+
+// Run mocks mgo.Database(name).Collection(name).
+func (db MockDatabase) Run(selector interface{}, update interface{}) error {
+	return nil
+}
+
+//Config is the keeper of the config
+type Config struct {
 	MongoDBUser     string
 	MongoDBPassword string
 	MongoDBHost     string
@@ -59,7 +118,7 @@ type serverStatusDur struct {
 	JournaledMB        int `bson:"journaledMB"`
 	WriteToDataFilesMB int `bson:"writeToDataFilesMB"`
 	Compression        int `bson:"compression"`
-	commitsInWriteLock int `bson:"commitsInWriteLock"`
+	CommitsInWriteLock int `bson:"commitsInWriteLock"`
 	EarlyCommits       int `bson:"earlyCommits"`
 	TimeMS             struct {
 		DT                 int `bson:"dt"`

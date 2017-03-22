@@ -2,11 +2,9 @@ package mongo
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
-	"gopkg.in/mgo.v2"
 )
 
 const NAME string = "mongo"
@@ -14,7 +12,7 @@ const EVENT_TYPE string = "DataStoreSample"
 const PROVIDER string = "mongo"
 const PROTOCOL_VERSION string = "1"
 
-func Run(log *logrus.Logger, prettyPrint bool, version string) {
+func Run(log *logrus.Logger, session Session, mongoConfig Config, prettyPrint bool, version string) {
 	// Initialize the output structure
 	var data = pluginData{
 		Name:            NAME,
@@ -25,17 +23,6 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]eventData, 0),
 	}
 
-	var config = mongoConfig{
-		MongoDBUser:     os.Getenv("MONGODB_USER"),
-		MongoDBPassword: os.Getenv("MONGODB_PASSWORD"),
-		MongoDBHost:     os.Getenv("MONGODB_HOST"),
-		MongoDBPort:     os.Getenv("MONGODB_PORT"),
-		MongoDB:         os.Getenv("MONGODB_DB"),
-	}
-	validateConfig(log, config)
-	mongoURL := fmt.Sprintf("mongodb://%v:%v@%v:%v/%v", config.MongoDBUser, config.MongoDBPassword, config.MongoDBHost, config.MongoDBPort, config.MongoDB)
-	session, err := mgo.Dial(mongoURL)
-	fatalIfErr(log, err)
 	databaseNames, err := session.DatabaseNames()
 	fatalIfErr(log, err)
 	databaseStatsArray := make([]dbStats, len(databaseNames))
@@ -54,7 +41,13 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
-func validateConfig(log *logrus.Logger, config mongoConfig) {
+// InitMongoClient - function to create a mongo client
+func InitMongoClient(log *logrus.Logger, config Config) Session {
+	mongoURL := fmt.Sprintf("mongodb://%v:%v@%v:%v/%v", config.MongoDBUser, config.MongoDBPassword, config.MongoDBHost, config.MongoDBPort, config.MongoDB)
+	return NewSession(mongoURL)
+}
+
+func ValidateConfig(log *logrus.Logger, config Config) {
 	if config.MongoDBUser == "" || config.MongoDBPassword == "" || config.MongoDBHost == "" || config.MongoDBPort == "" || config.MongoDB == "" {
 		log.Error(config)
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
