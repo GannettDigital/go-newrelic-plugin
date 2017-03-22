@@ -153,10 +153,12 @@ func fatalIfErr(log *logrus.Logger, err error) {
   }
 }
 
-func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) (records []MetricData, err error) {
-  jobData, err := getAllJobStats(log, jenkins)
-  if err != nil {
-    return nil, err
+func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) ([]MetricData, error) {
+  var records []MetricData
+
+  jobData, jobDataErr := getAllJobStats(log, jenkins)
+  if jobDataErr != nil {
+    return nil, jobDataErr
   }
   for _, job := range jobData {
     records = append(records, MetricData{
@@ -179,9 +181,9 @@ func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) (records []Metri
     })
   }
 
-  nodeData, err := getAllNodeStats(log, jenkins)
-  if err != nil {
-    return nil, err
+  nodeData, nodeDataErr := getAllNodeStats(log, jenkins)
+  if nodeDataErr != nil {
+    return nil, nodeDataErr
   }
   for _, node := range nodeData {
     records = append(records, MetricData{
@@ -197,7 +199,7 @@ func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) (records []Metri
   return records, nil
 }
 
-func getJenkins(config JenkinsConfig) (*gojenkins.Jenkins) {
+func getJenkins(config JenkinsConfig) *gojenkins.Jenkins {
   return gojenkins.CreateJenkins(
     config.JenkinsHost,
     config.JenkinsAPIUser,
@@ -206,11 +208,13 @@ func getJenkins(config JenkinsConfig) (*gojenkins.Jenkins) {
 }
 
 // gets job information
-func getAllJobStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (jobRecords []JobMetric, err error) {
-  jobs, err := jenkins.GetAllJobs()
-  if err != nil {
-    log.WithError(err).Error("Error getting job statistics")
-    return jobRecords, err
+func getAllJobStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) ([]JobMetric, error) {
+  var jobRecords []JobMetric
+
+  jobs, jobsErr := jenkins.GetAllJobs()
+  if jobsErr != nil {
+    log.WithError(jobsErr).Error("Error getting job statistics")
+    return jobRecords, jobsErr
   }
 
   for _, job := range jobs {
@@ -228,7 +232,9 @@ func getAllJobStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (jobRecords 
 }
 
 // recursively finds all child jobs for a job
-func findChildJobs(jenkins *gojenkins.Jenkins, job *gojenkins.Job) (childJobs []*gojenkins.Job, _ error) {
+func findChildJobs(jenkins *gojenkins.Jenkins, job *gojenkins.Job) ([]*gojenkins.Job, error) {
+  var childJobs []*gojenkins.Job
+
   if len(job.GetInnerJobsMetadata()) > 0 {
     innerJobs, innerJobsErr := job.GetInnerJobs()
     if innerJobsErr != nil {
@@ -250,10 +256,13 @@ func findChildJobs(jenkins *gojenkins.Jenkins, job *gojenkins.Job) (childJobs []
 }
 
 // gets stats from an individual job
-func getJobStats(job gojenkins.Job) (record JobMetric) {
-  record.EntityName = getFullJobName(job)
+func getJobStats(job gojenkins.Job) JobMetric {
+  record := JobMetric{
+    EntityName: getFullJobName(job),
+  }
 
-  healthReport, health := job.Raw.HealthReport, 0
+  health := 0
+  healthReport := job.Raw.HealthReport
   if healthReport != nil && len(healthReport) > 0 {
     for _, report := range healthReport {
       health += int(report.Score)
@@ -290,11 +299,13 @@ func getJobStats(job gojenkins.Job) (record JobMetric) {
 }
 
 // gets node information
-func getAllNodeStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) (nodeRecords []NodeMetric, err error) {
-  nodes, err := jenkins.GetAllNodes()
-  if err != nil {
-    log.WithError(err).Error("Error getting node statistics")
-    return nil, err
+func getAllNodeStats(log *logrus.Logger, jenkins *gojenkins.Jenkins) ([]NodeMetric, error) {
+  var nodeRecords []NodeMetric
+
+  nodes, nodesErr := jenkins.GetAllNodes()
+  if nodesErr != nil {
+    log.WithError(nodesErr).Error("Error getting node statistics")
+    return nil, nodesErr
   }
 
   for _, node := range nodes {
