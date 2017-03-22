@@ -65,17 +65,20 @@ func TestValidateConfig(t *testing.T) {
 func TestGetFullJobName(t *testing.T) {
   g := goblin.Goblin(t)
   g.Describe("jenkins getFullJobName()", func() {
-    var tests = map[string]gojenkins.Job{
-      "foo":         gojenkins.Job{Base: "/job/foo"},
-      "foo/bar":     gojenkins.Job{Base: "/job/foo/job/bar"},
-      "foo/bar/baz": gojenkins.Job{Base: "/job/foo/job/bar/job/baz"},
+    var tests = map[string]struct{
+      Expected string
+      Job      gojenkins.Job
+    }{
+      "without a parent": { "foo", gojenkins.Job{Base: "/job/foo"} },
+      "with one parent":  { "foo/bar", gojenkins.Job{Base: "/job/foo/job/bar"} },
+      "with two parents": { "foo/bar/baz", gojenkins.Job{Base: "/job/foo/job/bar/job/baz"} },
     }
-    g.It("should return job name prefixed by parent job names", func() {
-      for expected, job := range tests {
-        res := getFullJobName(job)
-        g.Assert(res).Equal(expected)
-      }
-    })
+    for name, ex := range tests {
+      g.It("should return the full name of a job " + name, func() {
+        res := getFullJobName(ex.Job)
+        g.Assert(res).Equal(ex.Expected)
+      })
+    }
   })
 }
 

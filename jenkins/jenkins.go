@@ -119,7 +119,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
   }
   validErr := validateConfig(log, config)
   if validErr != nil {
-    log.Fatal("config: " + fmt.Sprint(validErr))
+    log.Fatalf("config: %v\n", validErr)
   }
 
   jenkins, jenkinsErr := getJenkins(config).Init()
@@ -282,7 +282,7 @@ func getJobStats(job gojenkins.Job) JobMetric {
 
     tests, testsErr := build.GetResultSet()
     if testsErr == nil {
-      var totalTests int
+      totalTests := 0
       for _, suite := range tests.Suites {
         totalTests += len(suite.Cases)
       }
