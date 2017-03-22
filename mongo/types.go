@@ -1,6 +1,8 @@
 package mongo
 
 import (
+	"encoding/json"
+
 	"gopkg.in/mgo.v2"
 )
 
@@ -9,7 +11,6 @@ type Session interface {
 	DB(name string) DataLayer
 	DatabaseNames() ([]string, error)
 	Run(selector interface{}, update interface{}) error
-	Close()
 }
 
 // MongoSession is currently a Mongo session.
@@ -31,31 +32,44 @@ type MongoDatabase struct {
 	*mgo.Database
 }
 
-type MockSession struct{}
+type MockSession struct {
+	SessionResults  MockSessionResults
+	DatabaseResults map[string]MockDatabaseResults
+}
 
-// Close mocks mgo.Session.Close().
-func (fs MockSession) Close() {}
+type MockSessionResults struct {
+	DatabaseNamesResult []string
+	RunResult           []byte
+}
+
+type MockDatabaseResults struct {
+	RunResult []byte
+}
 
 // DB mocks mgo.Session.DB().
 func (fs MockSession) DB(name string) DataLayer {
-	mockDatabase := MockDatabase{}
+	mockDatabase := MockDatabase{DatabaseResults: fs.DatabaseResults[name]}
 	return mockDatabase
 }
 
 // DatabaseNames mocks mgo.Session.DatabaseNames().
 func (fs MockSession) DatabaseNames() ([]string, error) {
-	return []string{}, nil
+	return fs.SessionResults.DatabaseNamesResult, nil
 }
 
 func (fs MockSession) Run(selector interface{}, update interface{}) error {
+	json.Unmarshal(fs.SessionResults.RunResult, &update)
 	return nil
 }
 
 // MockDatabase satisfies DataLayer and act as a mock.
-type MockDatabase struct{}
+type MockDatabase struct {
+	DatabaseResults MockDatabaseResults
+}
 
 // Run mocks mgo.Database(name).Collection(name).
 func (db MockDatabase) Run(selector interface{}, update interface{}) error {
+	json.Unmarshal(db.DatabaseResults.RunResult, &update)
 	return nil
 }
 

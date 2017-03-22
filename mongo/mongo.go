@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
@@ -23,22 +24,37 @@ func Run(log *logrus.Logger, session Session, mongoConfig Config, prettyPrint bo
 		Events:          make([]eventData, 0),
 	}
 
+	databaseStatsArray := readDBStats(log, session)
+	for _, databaseStatsStruct := range databaseStatsArray {
+		data.Metrics = append(data.Metrics, formatDBStatsStructToMap(databaseStatsStruct))
+	}
+
+	serverStatusResult := readServerStats(log, session)
+	data.Metrics = append(data.Metrics, formatServerStatsStructToMap(serverStatusResult))
+
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
+}
+
+func readServerStats(log *logrus.Logger, session Session) serverStatus {
+	var serverStatusResult serverStatus
+	err := session.Run("serverStatus", &serverStatusResult)
+	fatalIfErr(log, err)
+	return serverStatusResult
+}
+
+func readDBStats(log *logrus.Logger, session Session) []dbStats {
 	databaseNames, err := session.DatabaseNames()
 	fatalIfErr(log, err)
 	databaseStatsArray := make([]dbStats, len(databaseNames))
 	for index, databaseName := range databaseNames {
 		currentDatabase := session.DB(databaseName)
-		currentDatabase.Run("dbStats", &databaseStatsArray[index])
+		dbStatsErr := currentDatabase.Run("dbStats", &databaseStatsArray[index])
+		if dbStatsErr != nil {
+			err = dbStatsErr
+		}
 	}
-
-	var serverStatusResult serverStatus
-	err = session.Run("serverStatus", &serverStatusResult)
 	fatalIfErr(log, err)
-	data.Metrics = append(data.Metrics, formatServerStatsStructToMap(serverStatusResult))
-	for _, databaseStatsStruct := range databaseStatsArray {
-		data.Metrics = append(data.Metrics, formatDBStatsStructToMap(databaseStatsStruct))
-	}
-	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
+	return databaseStatsArray
 }
 
 // InitMongoClient - function to create a mongo client
@@ -47,11 +63,24 @@ func InitMongoClient(log *logrus.Logger, config Config) Session {
 	return NewSession(mongoURL)
 }
 
-func ValidateConfig(log *logrus.Logger, config Config) {
-	if config.MongoDBUser == "" || config.MongoDBPassword == "" || config.MongoDBHost == "" || config.MongoDBPort == "" || config.MongoDB == "" {
-		log.Error(config)
-		log.Fatal("Config Yaml is missing values. Please check the config to continue")
+// ValidateConfig validates the config
+func ValidateConfig(config Config) error {
+	if config.MongoDBUser == "" {
+		return errors.New("mongo DBUser must be set")
 	}
+	if config.MongoDBPassword == "" {
+		return errors.New("mongo DBPassword must be set.")
+	}
+	if config.MongoDBHost == "" {
+		return errors.New("mongo DBHost must be set.")
+	}
+	if config.MongoDBPort == "" {
+		return errors.New("mongo DBPort must be set.")
+	}
+	if config.MongoDB == "" {
+		return errors.New("mongo DB must be set.")
+	}
+	return nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {

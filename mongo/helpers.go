@@ -12,8 +12,8 @@ func NewSession(mongoUrl string) Session {
 	return MongoSession{mgoSession}
 }
 
-func NewMockSession() Session {
-	return MockSession{}
+func NewMockSession(mockSessionResults MockSessionResults, mockDatabaseResults map[string]MockDatabaseResults) Session {
+	return MockSession{mockSessionResults, mockDatabaseResults}
 }
 
 func formatDBStatsStructToMap(dbStats dbStats) (dbInfoMap map[string]interface{}) {

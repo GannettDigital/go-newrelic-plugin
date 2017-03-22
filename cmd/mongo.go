@@ -23,7 +23,10 @@ var mongoCmd = &cobra.Command{
 			MongoDBPort:     os.Getenv("MONGODB_PORT"),
 			MongoDB:         os.Getenv("MONGODB_DB"),
 		}
-		mongo.ValidateConfig(log, config)
+		err := mongo.ValidateConfig(log, config)
+		if err != nil {
+			log.Fatalf("invalid config: %v\n", err)
+		}
 		mongo.Run(log, mongo.InitMongoClient(log, config), config, prettyPrint, status.GetInfo().Version)
 	},
 }
