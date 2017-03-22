@@ -22,6 +22,7 @@ Available Commands:
   help        Help about any command
   nginx       execute an nginx collection
   rabbitmq    execute a rabbitmq collection
+  jenkins     execute a jenkins collection
   haproxy     execute a haproxy collection
   version     Print the version of go-newrelic-plugin
 
@@ -83,6 +84,7 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 * [nginx]('./nginx/nginx.go')
 * [rabbitmq]('./rabbitmq/rabbitmq.go')
 * [couchbase]('./couchbase/couchbase.go')
+* [jenkins]('./jenkins/jenkins.go')
 * [redis]('./redis/redis.go')
 * [haproxy]('./haproxy/haproxy.go')
 

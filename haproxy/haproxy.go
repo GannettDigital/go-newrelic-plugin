@@ -20,8 +20,8 @@ const NAME string = "haproxy"
 const PROVIDER string = "haproxy"
 const PROTOCOL_VERSION string = "1"
 
-//HaproxyConfig is the keeper of the config
-type HaproxyConfig struct {
+//HaConfig is the keeper of the config
+type HaConfig struct {
 	HaproxyPort      string
 	HaproxyStatusURI string
 	HaproxyHost      string
@@ -86,19 +86,21 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	var config = HaproxyConfig{
+	var config = HaConfig{
 		HaproxyPort:      os.Getenv("HAPROXYPORT"),
 		HaproxyStatusURI: os.Getenv("HAPROXYSTATUSURI"),
 		HaproxyHost:      os.Getenv("HAPROXYHOST"),
 	}
 	validateConfig(log, config)
 
-	var metric = getHaproxyStatus(log, config)
-	data.Metrics = append(data.Metrics, metric)
+	metric, err := getHaproxyStatus(log, config)
+	fatalIfErr(log, err)
+
+	data.Metrics = metric
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func initStats(log *logrus.Logger, config HaproxyConfig) ([][]string, error) {
+func initStats(log *logrus.Logger, config HaConfig) ([][]string, error) {
 	haproxyStatsURI := fmt.Sprintf("%v:%v/%v;csv", config.HaproxyHost, config.HaproxyPort, config.HaproxyStatusURI)
 	httpReq, err := http.NewRequest("GET", haproxyStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -116,7 +118,7 @@ func initStats(log *logrus.Logger, config HaproxyConfig) ([][]string, error) {
 			"httpReq": httpReq,
 			"error":   err,
 		}).Error("Encountered error calling CallAPI")
-		return err
+		return nil, err
 	}
 	r := csv.NewReader(strings.NewReader(string(data)))
 	everything, err := r.ReadAll()
@@ -129,104 +131,106 @@ func initStats(log *logrus.Logger, config HaproxyConfig) ([][]string, error) {
 	return everything, nil
 }
 
-func getHaproxyStatus(log *logrus.Logger, config HaproxyConfig) ([]MetricData, error) {
+func getHaproxyStatus(log *logrus.Logger, config HaConfig) ([]MetricData, error) {
 	InitialStats, err := initStats(log, config)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"haproxyConfig": config,
 			"error":         err,
 		}).Error("Encountered error querying Stats")
-		return make([]MetricData, 0), err
+		return nil, err
 	}
 	Stats := make([]MetricData, 0)
 	for _, record := range InitialStats {
 		if record[0] == "http_frontend" {
 			Stats = append(Stats, MetricData{
-				"haproxy.frontend.session.current":  toInt(record[4]),
-				"haproxy.frontend.session.max":      toInt(record[5]),
-				"haproxy.frontend.session.limit":    toInt(record[6]),
-				"haproxy.frontend.session.total":    toInt(record[7]),
-				"haproxy.frontend.bytes.in_rate":    toInt64(record[8]),
-				"haproxy.frontend.bytes.out_rate":   toInt64(record[9]),
-				"haproxy.frontend.denied.req_rate":  toInt(record[10]),
-				"haproxy.frontend.denied.resp_rate": toInt(record[11]),
-				"haproxy.frontend.errors.req_rate":  toInt(record[12]),
-				"haproxy.frontend.session.rate":     toInt(record[33]),
-				"haproxy.frontend.response.1xx":     toInt(record[39]),
-				"haproxy.frontend.response.2xx":     toInt(record[40]),
-				"haproxy.frontend.response.3xx":     toInt(record[41]),
-				"haproxy.frontend.response.4xx":     toInt(record[42]),
-				"haproxy.frontend.response.5xx":     toInt(record[43]),
-				"haproxy.frontend.response.other":   toInt(record[44]),
-				"haproxy.frontend.requests.rate":    toInt(record[46]),
+				"haproxy.frontend.session.current":  toInt(log, record[4]),
+				"haproxy.frontend.session.max":      toInt(log, record[5]),
+				"haproxy.frontend.session.limit":    toInt(log, record[6]),
+				"haproxy.frontend.session.total":    toInt(log, record[7]),
+				"haproxy.frontend.bytes.in_rate":    toInt64(log, record[8]),
+				"haproxy.frontend.bytes.out_rate":   toInt64(log, record[9]),
+				"haproxy.frontend.denied.req_rate":  toInt(log, record[10]),
+				"haproxy.frontend.denied.resp_rate": toInt(log, record[11]),
+				"haproxy.frontend.errors.req_rate":  toInt(log, record[12]),
+				"haproxy.frontend.session.rate":     toInt(log, record[33]),
+				"haproxy.frontend.response.1xx":     toInt(log, record[39]),
+				"haproxy.frontend.response.2xx":     toInt(log, record[40]),
+				"haproxy.frontend.response.3xx":     toInt(log, record[41]),
+				"haproxy.frontend.response.4xx":     toInt(log, record[42]),
+				"haproxy.frontend.response.5xx":     toInt(log, record[43]),
+				"haproxy.frontend.response.other":   toInt(log, record[44]),
+				"haproxy.frontend.requests.rate":    toInt(log, record[46]),
 			})
 		} else if record[0] != "stats" && record[1] == "BACKEND" {
 			Stats = append(Stats, MetricData{
-				"haproxy.backend.queue.current":       toInt(record[2]),
-				"haproxy.backend.queue.max":           toInt(record[3]),
-				"haproxy.backend.session.current":     toInt(record[4]),
-				"haproxy.backend.session.max":         toInt(record[5]),
-				"haproxy.backend.session.limit":       toInt(record[6]),
-				"haproxy.backend.session.total":       toInt(record[7]),
-				"haproxy.backend.bytes.in_rate":       toInt64(record[8]),
-				"haproxy.backend.bytes.out_rate":      toInt64(record[9]),
-				"haproxy.backend.denied.req_rate":     toInt(record[10]),
-				"haproxy.backend.denied.resp_rate":    toInt(record[11]),
-				"haproxy.backend.errors.con_rate":     toInt(record[13]),
-				"haproxy.backend.errors.resp_rate":    toInt(record[14]),
-				"haproxy.backend.warnings.retr_rate":  toInt(record[15]),
-				"haproxy.backend.warnings.redis_rate": toInt(record[16]),
-				"haproxy.backend.session.rate":        toInt(record[33]),
-				"haproxy.backend.response.1xx":        toInt(record[39]),
-				"haproxy.backend.response.2xx":        toInt(record[40]),
-				"haproxy.backend.response.3xx":        toInt(record[41]),
-				"haproxy.backend.response.4xx":        toInt(record[42]),
-				"haproxy.backend.response.5xx":        toInt(record[43]),
-				"haproxy.backend.response.other":      toInt(record[44]),
-				"haproxy.backend.queue.time":          toInt(record[58]),
-				"haproxy.backend.connect.time":        toInt(record[59]),
-				"haproxy.backend.response.time":       toInt(record[60]),
-				"haproxy.backend.session.time":        toInt(record[61]),
+				"haproxy.backend.queue.current":       toInt(log, record[2]),
+				"haproxy.backend.queue.max":           toInt(log, record[3]),
+				"haproxy.backend.session.current":     toInt(log, record[4]),
+				"haproxy.backend.session.max":         toInt(log, record[5]),
+				"haproxy.backend.session.limit":       toInt(log, record[6]),
+				"haproxy.backend.session.total":       toInt(log, record[7]),
+				"haproxy.backend.bytes.in_rate":       toInt64(log, record[8]),
+				"haproxy.backend.bytes.out_rate":      toInt64(log, record[9]),
+				"haproxy.backend.denied.req_rate":     toInt(log, record[10]),
+				"haproxy.backend.denied.resp_rate":    toInt(log, record[11]),
+				"haproxy.backend.errors.con_rate":     toInt(log, record[13]),
+				"haproxy.backend.errors.resp_rate":    toInt(log, record[14]),
+				"haproxy.backend.warnings.retr_rate":  toInt(log, record[15]),
+				"haproxy.backend.warnings.redis_rate": toInt(log, record[16]),
+				"haproxy.backend.session.rate":        toInt(log, record[33]),
+				"haproxy.backend.response.1xx":        toInt(log, record[39]),
+				"haproxy.backend.response.2xx":        toInt(log, record[40]),
+				"haproxy.backend.response.3xx":        toInt(log, record[41]),
+				"haproxy.backend.response.4xx":        toInt(log, record[42]),
+				"haproxy.backend.response.5xx":        toInt(log, record[43]),
+				"haproxy.backend.response.other":      toInt(log, record[44]),
+				"haproxy.backend.queue.time":          toInt(log, record[58]),
+				"haproxy.backend.connect.time":        toInt(log, record[59]),
+				"haproxy.backend.response.time":       toInt(log, record[60]),
+				"haproxy.backend.session.time":        toInt(log, record[61]),
 			})
 		}
 	}
 	//return Stats, nil
-	return Stats, nil
+	return Stats, err
 }
 
-func toInt(value string) int {
+func toInt(log *logrus.Logger, value string) int {
 	if value == "" {
 		return 0
-	} else {
-		valueInt, err := strconv.Atoi(value)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"valueInt": valueInt,
-				"error":    err,
-			}).Error("Error converting value to int")
-			return 0
-		}
-		return valueInt
 	}
+	valueInt, err := strconv.Atoi(value)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"valueInt": valueInt,
+			"error":    err,
+		}).Debug("Error converting value to int")
+
+		return 0
+	}
+
+	return valueInt
 }
 
-func toInt64(value string) int64 {
+func toInt64(log *logrus.Logger, value string) int64 {
 	if value == "" {
 		return 0
-	} else {
-		valueInt, err := strconv.ParseInt(value, 10, 64)
-		if err != nil {
-			log.WithFields(logrus.Fields{
-				"valueInt": valueInt,
-				"error":    err,
-			}).Error("Error converting value to int")
-			return 0
-		}
-		return valueInt
 	}
+	valueInt, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"valueInt": valueInt,
+			"error":    err,
+		}).Debug("Error converting value to int")
+
+		return 0
+	}
+
+	return valueInt
 }
 
-func validateConfig(log *logrus.Logger, config HaproxyConfig) {
+func validateConfig(log *logrus.Logger, config HaConfig) {
 	if config.HaproxyStatusURI == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
