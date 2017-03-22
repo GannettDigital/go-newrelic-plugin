@@ -27,56 +27,22 @@ var (
 func TestValidateConfig(t *testing.T) {
   g := goblin.Goblin(t)
   g.Describe("jenkins validateConfig()", func() {
-    g.It("should return an error when JenkinsHost is not set", func() {
-      err := validateConfig(fakeLog, JenkinsConfig{})
-      g.Assert(err == nil).IsFalse()
-    })
-    g.It("should return nil when JenkinsHost is set and JenkinsAPIUser and JenkinsAPIKey are not", func() {
-      err := validateConfig(fakeLog, JenkinsConfig{
-        JenkinsHost: "foo",
-      })
-      g.Assert(err).Equal(nil)
-    })
-    g.It("should return an error when JenkinsAPIUser is set but JenkinsAPIKey is not", func() {
-      err := validateConfig(fakeLog, JenkinsConfig{
-        JenkinsHost: "foo",
-        JenkinsAPIUser: "bar",
-      })
-      g.Assert(err == nil).IsFalse()
-    })
-    g.It("should return an error when JenkinsAPIKey is set but JenkinsAPIUser is not", func() {
-      err := validateConfig(fakeLog, JenkinsConfig{
-        JenkinsHost: "foo",
-        JenkinsAPIKey: "bar",
-      })
-      g.Assert(err == nil).IsFalse()
-    })
-    g.It("should return nil when all of the keys are set", func() {
-      err := validateConfig(fakeLog, JenkinsConfig{
-        JenkinsHost: "foo",
-        JenkinsAPIUser: "bar",
-        JenkinsAPIKey: "baz",
-      })
-      g.Assert(err).Equal(nil)
-    })
-  })
-}
-
-func TestGetFullJobName(t *testing.T) {
-  g := goblin.Goblin(t)
-  g.Describe("jenkins getFullJobName()", func() {
-    var tests = map[string]struct{
-      Expected string
-      Job      gojenkins.Job
+    expected := map[string]struct{
+      ExpectedIsNil bool
+      Config        JenkinsConfig
     }{
-      "without a parent": { "foo", gojenkins.Job{Base: "/job/foo"} },
-      "with one parent":  { "foo/bar", gojenkins.Job{Base: "/job/foo/job/bar"} },
-      "with two parents": { "foo/bar/baz", gojenkins.Job{Base: "/job/foo/job/bar/job/baz"} },
+      "no": { false, JenkinsConfig{} },
+      "JenkinsHost": { true, JenkinsConfig{JenkinsHost: "http://jenkins.mock"} },
+      "JenkinsHost, JenkinsAPIUser": { false, JenkinsConfig{JenkinsHost: "http://jenkins.mock", JenkinsAPIUser: "test-user" } },
+      "JenkinsHost, JenkinsAPIKey": { false, JenkinsConfig{JenkinsHost: "http://jenkins.mock", JenkinsAPIKey: "test-pw" } },
+      "JenkinsAPIUser, JenkinsAPIKey": { false, JenkinsConfig{JenkinsAPIUser: "test-user", JenkinsAPIKey: "test-pw"} },
+      "all": { true, JenkinsConfig{JenkinsHost: "http://jenkins.mock", JenkinsAPIUser: "test-user", JenkinsAPIKey: "test-pw" } },
     }
-    for name, ex := range tests {
-      g.It("should return the full name of a job " + name, func() {
-        res := getFullJobName(ex.Job)
-        g.Assert(res).Equal(ex.Expected)
+    for name, ex := range expected {
+      desc := fmt.Sprintf("should return %v when %v fields are set", ex.ExpectedIsNil, name)
+      g.It(desc, func() {
+        valid := validateConfig(fakeLog, ex.Config)
+        g.Assert(valid == nil).Equal(ex.ExpectedIsNil)
       })
     }
   })
