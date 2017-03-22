@@ -94,12 +94,11 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	validateConfig(log, config)
 
 	var metric = getHaproxyStatus(log, config)
-
 	data.Metrics = append(data.Metrics, metric)
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func initStats(log *logrus.Logger, config HaproxyConfig) (everything [][]string, err error) {
+func initStats(log *logrus.Logger, config HaproxyConfig) ([][]string, error) {
 	haproxyStatsURI := fmt.Sprintf("%v:%v/%v;csv", config.HaproxyHost, config.HaproxyPort, config.HaproxyStatusURI)
 	httpReq, err := http.NewRequest("GET", haproxyStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
@@ -107,8 +106,7 @@ func initStats(log *logrus.Logger, config HaproxyConfig) (everything [][]string,
 			"haproxyStatsURI": haproxyStatsURI,
 			"error":           err,
 		}).Error("Encountered error creating http.NewRequest")
-		close(stats)
-		return []everything{}, err
+		return [][]string{}, err
 	}
 	code, data, err := runner.CallAPI(log, nil, httpReq, &http.Client{})
 	if err != nil || code != 200 {
@@ -118,22 +116,20 @@ func initStats(log *logrus.Logger, config HaproxyConfig) (everything [][]string,
 			"httpReq": httpReq,
 			"error":   err,
 		}).Error("Encountered error calling CallAPI")
-		close(stats)
 		return err
 	}
 	r := csv.NewReader(strings.NewReader(string(data)))
-	stats, err := r.ReadAll()
+	everything, err := r.ReadAll()
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"err": err,
 		}).Error("Unable to decode initial CSV stats")
-		close(stats)
-		return stats, err
+		return everything, err
 	}
-	return stats, nil
+	return everything, nil
 }
 
-func getHaproxyStatus(log *logrus.Logger, config HaproxyConfig) (Stats []MetricData, err error) {
+func getHaproxyStatus(log *logrus.Logger, config HaproxyConfig) ([]MetricData, error) {
 	InitialStats, err := initStats(log, config)
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -143,7 +139,7 @@ func getHaproxyStatus(log *logrus.Logger, config HaproxyConfig) (Stats []MetricD
 		return make([]MetricData, 0), err
 	}
 	Stats := make([]MetricData, 0)
-	for _, record = range InitialStats {
+	for _, record := range InitialStats {
 		if record[0] == "http_frontend" {
 			Stats = append(Stats, MetricData{
 				"haproxy.frontend.session.current":  toInt(record[4]),

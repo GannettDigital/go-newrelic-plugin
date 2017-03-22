@@ -26,6 +26,7 @@ func TestinitStats(t *testing.T) {
 	var tests = []struct {
 		HTTPRunner      fake.HTTPResult
 		TestDescription string
+		ExpectedResult  [][]string
 	}{
 		{
 			HTTPRunner: fake.HTTPResult{
