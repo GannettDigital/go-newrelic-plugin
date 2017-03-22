@@ -1,7 +1,11 @@
-go-api-skeleton CHANGELOG
+go-newrelic-plugin CHANGELOG
 ==============================
 
 This file is used to list changes made in each version of go-newrelic-plugin.
+
+# 0.4.0
+
+Alex Lindeman - PAAS-4898 Add Jenkins plugin
 
 # 0.3.1
 
