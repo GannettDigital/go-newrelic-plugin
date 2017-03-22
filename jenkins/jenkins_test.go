@@ -129,8 +129,8 @@ func TestGetJobStats(t *testing.T) {
   g := goblin.Goblin(t)
   fakeJenkins := fakeJenkins()
   g.Describe("jenkins getJobStats()", func() {
-    expected := []JobMetric{
-      {
+    expected := map[string]JobMetric{
+      "with build and test data": {
         EntityName: "foo",
         Health: 90,
         BuildNumber: 1,
@@ -146,7 +146,7 @@ func TestGetJobStats(t *testing.T) {
         TestsFailed: 1,
         TestsSkipped: 0,
       },
-      {
+      "with only build data": {
         EntityName: "bar",
         Health: 90,
         BuildNumber: 1,
@@ -156,18 +156,18 @@ func TestGetJobStats(t *testing.T) {
         BuildDurationSecond: 5,
         BuildArtifacts: 1,
       },
-      {
+      "with no data": {
         EntityName: "baz",
       },
     }
-    g.It("should return statistics about a Job object", func() {
-      for _, ex := range expected {
+    for name, ex := range expected {
+      g.It("should return statistics about a job " + name, func() {
         job, err := fakeJenkins.GetJob(ex.EntityName)
         res := getJobStats(*job)
         g.Assert(err).Equal(nil)
         g.Assert(reflect.DeepEqual(res, ex)).IsTrue()
-      }
-    })
+      })
+    }
   })
 }
 
@@ -216,13 +216,11 @@ func TestGetAllJobStats(t *testing.T) {
         BuildArtifacts: 1,
       },
     }
-    g.It("should return statistics about many Jobs", func() {
-      res, err := getAllJobStats(fakeLog, fakeJenkins)
-      for i := range expected {
-        g.Assert(err).Equal(nil)
-        g.Assert(len(res)).Equal(len(expected))
-        g.Assert(reflect.DeepEqual(res[i], expected[i])).IsTrue()
-      }
+    res, err := getAllJobStats(fakeLog, fakeJenkins)
+    g.It("should return statistics about many jobs", func() {
+      g.Assert(err).Equal(nil)
+      g.Assert(len(res)).Equal(len(expected))
+      g.Assert(reflect.DeepEqual(res, expected)).IsTrue()
     })
   })
 }
@@ -231,34 +229,34 @@ func TestGetNodeStats(t *testing.T) {
   g := goblin.Goblin(t)
   fakeJenkins := fakeJenkins()
   g.Describe("jenkins getNodeStats()", func() {
-    expected := []NodeMetric{
-      {
+    expected := map[string]NodeMetric{
+      "with two executors and is idle": {
         EntityName: "test-0",
         Online: true,
         Idle: true,
         Executors: 2,
       },
-      {
+      "with four executors and not idle": {
         EntityName: "test-1",
         Online: true,
         Idle: false,
         Executors: 4,
       },
-      {
+      "that is not online": {
         EntityName: "test-2",
         Online: false,
         Idle: true,
         Executors: 0,
       },
     }
-    g.It("should return statistics about a Node object", func() {
-      for _, ex := range expected {
+    for name, ex := range expected {
+      g.It("should return statistics about a node " + name, func() {
         node, err := fakeJenkins.GetNode(ex.EntityName)
         res := getNodeStats(*node)
         g.Assert(err).Equal(nil)
         g.Assert(reflect.DeepEqual(res, ex)).IsTrue()
-      }
-    })
+      })
+    }
   })
 }
 
@@ -286,7 +284,7 @@ func TestGetAllNodeStats(t *testing.T) {
         Executors: 0,
       },
     }
-    g.It("should return statistics about many Nodes", func() {
+    g.It("should return statistics about many nodes", func() {
       res, err := getAllNodeStats(fakeLog, fakeJenkins)
       g.Assert(err).Equal(nil)
       g.Assert(reflect.DeepEqual(res, expected)).IsTrue()
@@ -364,7 +362,8 @@ func registerResponders(transport *httpmock.MockTransport) {
   }
 
   extraslash := regexp.MustCompile("([^:])//+")
-  for _, match := range responses {
+  for r := range responses {
+    match := responses[r]
     url := extraslash.ReplaceAllString(strings.Join([]string{fakeJenkinsConfig.JenkinsHost, match.Endpoint, "api", "json"}, "/"), "$1/")
     transport.RegisterResponder(match.Method, url, func(req *http.Request) (*http.Response, error) {
       resp := httpmock.NewStringResponse(match.Code, match.Response)
