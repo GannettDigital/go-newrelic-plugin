@@ -225,9 +225,9 @@ type serverStatsMetrics struct {
 	Cursor struct {
 		TimedOut int64 `bson:"timedOut"`
 		Open     struct {
-			NoTimeout int64 `bson:"noTimeout"`
-			Pinned    int64 `bson:"pinned"`
-			Total     int64 `bson:"total"`
+			NoTimeout int `bson:"noTimeout"`
+			Pinned    int `bson:"pinned"`
+			Total     int `bson:"total"`
 		} `bson:"open"`
 	} `bson:"cursor"`
 	Document struct {
