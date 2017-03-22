@@ -88,7 +88,7 @@ func TestGetMetrics(t *testing.T) {
     })
     g.It("should have 'provider' keys on everything", func() {
       for _, metric := range res {
-        g.Assert(metric["entity_name"] != nil).IsTrue()
+        g.Assert(metric["provider"] != nil).IsTrue()
       }
     })
   })
