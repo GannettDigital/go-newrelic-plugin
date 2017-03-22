@@ -1,13 +1,17 @@
-go-api-skeleton CHANGELOG
+go-newrelic-plugin CHANGELOG
 ==============================
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 0.3.2
+# 0.5.0
 
 Michael Dunton  - PAAS-5131 Adding Mongo collector
-                - Adding a helper file to do the outputJSON to reduce code copy.
-                
+                - Adding a helper file to do the outputJSON to reduce code copy.          
+
+# 0.4.0
+
+Alex Lindeman - PAAS-4898 Add Jenkins plugin
+
 # 0.3.1
 
 Ryan Grothouse - fixed bug with protocolVersion key
@@ -15,7 +19,6 @@ Ryan Grothouse - fixed bug with protocolVersion key
 # 0.3.0
 
 Tom Barber  - adding support for redis plugin
->>>>>>> master
 
 # 0.2.1
 

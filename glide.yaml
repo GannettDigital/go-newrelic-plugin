@@ -23,5 +23,8 @@ import:
   version: ^2.0.0
   vcs: git
 - package: github.com/spf13/cobra
-- package: gopkg.in/mgo.v2
+- package: github.com/bndr/gojenkins
+  version: 45513d2317d95aa57bd219aa46bb35d5b702675a
+- package: github.com/jarcoal/httpmock
 - package: gopkg.in/redis.v5
+- package: gopkg.in/mgo.v2
