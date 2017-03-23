@@ -11,6 +11,55 @@ import (
 
 var fakeLog = logrus.New()
 
+func TestRun(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		InputLog        *logrus.Logger
+		InputSession    Session
+		InputConfig     Config
+		InputPretty     bool
+		InputVersion    string
+		TestDescription string
+	}{
+		{
+			InputLog: logrus.New(),
+			InputSession: NewMockSession(
+				MockSessionResults{
+					DatabaseNamesResult: []string{"foo", "bar"},
+				},
+				map[string]MockDatabaseResults{
+					"foo": MockDatabaseResults{
+						RunResult: []byte("{\"DB\":\"foo\",\"Collections\":1,\"Objects\":29,\"AvgObjSize\":1029,\"DataSize\":1024,\"StorageSize\":1020,\"NumExtents\":10,\"Indexes\":100,\"IndexSize\":2048}"),
+					},
+					"bar": MockDatabaseResults{
+						RunResult: []byte("{\"DB\":\"bar\",\"Collections\":2,\"Objects\":30,\"AvgObjSize\":1030,\"DataSize\":1025,\"StorageSize\":1021,\"NumExtents\":11,\"Indexes\":101,\"IndexSize\":2049}"),
+					},
+				},
+			),
+			InputConfig: Config{
+				MongoDBUser:     "User",
+				MongoDBPassword: "Password",
+				MongoDBHost:     "localhost",
+				MongoDBPort:     "1234",
+				MongoDB:         "admin",
+			},
+			InputPretty:     false,
+			InputVersion:    "0.0.1",
+			TestDescription: "Should successfully perform a run without error",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("Run()", func() {
+			g.It(test.TestDescription, func() {
+				Run(test.InputLog, test.InputSession, test.InputConfig, test.InputPretty, test.InputVersion)
+				g.Assert(true).IsTrue()
+			})
+		})
+	}
+}
+
 func TestValidateConfig(t *testing.T) {
 	g := goblin.Goblin(t)
 	g.Describe("mongo validateConfig()", func() {
@@ -104,7 +153,6 @@ func TestReadServerStats(t *testing.T) {
 				Host: "g00000000652073",
 				MongoMetricsCursorOpenTotal: 5,
 			},
-			TestDescription: "Should successfully read two database's  stats from mongo",
 		},
 	}
 
@@ -114,6 +162,31 @@ func TestReadServerStats(t *testing.T) {
 				res := readServerStats(test.InputLog, test.InputSession)
 				g.Assert(res.Host).Equal(test.ExpectedRes.Host)
 				g.Assert(res.Metrics.Cursor.Open.Total).Equal(test.ExpectedRes.MongoMetricsCursorOpenTotal)
+			})
+		})
+	}
+}
+
+func TestFatalIfErrt(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		InputLog        *logrus.Logger
+		InputErr        error
+		TestDescription string
+	}{
+		{
+			InputLog:        logrus.New(),
+			InputErr:        nil,
+			TestDescription: "Should successfully not exit on a nil error",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("fatalIfErr()", func() {
+			g.It(test.TestDescription, func() {
+				fatalIfErr(test.InputLog, test.InputErr)
+				g.Assert(true).IsTrue()
 			})
 		})
 	}

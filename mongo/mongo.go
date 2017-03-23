@@ -69,16 +69,16 @@ func ValidateConfig(config Config) error {
 		return errors.New("mongo DBUser must be set")
 	}
 	if config.MongoDBPassword == "" {
-		return errors.New("mongo DBPassword must be set.")
+		return errors.New("mongo DBPassword must be set")
 	}
 	if config.MongoDBHost == "" {
-		return errors.New("mongo DBHost must be set.")
+		return errors.New("mongo DBHost must be set")
 	}
 	if config.MongoDBPort == "" {
-		return errors.New("mongo DBPort must be set.")
+		return errors.New("mongo DBPort must be set")
 	}
 	if config.MongoDB == "" {
-		return errors.New("mongo DB must be set.")
+		return errors.New("mongo DB must be set")
 	}
 	return nil
 }
