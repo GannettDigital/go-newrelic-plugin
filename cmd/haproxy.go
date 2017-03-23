@@ -12,7 +12,7 @@ func init() {
 
 var haproxyCmd = &cobra.Command{
 	Use:   "haproxy",
-	Short: "execute an haproxy collection",
+	Short: "execute a haproxy collection",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("haproxy collection")
 		haproxy.Run(log, prettyPrint, status.GetInfo().Version)

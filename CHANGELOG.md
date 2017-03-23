@@ -3,6 +3,10 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.6.0
+
+Seth Dozier - PAAS-4877 Initial HAProxy plugin
+
 # 0.5.1
 
 Michael Dunton - PAAS-5254 Fix event_type issue for couchbase
