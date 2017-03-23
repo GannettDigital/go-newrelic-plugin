@@ -14,7 +14,7 @@ import (
 
 var runner utilsHTTP.HTTPRunner
 
-const EVENT_TYPE string = "DataStoreSample"
+const EVENT_TYPE string = "DatastoreSample"
 const NAME string = "couchbase"
 const PROVIDER string = "couchbase" //we might want to make this an env tied to nginx version or app name maybe...
 const PROTOCOL_VERSION string = "1"
@@ -290,7 +290,7 @@ func avgFloat32Sample(sampleSet []float32) (result float32) {
 
 func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bucketInfoMap map[string]interface{}) {
 	return map[string]interface{}{
-		"event_type":                                         "LoadBalancerSample",
+		"event_type":                                         EVENT_TYPE,
 		"provider":                                           PROVIDER,
 		"couchbase.by_bucket.name":                           completeBucketInfo.bucketInfo.Name,
 		"couchbase.by_bucket.avg_bg_wait_time":               avgIntSample(completeBucketInfo.bucketStats.OP.Samples.AVGBGWaitTime),
@@ -350,7 +350,7 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 
 func formatBucketInfoEPStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bucketInfoMap map[string]interface{}) {
 	return map[string]interface{}{
-		"event_type":                                          "LoadBalancerSample",
+		"event_type":                                          EVENT_TYPE,
 		"provider":                                            PROVIDER,
 		"couchbase.by_bucket.name":                            completeBucketInfo.bucketInfo.Name,
 		"couchbase.by_bucket.ep_bg_fetched":                   avgIntSample(completeBucketInfo.bucketStats.OP.Samples.EPBGFetched),

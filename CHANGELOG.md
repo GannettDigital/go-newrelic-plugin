@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.5.1
+
+Michael Dunton - PAAS-5254 Fix event_type issue for couchbase
+
 # 0.5.0
 
 Michael Dunton  - PAAS-5131 Adding Mongo collector
