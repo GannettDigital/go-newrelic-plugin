@@ -1,0 +1,14 @@
+name: com.gannettdigital.haproxy
+description: Reports HAProxy metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/haproxy
+    prefix: gannett
+    interval: 15
+    env:
+      HAPROXYPORT: "8000"
+      HAPROXYSTATUSURI: haproxy
+      HAPROXYHOST: http://localhost
