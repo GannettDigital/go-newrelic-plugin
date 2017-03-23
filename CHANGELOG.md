@@ -3,10 +3,6 @@ go-api-skeleton CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 0.5.0
-
-Seth Dozier - PAAS-4877 initial HAProxy support
-
 # 0.4.0
 
 Alex Lindeman - PAAS-4898 Add Jenkins plugin
