@@ -1,0 +1,16 @@
+name: com.gannettdigital.mongo
+description: Reports mongo metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/go-newrelic-plugin mongo
+    prefix: gannett
+    interval: 15
+    env:
+      MONGODB_USER: "gdMonitor"
+      MONGODB_PASSWORD: "gdPass"
+      MONGODB_HOST: "localhost"
+      MONGODB_PORT: "27017"
+      MONGODB_DB: 'admin'
