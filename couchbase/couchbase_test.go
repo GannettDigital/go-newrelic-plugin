@@ -95,6 +95,8 @@ func TestGetCouchClusterStats(t *testing.T) {
 				g.Assert(getCouchBucketStatsError).Equal(nil)
 				g.Assert(len(couchBucketResponses)).Equal(1)
 				g.Assert(couchBucketResponses[0]["couchbase.cluster.hdd.free"]).Equal(int64(55555))
+				g.Assert(couchBucketResponses[0]["event_type"]).Equal(EVENT_TYPE)
+				g.Assert(couchBucketResponses[0]["provider"]).Equal(PROVIDER)
 			})
 		})
 	}
