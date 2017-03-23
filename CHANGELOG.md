@@ -3,6 +3,11 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.5.0
+
+Michael Dunton  - PAAS-5131 Adding Mongo collector
+                - Adding a helper file to do the outputJSON to reduce code copy.          
+
 # 0.4.0
 
 Alex Lindeman - PAAS-4898 Add Jenkins plugin
