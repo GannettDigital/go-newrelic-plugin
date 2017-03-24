@@ -20,10 +20,12 @@ Usage:
 Available Commands:
   couchbase   execute a couchbase collection
   help        Help about any command
+  haproxy     execute a haproxy collection
+  jenkins     execute a jenkins collection
+  mongo       execute a mongo collection
   nginx       execute an nginx collection
   rabbitmq    execute a rabbitmq collection
-  jenkins     execute a jenkins collection
-  haproxy     execute a haproxy collection
+  redis       execute a redis collection
   version     Print the version of go-newrelic-plugin
 
 Flags:
@@ -31,13 +33,13 @@ Flags:
       --verbose        verbose output
 ```
 
-All of the commands besides [root.go]('./cmd/root.go') follow the same basic pattern. Import your collector and call the `Run` function. You can model your command function off of the skel.go command. Just make sure you update the `Use` and `Short` keys. `Use` is the name of the command and it should match the name of your collector. `Short` is a description of your collector. Both of these will show up in the help command output.
+All of the commands besides [root.go](cmd/root.go) follow the same basic pattern. Import your collector and call the `Run` function. You can model your command function off of the skel.go command. Just make sure you update the `Use` and `Short` keys. `Use` is the name of the command and it should match the name of your collector. `Short` is a description of your collector. Both of these will show up in the help command output.
 
 ### Collectors
 
 Collectors are designed to collect the stats for a given technology and report back to the newrelic infrastructure app. In general, collector development is where contributors will be spending their time.
 
-Each collector is its own package. Take a look at the [skel package](''./skel/skel.go') The entry point to this package is `Run(log *logrus.Logger, prettyPrint bool, version string)`
+Each collector is its own package. Take a look at the [skel package](skel/skel.go) The entry point to this package is `Run(log *logrus.Logger, prettyPrint bool, version string)`
 Your collector's Run method will be called everytime New Relic requests stats.
 
 Once your function is created, you can begin development of the logic for collecting and reporting stats of your specific technology.
@@ -81,12 +83,13 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 
 
 ## Available Collectors
-* [nginx]('./nginx/nginx.go')
-* [rabbitmq]('./rabbitmq/rabbitmq.go')
-* [couchbase]('./couchbase/couchbase.go')
-* [jenkins]('./jenkins/jenkins.go')
-* [redis]('./redis/redis.go')
-* [haproxy]('./haproxy/haproxy.go')
+* [nginx](nginx/nginx.go)
+* [rabbitmq](rabbitmq/rabbitmq.go)
+* [couchbase](couchbase/couchbase.go)
+* [jenkins](jenkins/jenkins.go)
+* [redis](redis/redis.go)
+* [mongo](mongo/mongo.go)
+* [haproxy](haproxy/haproxy.go)
 
 #### Contributing
 
