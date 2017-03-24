@@ -20,6 +20,7 @@ Usage:
 Available Commands:
   couchbase   execute a couchbase collection
   help        Help about any command
+  haproxy     execute a haproxy collection
   jenkins     execute a jenkins collection
   mongo       execute a mongo collection
   nginx       execute an nginx collection
@@ -88,6 +89,7 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 * [jenkins]('./jenkins/jenkins.go')
 * [redis]('./redis/redis.go')
 * [mongo]('./mongo/mongo.go')
+* [haproxy]('./haproxy/haproxy.go')
 
 #### Contributing
 

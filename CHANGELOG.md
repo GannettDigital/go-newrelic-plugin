@@ -3,9 +3,13 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 0.5.3
+# 0.6.1
 
 Michael Dunton - PAAS-5116 Updating readme and fixing event type issue on mongo
+
+# 0.6.0
+
+Seth Dozier - PAAS-4877 Initial HAProxy plugin
 
 # 0.5.2
 
