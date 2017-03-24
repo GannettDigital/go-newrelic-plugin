@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.6.2
+
+Alex Lindeman - PAAS-4898 use helper `OutputJSON` method instead of own implementation in Jenkins collector
+
 # 0.6.1
 
 Michael Dunton - PAAS-5116 Updating readme and fixing event type issue on mongo

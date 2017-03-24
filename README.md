@@ -64,10 +64,8 @@ The important thing to note with the config is the env section. All of your conf
 
 **Important**: In order to test your application you should export the variables you setup in your ~/.profile of ~/.bash_profile
 
-
-
-
 ### Standards
+
 ###### Naming
 Your collector should be named after the technology you are gathering metrics for. If you were developing nginx, you collector would live in a file called `nginx.go` and live in a folder `nginx`
 
