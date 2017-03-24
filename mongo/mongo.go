@@ -9,7 +9,7 @@ import (
 )
 
 const NAME string = "mongo"
-const EVENT_TYPE string = "DataStoreSample"
+const EVENT_TYPE string = "DatastoreSample"
 const PROVIDER string = "mongo"
 const PROTOCOL_VERSION string = "1"
 
