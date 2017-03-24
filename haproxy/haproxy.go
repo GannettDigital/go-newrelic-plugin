@@ -3,6 +3,7 @@ package haproxy
 import (
 	"bytes"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -67,7 +68,10 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		HaproxyStatusURI: os.Getenv("HAPROXYSTATUSURI"),
 		HaproxyHost:      os.Getenv("HAPROXYHOST"),
 	}
-	validateConfig(log, config)
+	validErr := validateConfig(log, config)
+	if validErr != nil {
+		log.Fatalf("config: %v\n", validErr)
+	}
 
 	metric, err := getHaproxyStatus(log, config)
 	fatalIfErr(log, err)
@@ -208,13 +212,17 @@ func toInt64(log *logrus.Logger, value string) int64 {
 	return valueInt
 }
 
-func validateConfig(log *logrus.Logger, config HaConfig) {
+func validateConfig(log *logrus.Logger, config HaConfig) error {
 	if config.HaproxyStatusURI == "" {
-		log.Fatal("Config Yaml is missing values. Please check the config to continue")
+		return errors.New("Config is missing the HaproxyStatusURI. Please check the config to continue")
 	}
 	if config.HaproxyPort == "" {
-
+		return errors.New("Config is missing the HaproxyPort for the HTTP status page. Please check the config to continue")
 	}
+	if config.HaproxyHost == "" {
+		return errors.New("Config is missing the HaproxyHost. Please check the config to continue")
+	}
+	return nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
