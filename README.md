@@ -76,7 +76,7 @@ Your collectors module should export a function called `Run` and accepts 3 param
 In the event that your collector has an error in retrieving stats and you are unable to report stats back, you should os.Exit(-1) or anything but zero to tell the newrelic agent their was an issue and to disregard any reported stats.
 
 ### New Relic Standards
-Here you will find the [infrastructure Plugins and Agents SDK Draft](https://confluence.gannett.com/download/attachments/215789690/vs00190_Summary_Plan_Description_VS00190_SPD.pdf.pdf?api=v2)
+Here you will find the [infrastructure Plugins and Agents SDK Draft](https://confluence.gannett.com/download/attachments/215789690/ExternalInfrastructurePluginsandAgentsSDKdraft.pdf?api=v2)
 This document outlines the extensibility mechanism built into the New Relic Infrastructure (NRI) Agent that allows you to add new sources of data to your Infrastructure account.
 
 
