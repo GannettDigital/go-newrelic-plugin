@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.6.2
+
+Michael Dunton - PAAS-5116 Updating readme with correct link to newrelic plugin spec
+
 # 0.6.1
 
 Michael Dunton - PAAS-5116 Updating readme and fixing event type issue on mongo
