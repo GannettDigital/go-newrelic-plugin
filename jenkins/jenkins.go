@@ -1,23 +1,27 @@
 package jenkins
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
 	"github.com/bndr/gojenkins"
 )
 
-const NAME string = "jenkins"
-const PROVIDER string = "jenkins"
-const PROTOCOL_VERSION string = "1"
+// CollectorName - the name of this thing
+const CollectorName string = "jenkins"
 
-// JenkinsConfig is the keeper of the config
-type JenkinsConfig struct {
+// ProviderName - what app is sending the data
+const ProviderName string = "jenkins"
+
+// ProtocolVersion - nr-infra protocol version
+const ProtocolVersion string = "1"
+
+// Config stores the config to connect to the Jenkins master from which data will be retrieved
+type Config struct {
 	JenkinsAPIUser string
 	JenkinsAPIKey  string
 	JenkinsHost    string
@@ -45,6 +49,7 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
+// JobMetric stores metrics from jobs
 type JobMetric struct {
 	EntityName          string    `json:"entity_name"`
 	EventType           string    `json:"event_type"`
@@ -64,6 +69,7 @@ type JobMetric struct {
 	TestsSkipped        int       `json:"jenkins.job.testsSkipped"`
 }
 
+// NodeMetric stores metrics from build nodes
 type NodeMetric struct {
 	EntityName string `json:"entity_name"`
 	EventType  string `json:"event_type"`
@@ -73,37 +79,13 @@ type NodeMetric struct {
 	Executors  int    `json:"jenkins.node.executors"`
 }
 
-// OutputJSON takes an object and prints it as a JSON string to the stdout.
-// If the pretty attribute is set to true, the JSON will be idented for easy reading.
-func OutputJSON(data interface{}, pretty bool) error {
-	var output []byte
-	var err error
-
-	if pretty {
-		output, err = json.MarshalIndent(data, "", "\t")
-	} else {
-		output, err = json.Marshal(data)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Error outputting JSON: %s", err)
-	}
-
-	if string(output) == "null" {
-		fmt.Println("[]")
-	} else {
-		fmt.Println(string(output))
-	}
-
-	return nil
-}
-
+// Run connects to Jenkins, grabs data, and prints it to stdout
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
-		Name:            NAME,
-		ProtocolVersion: PROTOCOL_VERSION,
+		Name:            CollectorName,
+		ProtocolVersion: ProtocolVersion,
 		PluginVersion:   version,
 		Inventory:       make(map[string]InventoryData),
 		Metrics:         make([]MetricData, 0),
@@ -112,45 +94,48 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 
 	// get config from env vars
-	var config = JenkinsConfig{
+	var config = Config{
 		JenkinsHost:    os.Getenv("JENKINS_HOST"),
 		JenkinsAPIUser: os.Getenv("JENKINS_API_USER"),
 		JenkinsAPIKey:  os.Getenv("JENKINS_API_KEY"),
 	}
-	validErr := validateConfig(log, config)
+	validErr := validateConfig(config)
 	if validErr != nil {
-		log.Fatalf("config: %v\n", validErr)
+		log.WithError(validErr).Error("Error with configuration")
+		return
 	}
 
 	jenkins, jenkinsErr := getJenkins(config).Init()
 	if jenkinsErr != nil {
-		log.WithError(jenkinsErr).Fatal("Error connecting to Jenkins")
+		log.WithError(jenkinsErr).Error("Error connecting to Jenkins")
+		return
 	}
 
 	metrics, metricsErr := getMetrics(log, jenkins)
-	fatalIfErr(log, metricsErr)
-
+	if metricsErr != nil {
+		log.WithError(metricsErr).Error("Error collecting metrics")
+		return
+	}
 	data.Metrics = append(data.Metrics, metrics...)
-	fatalIfErr(log, OutputJSON(data, prettyPrint))
+
+	outputErr := helpers.OutputJSON(data, prettyPrint)
+	if outputErr != nil {
+		log.WithError(outputErr).Error("Error formatting output JSON")
+		return
+	}
 }
 
-func validateConfig(log *logrus.Logger, config JenkinsConfig) error {
+func validateConfig(config Config) error {
 	if config.JenkinsHost == "" {
-		return errors.New("JENKINS_HOST must be set")
+		return fmt.Errorf("JENKINS_HOST must be set")
 	}
 	if config.JenkinsAPIUser != "" && config.JenkinsAPIKey == "" {
-		return errors.New("you must also set JENKINS_API_KEY when JENKINS_API_USER is set")
+		return fmt.Errorf("You must also set JENKINS_API_KEY if JENKINS_API_USER is set")
 	}
 	if config.JenkinsAPIUser == "" && config.JenkinsAPIKey != "" {
-		return errors.New("you must also set JENKINS_API_USER when JENKINS_API_KEY is set")
+		return fmt.Errorf("You must also set JENKINS_API_USER if JENKINS_API_KEY is set")
 	}
 	return nil
-}
-
-func fatalIfErr(log *logrus.Logger, err error) {
-	if err != nil {
-		log.WithError(err).Fatal("can't continue")
-	}
 }
 
 func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) ([]MetricData, error) {
@@ -199,7 +184,7 @@ func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) ([]MetricData, e
 	return records, nil
 }
 
-func getJenkins(config JenkinsConfig) *gojenkins.Jenkins {
+func getJenkins(config Config) *gojenkins.Jenkins {
 	return gojenkins.CreateJenkins(
 		config.JenkinsHost,
 		config.JenkinsAPIUser,
