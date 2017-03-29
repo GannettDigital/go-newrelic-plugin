@@ -125,12 +125,13 @@ func getHaproxyStatus(log *logrus.Logger, haproxyConf Config) ([]MetricData, err
 		}).Error("Encountered error querying Stats")
 		return nil, err
 	}
-	Stats := make([]MetricData, len(InitialStats))
+	Stats := make([]MetricData, 0)
 	for _, record := range InitialStats {
 		if record[0] == "http_frontend" {
 			Stats = append(Stats, MetricData{
 				"event_type":                        EVENT_TYPE,
 				"provider":                          PROVIDER,
+				"haproxy.type":                      "frontend",
 				"haproxy.frontend.session.current":  toInt(log, record[4]),
 				"haproxy.frontend.session.max":      toInt(log, record[5]),
 				"haproxy.frontend.session.limit":    toInt(log, record[6]),
@@ -151,6 +152,9 @@ func getHaproxyStatus(log *logrus.Logger, haproxyConf Config) ([]MetricData, err
 			})
 		} else if record[0] != "stats" && record[1] == "BACKEND" {
 			Stats = append(Stats, MetricData{
+				"event_type":                          EVENT_TYPE,
+				"provider":                            PROVIDER,
+				"haproxy.type":                        "backend",
 				"haproxy.backend.queue.current":       toInt(log, record[2]),
 				"haproxy.backend.queue.max":           toInt(log, record[3]),
 				"haproxy.backend.session.current":     toInt(log, record[4]),
