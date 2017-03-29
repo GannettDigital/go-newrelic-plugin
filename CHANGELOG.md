@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.6.5
+
+Seth Dozier - PAAS-5255 cleanup config verbiage and fix pointer for successful haproxy integration tests
+
 # 0.6.4
 
 Alex Lindeman - PAAS-4898 change Jenkins event types to `CIJobSample` and `CIWorkerSample` and fix time units
