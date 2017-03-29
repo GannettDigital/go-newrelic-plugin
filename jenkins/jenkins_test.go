@@ -1,7 +1,6 @@
 package jenkins
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -68,24 +67,6 @@ func TestGetJenkins(t *testing.T) {
 	})
 }
 
-func TestRun(t *testing.T) {
-	g := goblin.Goblin(t)
-	g.Describe("jenkins Run()", func() {
-		buf := new(bytes.Buffer)
-		oldLogOut := fakeLog.Out
-		g.Before(func() {
-			fakeLog.Out = buf
-		})
-		Run(fakeLog, false, ProtocolVersion)
-		g.It("should run without errors", func() {
-			g.Assert(buf.Len()).Equal(0)
-		})
-		g.After(func() {
-			fakeLog.Out = oldLogOut
-		})
-	})
-}
-
 func TestGetMetrics(t *testing.T) {
 	g := goblin.Goblin(t)
 	fakeJenkins := fakeJenkins()
@@ -119,30 +100,30 @@ func TestGetJobStats(t *testing.T) {
 	g.Describe("jenkins getJobStats()", func() {
 		expected := map[string]JobMetric{
 			"with build and test data": {
-				EntityName:          "foo",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
-				TestsDurationSecond: 2,
-				TestsSuites:         1,
-				Tests:               3,
-				TestsPassed:         2,
-				TestsFailed:         1,
-				TestsSkipped:        0,
+				EntityName:      "foo",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
+				TestsDurationMs: 2,
+				TestsSuites:     1,
+				Tests:           3,
+				TestsPassed:     2,
+				TestsFailed:     1,
+				TestsSkipped:    0,
 			},
 			"with only build data": {
-				EntityName:          "bar",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
+				EntityName:      "bar",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
 			},
 			"with no data": {
 				EntityName: "baz",
@@ -165,43 +146,43 @@ func TestGetAllJobStats(t *testing.T) {
 	g.Describe("jenkins getAllJobStats()", func() {
 		expected := []JobMetric{
 			{
-				EntityName:          "foo",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
-				TestsDurationSecond: 2,
-				TestsSuites:         1,
-				Tests:               3,
-				TestsPassed:         2,
-				TestsFailed:         1,
-				TestsSkipped:        0,
+				EntityName:      "foo",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
+				TestsDurationMs: 2,
+				TestsSuites:     1,
+				Tests:           3,
+				TestsPassed:     2,
+				TestsFailed:     1,
+				TestsSkipped:    0,
 			},
 			{
-				EntityName:          "bar",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
+				EntityName:      "bar",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
 			},
 			{
 				EntityName: "baz",
 			},
 			{
-				EntityName:          "baz/qux",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
+				EntityName:      "baz/qux",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
 			},
 		}
 		res, err := getAllJobStats(fakeLog, fakeJenkins)
