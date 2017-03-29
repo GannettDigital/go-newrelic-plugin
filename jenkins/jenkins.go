@@ -51,22 +51,22 @@ type PluginData struct {
 
 // JobMetric stores metrics from jobs
 type JobMetric struct {
-	EntityName          string    `json:"entity_name"`
-	EventType           string    `json:"event_type"`
-	Provider            string    `json:"provider"`
-	Health              int       `json:"jenkins.job.health"`
-	BuildNumber         int       `json:"jenkins.job.buildNumber"`
-	BuildRevision       string    `json:"jenkins.job.buildRevision"`
-	BuildDate           time.Time `json:"jenkins.job.buildDate"`
-	BuildResult         string    `json:"jenkins.job.buildResult"`
-	BuildDurationSecond int       `json:"jenkins.job.buildDurationSecond"`
-	BuildArtifacts      int       `json:"jenkins.job.buildArtifacts"`
-	TestsDurationSecond int       `json:"jenkins.job.testsDurationSecond"`
-	TestsSuites         int       `json:"jenkins.job.testsSuites"`
-	Tests               int       `json:"jenkins.job.tests"`
-	TestsPassed         int       `json:"jenkins.job.testsPassed"`
-	TestsFailed         int       `json:"jenkins.job.testsFailed"`
-	TestsSkipped        int       `json:"jenkins.job.testsSkipped"`
+	EntityName      string    `json:"entity_name"`
+	EventType       string    `json:"event_type"`
+	Provider        string    `json:"provider"`
+	Health          int       `json:"jenkins.job.health"`
+	BuildNumber     int       `json:"jenkins.job.buildNumber"`
+	BuildRevision   string    `json:"jenkins.job.buildRevision"`
+	BuildDate       time.Time `json:"jenkins.job.buildDate"`
+	BuildResult     string    `json:"jenkins.job.buildResult"`
+	BuildDurationMs int       `json:"jenkins.job.buildDurationMillisecond"`
+	BuildArtifacts  int       `json:"jenkins.job.buildArtifacts"`
+	TestsDurationMs int       `json:"jenkins.job.testsDurationMillisecond"`
+	TestsSuites     int       `json:"jenkins.job.testsSuites"`
+	Tests           int       `json:"jenkins.job.tests"`
+	TestsPassed     int       `json:"jenkins.job.testsPassed"`
+	TestsFailed     int       `json:"jenkins.job.testsFailed"`
+	TestsSkipped    int       `json:"jenkins.job.testsSkipped"`
 }
 
 // NodeMetric stores metrics from build nodes
@@ -90,7 +90,6 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Inventory:       make(map[string]InventoryData),
 		Metrics:         make([]MetricData, 0),
 		Events:          make([]EventData, 0),
-		Status:          "ok",
 	}
 
 	// get config from env vars
@@ -147,22 +146,22 @@ func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) ([]MetricData, e
 	}
 	for _, job := range jobData {
 		records = append(records, MetricData{
-			"entity_name":                     job.EntityName,
-			"event_type":                      "DatastoreSample",
-			"provider":                        "jenkins.job",
-			"jenkins.job.health":              job.Health,
-			"jenkins.job.buildNumber":         job.BuildNumber,
-			"jenkins.job.buildRevision":       job.BuildRevision,
-			"jenkins.job.buildDate":           job.BuildDate,
-			"jenkins.job.buildResult":         job.BuildResult,
-			"jenkins.job.buildDurationSecond": job.BuildDurationSecond,
-			"jenkins.job.buildArtifacts":      job.BuildArtifacts,
-			"jenkins.job.testsDurationSecond": job.TestsDurationSecond,
-			"jenkins.job.testsSuites":         job.TestsSuites,
-			"jenkins.job.tests":               job.Tests,
-			"jenkins.job.testsPassed":         job.TestsPassed,
-			"jenkins.job.testsFailed":         job.TestsFailed,
-			"jenkins.job.testsSkipped":        job.TestsSkipped,
+			"entity_name":                          job.EntityName,
+			"event_type":                           "CIJobSample",
+			"provider":                             "jenkins",
+			"jenkins.job.health":                   job.Health,
+			"jenkins.job.buildNumber":              job.BuildNumber,
+			"jenkins.job.buildRevision":            job.BuildRevision,
+			"jenkins.job.buildDate":                job.BuildDate,
+			"jenkins.job.buildResult":              job.BuildResult,
+			"jenkins.job.buildDurationMillisecond": job.BuildDurationMs,
+			"jenkins.job.buildArtifacts":           job.BuildArtifacts,
+			"jenkins.job.testsDurationMillisecond": job.TestsDurationMs,
+			"jenkins.job.testsSuites":              job.TestsSuites,
+			"jenkins.job.tests":                    job.Tests,
+			"jenkins.job.testsPassed":              job.TestsPassed,
+			"jenkins.job.testsFailed":              job.TestsFailed,
+			"jenkins.job.testsSkipped":             job.TestsSkipped,
 		})
 	}
 
@@ -173,8 +172,8 @@ func getMetrics(log *logrus.Logger, jenkins *gojenkins.Jenkins) ([]MetricData, e
 	for _, node := range nodeData {
 		records = append(records, MetricData{
 			"entity_name":            node.EntityName,
-			"event_type":             "LoadBalancerSample",
-			"provider":               "jenkins.node",
+			"event_type":             "CIWorkerSample",
+			"provider":               "jenkins",
 			"jenkins.node.online":    node.Online,
 			"jenkins.node.idle":      node.Idle,
 			"jenkins.node.executors": node.Executors,
@@ -262,7 +261,7 @@ func getJobStats(job gojenkins.Job) JobMetric {
 		record.BuildRevision = build.GetRevision()
 		record.BuildDate = build.GetTimestamp()
 		record.BuildResult = strings.ToLower(build.GetResult())
-		record.BuildDurationSecond = int(build.GetDuration())
+		record.BuildDurationMs = int(build.GetDuration())
 		record.BuildArtifacts = len(build.GetArtifacts())
 
 		tests, testsErr := build.GetResultSet()
@@ -271,7 +270,7 @@ func getJobStats(job gojenkins.Job) JobMetric {
 			for _, suite := range tests.Suites {
 				totalTests += len(suite.Cases)
 			}
-			record.TestsDurationSecond = int(tests.Duration)
+			record.TestsDurationMs = int(tests.Duration)
 			record.Tests = totalTests
 			record.TestsSuites = len(tests.Suites)
 			record.TestsPassed = int(tests.PassCount)
