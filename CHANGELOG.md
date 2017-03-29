@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.6.6
+
+Seth Dozier - PAAS-5255 cleanup empty metrics 
+
 # 0.6.5
 
 Seth Dozier - PAAS-5255 cleanup config verbiage and fix pointer for successful haproxy integration tests
