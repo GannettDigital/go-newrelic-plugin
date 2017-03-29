@@ -9,10 +9,10 @@ import (
 	"github.com/franela/goblin"
 )
 
-var fakeConfig HaConfig
+var fakeConfig Config
 
 func init() {
-	fakeConfig = HaConfig{
+	fakeConfig = Config{
 		HaproxyPort:      "8000",
 		HaproxyStatusURI: "haproxy",
 		HaproxyHost:      "http://localhost",
