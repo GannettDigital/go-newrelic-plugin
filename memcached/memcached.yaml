@@ -1,0 +1,14 @@
+name: com.gannettdigital.memcached
+description: Reports memcached metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/memcached
+    prefix: gannett
+    interval: 15
+    env:
+      MEMCACHED_HOST: '52.87.202.38'
+      MEMCACHED_PORT: '11211'
+      COMMANDS:  'stats , stats settings , stats items , stats sizes , stats slabs , stats conns'

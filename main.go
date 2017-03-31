@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GannettDigital/go-newrelic-plugin/cmd"
+	"./cmd"
+	//       "github.com/GannettDigital/go-newrelic-plugin/cmd"
 )
 
 func main() {
