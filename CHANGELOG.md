@@ -3,9 +3,13 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.6.7
+
+Tom Barber - Remove no longer used dependencies and update paas-api-ci
+
 # 0.6.6
 
-Seth Dozier - PAAS-5255 cleanup empty metrics 
+Seth Dozier - PAAS-5255 cleanup empty metrics
 
 # 0.6.5
 
