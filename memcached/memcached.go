@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"io"
 	"net"
 	"os"
 	"regexp"
@@ -120,14 +119,16 @@ func getMetric(config MemcachedConfig) map[string]interface{} {
 func socketReader(conn net.Conn, command string, metrics map[string]interface{}) {
 	log.Debug(fmt.Sprintf("socketReader: command: %s", command))
 	fmt.Fprintf(conn, "%s\r\n", command)
-	var buffer bytes.Buffer
-	n, err := io.Copy(&buffer, conn)
-	if err != nil {
-		log.WithError(err).Error("Error copying result")
-	}
-	log.Debug(fmt.Sprintf("socketReader: Read: n: %s"), n)
 
-	for _, result := range strings.Split(buffer.String(), "\r\n") {
+	scanner := bufio.NewScanner(bufio.NewReader(conn))
+	log.Debug(fmt.Sprintf("socketReader: scanner"))
+	for scanner.Scan() {
+		log.Debug(fmt.Sprintf("socketReader: scanning..."))
+
+		if err := scanner.Err(); err != nil {
+			log.WithError(err).Error("reading scanning connection")
+		}
+		result := strings.TrimSuffix(scanner.Text(), "\r")
 		log.Debug(fmt.Sprintf("socketReader: result: %s", result))
 		if strings.Compare("END", result) == 0 {
 			break
@@ -135,30 +136,7 @@ func socketReader(conn net.Conn, command string, metrics map[string]interface{})
 		line := strings.Split(result, " ")
 
 		name := metricName(command, line[1])
-		metrics[name] = asValue(line[2])
-	}
-}
-
-func socketReader2(conn net.Conn, command string, metrics map[string]interface{}) {
-	log.Debug(fmt.Sprintf("socketReader: command: %s", command))
-	fmt.Fprintf(conn, "%s\r\n", command)
-
-	for {
-		log.Debug(fmt.Sprintf("socketReader: ReadLine()"))
-		result, err := bufio.NewReader(conn).ReadString('\n')
-		if err != nil {
-			log.WithError(err).Error(fmt.Sprintf("Error reading command result: %s", command))
-			break
-		}
-		log.Debug(fmt.Sprintf("socketReader: result: %s", result))
-		metric := string(result[:])
-		if strings.Compare("END", metric) == 0 {
-			break
-		}
-		line := strings.Split(metric, " ")
-
-		name := metricName(command, line[1])
-		metrics[name] = asValue(line[2])
+		metrics[name] = asValue(strings.Join(line[2:]," "))
 	}
 }
 
