@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.6.8
+
+Mike Summers - add memcached plugin
+
 # 0.6.7
 
 Tom Barber - Remove no longer used dependencies and update paas-api-ci
