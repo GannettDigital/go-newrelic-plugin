@@ -7,7 +7,6 @@ import (
 )
 
 func init() {
-	log.Info("cmd/memcached.init()")
 	RootCmd.AddCommand(memcachedCmd)
 }
 
