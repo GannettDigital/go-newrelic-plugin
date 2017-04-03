@@ -77,8 +77,6 @@ var log *logrus.Logger
 
 func Run(LOG *logrus.Logger, prettyPrint bool, version string) {
 	log = LOG
-	//log.SetLevel(log.DebugLevel)
-	log.Level = logrus.DebugLevel
 	// Initialize the output structure
 	var data = PluginData{
 		Name:            NAME,
