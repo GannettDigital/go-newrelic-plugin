@@ -14,8 +14,10 @@ import (
 )
 
 const NAME string = "memcached"
-const PROVIDER string = "memcached" //we might want to make this an env tied to nginx version or app name maybe...
+const PROVIDER string = "memcached"
 const PROTOCOL_VERSION string = "1"
+const PLUGIN_VERSION string = "1.0.0"
+const STATUS string = "OK"
 
 //MemcachedConfig is the keeper of the config
 type MemcachedConfig struct {
@@ -40,10 +42,10 @@ type PluginData struct {
 	Name            string                   `json:"name"`
 	ProtocolVersion string                   `json:"protocol_version"`
 	PluginVersion   string                   `json:"plugin_version"`
+	Status          string                   `json:"status"`
 	Metrics         []MetricData             `json:"metrics"`
 	Inventory       map[string]InventoryData `json:"inventory"`
 	Events          []EventData              `json:"events"`
-	Status          string                   `json:"status"`
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -80,10 +82,11 @@ func Run(LOG *logrus.Logger, prettyPrint bool, version string) {
 	// Initialize the output structure
 	var data = PluginData{
 		Name:            NAME,
+		PluginVersion:   PLUGIN_VERSION,
 		ProtocolVersion: PROTOCOL_VERSION,
-		PluginVersion:   version,
-		Inventory:       make(map[string]InventoryData),
+		Status:          STATUS,
 		Metrics:         make([]MetricData, 0),
+		Inventory:       make(map[string]InventoryData),
 		Events:          make([]EventData, 0),
 	}
 
@@ -136,7 +139,7 @@ func socketReader(conn net.Conn, command string, metrics map[string]interface{})
 		line := strings.Split(result, " ")
 
 		name := metricName(command, line[1])
-		metrics[name] = asValue(strings.Join(line[2:]," "))
+		metrics[name] = asValue(strings.Join(line[2:], " "))
 	}
 }
 
@@ -154,10 +157,11 @@ func metricName(command string, metric string) string {
 	return result
 }
 
-var camelingRegex = regexp.MustCompile("[0-9A-Za-z]+")
+var camelingRegex = regexp.MustCompile("[0-9A-Za-z.]+")
 
 func camelCase(src string) string {
 	log.Debug(fmt.Sprintf("camelCase: src: %s", src))
+	src = strings.Replace(src, ":", ".", -1)
 	byteSrc := []byte(src)
 	chunks := camelingRegex.FindAll(byteSrc, -1)
 	for idx, val := range chunks {
