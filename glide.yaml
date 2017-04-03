@@ -10,14 +10,6 @@ import:
   repo: git@github.com:GannettDigital/paas-api-utils.git
   version: =2.0.0
   vcs: git
-- package: github.com/GannettDigital/logrus-custom-formatter
-  version: ^0.0.2
-  repo: git@github.com:GannettDigital/logrus-custom-formatter
-  vcs: git
-- package: github.com/GannettDigital/goFigure
-  version: ^1.0.4
-  repo: git@github.com:GannettDigital/goFigure
-  vcs: git
 - package: github.com/GannettDigital/goStateModule
   repo: git@github.com:GannettDigital/goStateModule.git
   version: ^2.0.0
