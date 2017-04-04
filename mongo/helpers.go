@@ -18,7 +18,7 @@ func NewMockSession(mockSessionResults MockSessionResults, mockDatabaseResults m
 
 func formatDBStatsStructToMap(dbStats dbStats) (dbInfoMap map[string]interface{}) {
 	return map[string]interface{}{
-		"event_type":           "LoadBalancerSample",
+		"event_type":           EVENT_TYPE,
 		"provider":             PROVIDER,
 		"mongo.db.name":        dbStats.DB,
 		"mongo.db.collections": dbStats.Collections,
@@ -34,7 +34,7 @@ func formatDBStatsStructToMap(dbStats dbStats) (dbInfoMap map[string]interface{}
 
 func formatServerStatsStructToMap(serverStatus serverStatus) (dbInfoMap map[string]interface{}) {
 	return map[string]interface{}{
-		"event_type":                                                              "LoadBalancerSample",
+		"event_type":                                                              EVENT_TYPE,
 		"provider":                                                                PROVIDER,
 		"mongo.server.host":                                                       serverStatus.Host,
 		"mongo.server.version":                                                    serverStatus.Version,
