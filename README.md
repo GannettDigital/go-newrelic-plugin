@@ -24,6 +24,7 @@ Available Commands:
   jenkins     execute a jenkins collection
   memcached   execute a memcached collection
   mongo       execute a mongo collection
+  mysql       execute a mongo collection
   nginx       execute an nginx collection
   rabbitmq    execute a rabbitmq collection
   redis       execute a redis collection
@@ -90,6 +91,7 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 * [mongo](mongo/mongo.go)
 * [haproxy](haproxy/haproxy.go)
 * [memcached](memcached/memcached.go)
+* [mysql](mysql/mysql.go)
 
 #### Contributing
 

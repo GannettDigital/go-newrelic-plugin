@@ -3,9 +3,9 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 0.6.8
+# 0.7.0
 
-Mike Summers - add memcached plugin
+Mike Summers - add memcached & MySQL plugins
 
 # 0.6.7
 
