@@ -1,4 +1,4 @@
-package skel
+package zookeeper
 
 import (
 	"encoding/json"
@@ -8,8 +8,8 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-const NAME string = "skel"
-const PROVIDER string = "skel" //we might want to make this an env tied to nginx version or app name maybe...
+const NAME string = "zookeeper"
+const PROVIDER string = "zookeeper" //we might want to make this an env tied to nginx version or app name maybe...
 const PROTOCOL_VERSION string = "1"
 
 //SkelConfig is the keeper of the config
@@ -91,7 +91,7 @@ func getMetric(log *logrus.Logger, config SkelConfig) map[string]interface{} {
 	return map[string]interface{}{
 		"event_type": "LoadBalancerSample",
 		"provider":   PROVIDER,
-		"skel.stat":  1,
+		"zookeeper.stat":  1,
 	}
 }
 

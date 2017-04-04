@@ -1,11 +1,11 @@
-name: com.gannettdigital.skel
+name: com.gannettdigital.zookeeper
 description: Reports Skel metrics
 protocol_version: 1
 os: linux
 
 source:
   - command:
-     - ./bin/skel
+     - ./bin/zookeeper
     prefix: gannett
     interval: 15
     env:
