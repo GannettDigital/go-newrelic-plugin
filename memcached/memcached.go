@@ -70,26 +70,30 @@ func Run(logger *logrus.Logger, prettyPrint bool, version string) {
 	}
 	validateConfig(config)
 
-	var metric = getMetric(config)
-
+	metric, err := getMetric(config)
+	if err != nil {
+		data.Status = err.Error()
+	}
 	data.Metrics = append(data.Metrics, metric)
 	fatalIfErr(helpers.OutputJSON(data, prettyPrint), "OutputJSON error")
 }
 
-func getMetric(config MemcachedConfig) map[string]interface{} {
+func getMetric(config MemcachedConfig) (map[string]interface{}, error) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", config.MemcachedHost, config.MemcachedPort))
-	fatalIfErr(err, fmt.Sprintf("getMetric: Cannot connect to memcached %s:%s", config.MemcachedHost, config.MemcachedPort))
+	if err != nil {
+		log.WithError(err).Error(fmt.Sprintf("getMetric: Cannot connect to memcached %s:%s", config.MemcachedHost, config.MemcachedPort))
+		return nil, err
+	}
 
 	metrics := map[string]interface{}{
-		"event_type":     "DatastoreSample",
-		"provider":       PROVIDER,
-		"memcached.stat": 1,
+		"event_type": "DatastoreSample",
+		"provider":   PROVIDER,
 	}
 
 	for _, command := range strings.Split(config.Commands, ",") {
 		socketReader(conn, strings.TrimSpace(command), metrics)
 	}
-	return metrics
+	return metrics, nil
 }
 
 func socketReader(conn net.Conn, command string, metrics map[string]interface{}) {
