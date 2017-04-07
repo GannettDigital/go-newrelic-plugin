@@ -9,5 +9,6 @@ source:
     prefix: gannett
     interval: 15
     env:
-      KRAKEN_ID: null
-      KRAKEN_PATH: null
+      KRAKEN_PORT: "8140"
+      KRAKEN_STATUSURI: status
+      KRAKEN_HOST: http://localhost
