@@ -3,9 +3,39 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+=======
+
 # 0.7.0
 
 Ed De - PAAS-5120 Initial Kraken version
+
+# 0.6.8
+
+Tom Barber - update mongo plugin event_type to use correct value
+
+# 0.6.7
+
+Tom Barber - Remove no longer used dependencies and update paas-api-ci
+
+# 0.6.6
+
+Seth Dozier - PAAS-5255 cleanup empty metrics
+
+# 0.6.5
+
+Seth Dozier - PAAS-5255 cleanup config verbiage and fix pointer for successful haproxy integration tests
+
+# 0.6.4
+
+Alex Lindeman - PAAS-4898 change Jenkins event types to `CIJobSample` and `CIWorkerSample` and fix time units
+
+# 0.6.3
+
+Alex Lindeman - PAAS-4898 use helper `OutputJSON` method instead of own implementation in Jenkins collector
+
+# 0.6.2
+
+Michael Dunton - PAAS-5116 Updating readme with correct link to newrelic plugin spec
 
 # 0.6.1
 

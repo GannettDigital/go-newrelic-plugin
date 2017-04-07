@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	fakeLog           = logrus.New()
-	fakeJenkinsConfig = JenkinsConfig{
+	fakeLog    = logrus.New()
+	fakeConfig = Config{
 		JenkinsHost:    "http://jenkins.mock",
 		JenkinsAPIUser: "test-user",
 		JenkinsAPIKey:  "test-pw",
@@ -29,19 +29,19 @@ func TestValidateConfig(t *testing.T) {
 	g.Describe("jenkins validateConfig()", func() {
 		expected := map[string]struct {
 			ExpectedIsNil bool
-			Config        JenkinsConfig
+			Config        Config
 		}{
-			"no":                            {false, JenkinsConfig{}},
-			"JenkinsHost":                   {true, JenkinsConfig{JenkinsHost: "http://jenkins.mock"}},
-			"JenkinsHost, JenkinsAPIUser":   {false, JenkinsConfig{JenkinsHost: "http://jenkins.mock", JenkinsAPIUser: "test-user"}},
-			"JenkinsHost, JenkinsAPIKey":    {false, JenkinsConfig{JenkinsHost: "http://jenkins.mock", JenkinsAPIKey: "test-pw"}},
-			"JenkinsAPIUser, JenkinsAPIKey": {false, JenkinsConfig{JenkinsAPIUser: "test-user", JenkinsAPIKey: "test-pw"}},
-			"all": {true, JenkinsConfig{JenkinsHost: "http://jenkins.mock", JenkinsAPIUser: "test-user", JenkinsAPIKey: "test-pw"}},
+			"no":                            {false, Config{}},
+			"JenkinsHost":                   {true, Config{JenkinsHost: "http://jenkins.mock"}},
+			"JenkinsHost, JenkinsAPIUser":   {false, Config{JenkinsHost: "http://jenkins.mock", JenkinsAPIUser: "test-user"}},
+			"JenkinsHost, JenkinsAPIKey":    {false, Config{JenkinsHost: "http://jenkins.mock", JenkinsAPIKey: "test-pw"}},
+			"JenkinsAPIUser, JenkinsAPIKey": {false, Config{JenkinsAPIUser: "test-user", JenkinsAPIKey: "test-pw"}},
+			"all": {true, Config{JenkinsHost: "http://jenkins.mock", JenkinsAPIUser: "test-user", JenkinsAPIKey: "test-pw"}},
 		}
 		for name, ex := range expected {
 			desc := fmt.Sprintf("should return %v when %v fields are set", ex.ExpectedIsNil, name)
 			g.It(desc, func() {
-				valid := validateConfig(fakeLog, ex.Config)
+				valid := validateConfig(ex.Config)
 				g.Assert(valid == nil).Equal(ex.ExpectedIsNil)
 			})
 		}
@@ -52,7 +52,7 @@ func TestGetJenkins(t *testing.T) {
 	g := goblin.Goblin(t)
 	fakeJenkins := fakeJenkins()
 	g.Describe("jenkins getJenkins()", func() {
-		res := getJenkins(fakeJenkinsConfig)
+		res := getJenkins(fakeConfig)
 		g.It("should connect to the right Jenkins", func() {
 			g.Assert(res.Server).Equal("http://jenkins.mock")
 		})
@@ -100,30 +100,30 @@ func TestGetJobStats(t *testing.T) {
 	g.Describe("jenkins getJobStats()", func() {
 		expected := map[string]JobMetric{
 			"with build and test data": {
-				EntityName:          "foo",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
-				TestsDurationSecond: 2,
-				TestsSuites:         1,
-				Tests:               3,
-				TestsPassed:         2,
-				TestsFailed:         1,
-				TestsSkipped:        0,
+				EntityName:      "foo",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
+				TestsDurationMs: 2,
+				TestsSuites:     1,
+				Tests:           3,
+				TestsPassed:     2,
+				TestsFailed:     1,
+				TestsSkipped:    0,
 			},
 			"with only build data": {
-				EntityName:          "bar",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
+				EntityName:      "bar",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
 			},
 			"with no data": {
 				EntityName: "baz",
@@ -146,43 +146,43 @@ func TestGetAllJobStats(t *testing.T) {
 	g.Describe("jenkins getAllJobStats()", func() {
 		expected := []JobMetric{
 			{
-				EntityName:          "foo",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
-				TestsDurationSecond: 2,
-				TestsSuites:         1,
-				Tests:               3,
-				TestsPassed:         2,
-				TestsFailed:         1,
-				TestsSkipped:        0,
+				EntityName:      "foo",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
+				TestsDurationMs: 2,
+				TestsSuites:     1,
+				Tests:           3,
+				TestsPassed:     2,
+				TestsFailed:     1,
+				TestsSkipped:    0,
 			},
 			{
-				EntityName:          "bar",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
+				EntityName:      "bar",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
 			},
 			{
 				EntityName: "baz",
 			},
 			{
-				EntityName:          "baz/qux",
-				Health:              90,
-				BuildNumber:         1,
-				BuildRevision:       "abcdef1",
-				BuildDate:           time.Unix(1483228800, 0),
-				BuildResult:         "success",
-				BuildDurationSecond: 5,
-				BuildArtifacts:      1,
+				EntityName:      "baz/qux",
+				Health:          90,
+				BuildNumber:     1,
+				BuildRevision:   "abcdef1",
+				BuildDate:       time.Unix(1483228800, 0),
+				BuildResult:     "success",
+				BuildDurationMs: 5,
+				BuildArtifacts:  1,
 			},
 		}
 		res, err := getAllJobStats(fakeLog, fakeJenkins)
@@ -282,9 +282,9 @@ func TestFindChildJobs(t *testing.T) {
 
 func fakeJenkins() *gojenkins.Jenkins {
 	jenkins := gojenkins.CreateJenkins(
-		fakeJenkinsConfig.JenkinsHost,
-		fakeJenkinsConfig.JenkinsAPIUser,
-		fakeJenkinsConfig.JenkinsAPIKey,
+		fakeConfig.JenkinsHost,
+		fakeConfig.JenkinsAPIUser,
+		fakeConfig.JenkinsAPIKey,
 	)
 
 	fakeJenkinsTransport := httpmock.NewMockTransport()
@@ -333,7 +333,7 @@ func registerResponders(transport *httpmock.MockTransport) {
 	extraslash := regexp.MustCompile("([^:])//+")
 	for r := range responses {
 		match := responses[r]
-		url := extraslash.ReplaceAllString(strings.Join([]string{fakeJenkinsConfig.JenkinsHost, match.Endpoint, "api", "json"}, "/"), "$1/")
+		url := extraslash.ReplaceAllString(strings.Join([]string{fakeConfig.JenkinsHost, match.Endpoint, "api", "json"}, "/"), "$1/")
 		transport.RegisterResponder(match.Method, url, func(req *http.Request) (*http.Response, error) {
 			resp := httpmock.NewStringResponse(match.Code, match.Response)
 			resp.Header.Add("Content-Type", "application/json")

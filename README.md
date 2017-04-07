@@ -64,10 +64,8 @@ The important thing to note with the config is the env section. All of your conf
 
 **Important**: In order to test your application you should export the variables you setup in your ~/.profile of ~/.bash_profile
 
-
-
-
 ### Standards
+
 ###### Naming
 Your collector should be named after the technology you are gathering metrics for. If you were developing nginx, you collector would live in a file called `nginx.go` and live in a folder `nginx`
 
@@ -78,7 +76,7 @@ Your collectors module should export a function called `Run` and accepts 3 param
 In the event that your collector has an error in retrieving stats and you are unable to report stats back, you should os.Exit(-1) or anything but zero to tell the newrelic agent their was an issue and to disregard any reported stats.
 
 ### New Relic Standards
-Here you will find the [infrastructure Plugins and Agents SDK Draft](https://confluence.gannett.com/download/attachments/215789690/vs00190_Summary_Plan_Description_VS00190_SPD.pdf.pdf?api=v2)
+Here you will find the [infrastructure Plugins and Agents SDK Draft](https://confluence.gannett.com/download/attachments/215789690/ExternalInfrastructurePluginsandAgentsSDKdraft.pdf?api=v2)
 This document outlines the extensibility mechanism built into the New Relic Infrastructure (NRI) Agent that allows you to add new sources of data to your Infrastructure account.
 
 

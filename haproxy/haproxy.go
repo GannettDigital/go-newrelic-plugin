@@ -22,8 +22,8 @@ const PROVIDER string = "haproxy"
 const PROTOCOL_VERSION string = "1"
 const EVENT_TYPE string = "LoadBalancerSample"
 
-//HaConfig is the keeper of the config
-type HaConfig struct {
+//Config is the keeper of the config
+type Config struct {
 	HaproxyPort      string
 	HaproxyStatusURI string
 	HaproxyHost      string
@@ -51,6 +51,11 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
+func init() {
+	runner = utilsHTTP.HTTPRunnerImpl{}
+}
+
+// Run is the entry point for the collector
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	// Initialize the output structure
@@ -63,25 +68,25 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	var config = HaConfig{
+	var haproxyConf = Config{
 		HaproxyPort:      os.Getenv("HAPROXYPORT"),
 		HaproxyStatusURI: os.Getenv("HAPROXYSTATUSURI"),
 		HaproxyHost:      os.Getenv("HAPROXYHOST"),
 	}
-	validErr := validateConfig(log, config)
+	validErr := validateConfig(log, haproxyConf)
 	if validErr != nil {
 		log.Fatalf("config: %v\n", validErr)
 	}
 
-	metric, err := getHaproxyStatus(log, config)
+	metric, err := getHaproxyStatus(log, haproxyConf)
 	fatalIfErr(log, err)
 
 	data.Metrics = metric
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
-func initStats(log *logrus.Logger, config HaConfig) ([][]string, error) {
-	haproxyStatsURI := fmt.Sprintf("%v:%v/%v;csv", config.HaproxyHost, config.HaproxyPort, config.HaproxyStatusURI)
+func initStats(log *logrus.Logger, haproxyConf Config) ([][]string, error) {
+	haproxyStatsURI := fmt.Sprintf("%v:%v/%v;csv", haproxyConf.HaproxyHost, haproxyConf.HaproxyPort, haproxyConf.HaproxyStatusURI)
 	httpReq, err := http.NewRequest("GET", haproxyStatsURI, bytes.NewBuffer([]byte("")))
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -111,21 +116,22 @@ func initStats(log *logrus.Logger, config HaConfig) ([][]string, error) {
 	return everything, nil
 }
 
-func getHaproxyStatus(log *logrus.Logger, config HaConfig) ([]MetricData, error) {
-	InitialStats, err := initStats(log, config)
+func getHaproxyStatus(log *logrus.Logger, haproxyConf Config) ([]MetricData, error) {
+	InitialStats, err := initStats(log, haproxyConf)
 	if err != nil {
 		log.WithFields(logrus.Fields{
-			"haproxyConfig": config,
+			"haproxyConfig": haproxyConf,
 			"error":         err,
 		}).Error("Encountered error querying Stats")
 		return nil, err
 	}
-	Stats := make([]MetricData, len(InitialStats))
+	Stats := make([]MetricData, 0)
 	for _, record := range InitialStats {
 		if record[0] == "http_frontend" {
 			Stats = append(Stats, MetricData{
 				"event_type":                        EVENT_TYPE,
 				"provider":                          PROVIDER,
+				"haproxy.type":                      "frontend",
 				"haproxy.frontend.session.current":  toInt(log, record[4]),
 				"haproxy.frontend.session.max":      toInt(log, record[5]),
 				"haproxy.frontend.session.limit":    toInt(log, record[6]),
@@ -146,6 +152,9 @@ func getHaproxyStatus(log *logrus.Logger, config HaConfig) ([]MetricData, error)
 			})
 		} else if record[0] != "stats" && record[1] == "BACKEND" {
 			Stats = append(Stats, MetricData{
+				"event_type":                          EVENT_TYPE,
+				"provider":                            PROVIDER,
+				"haproxy.type":                        "backend",
 				"haproxy.backend.queue.current":       toInt(log, record[2]),
 				"haproxy.backend.queue.max":           toInt(log, record[3]),
 				"haproxy.backend.session.current":     toInt(log, record[4]),
@@ -212,14 +221,14 @@ func toInt64(log *logrus.Logger, value string) int64 {
 	return valueInt
 }
 
-func validateConfig(log *logrus.Logger, config HaConfig) error {
-	if config.HaproxyStatusURI == "" {
+func validateConfig(log *logrus.Logger, haproxyConf Config) error {
+	if haproxyConf.HaproxyStatusURI == "" {
 		return errors.New("Config is missing the HaproxyStatusURI. Please check the config to continue")
 	}
-	if config.HaproxyPort == "" {
+	if haproxyConf.HaproxyPort == "" {
 		return errors.New("Config is missing the HaproxyPort for the HTTP status page. Please check the config to continue")
 	}
-	if config.HaproxyHost == "" {
+	if haproxyConf.HaproxyHost == "" {
 		return errors.New("Config is missing the HaproxyHost. Please check the config to continue")
 	}
 	return nil
