@@ -1,0 +1,12 @@
+name: com.gannettdigital.zookeeper
+description: Reports Skel metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/zookeeper
+    prefix: gannett
+    interval: 15
+    env:
+      KEY: "VALUE"
