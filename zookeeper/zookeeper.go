@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
-//	"github.com/samuel/go-zookeeper"
 )
 
 const NAME string = "zookeeper"
