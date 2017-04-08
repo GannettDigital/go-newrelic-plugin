@@ -1,5 +1,5 @@
 name: com.gannettdigital.zookeeper
-description: Reports Skel metrics
+description: Reports ZooKeeper metrics
 protocol_version: 1
 os: linux
 
@@ -9,4 +9,7 @@ source:
     prefix: gannett
     interval: 15
     env:
-      KEY: "VALUE"
+      ZK_TICKTIME: 2000
+      ZK_DATADIR: "/var/zookeeper"
+      ZK_HOST: "localhost"
+      ZK_CLIENTPORT: 2181

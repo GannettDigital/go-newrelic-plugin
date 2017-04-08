@@ -6,15 +6,17 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
+//	"github.com/samuel/go-zookeeper"
 )
 
 const NAME string = "zookeeper"
 const PROVIDER string = "zookeeper" //we might want to make this an env tied to nginx version or app name maybe...
 const PROTOCOL_VERSION string = "1"
+const EVENT_TYPE string = "ZooKeeperSample"
 
-//SkelConfig is the keeper of the config
-type SkelConfig struct {
-	SkelHost string
+//ZooKeeperConfig is the keeper of the config
+type ZooKeeperConfig struct {
+	ZooKeeperHost string
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -76,8 +78,8 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	var config = SkelConfig{
-		SkelHost: os.Getenv("KEY"),
+	var config = ZooKeeperConfig{
+		ZooKeeperHost: os.Getenv("ZK_HOST"),
 	}
 	validateConfig(log, config)
 
@@ -87,16 +89,16 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func getMetric(log *logrus.Logger, config SkelConfig) map[string]interface{} {
+func getMetric(log *logrus.Logger, config ZooKeeperConfig) map[string]interface{} {
 	return map[string]interface{}{
-		"event_type": "LoadBalancerSample",
+		"event_type": EVENT_TYPE,
 		"provider":   PROVIDER,
 		"zookeeper.stat":  1,
 	}
 }
 
-func validateConfig(log *logrus.Logger, config SkelConfig) {
-	if config.SkelHost == "" {
+func validateConfig(log *logrus.Logger, config ZooKeeperConfig) {
+	if config.ZooKeeperHost == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
