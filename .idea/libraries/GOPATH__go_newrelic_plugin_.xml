@@ -1,0 +1,21 @@
+<component name="libraryTable">
+  <library name="GOPATH &lt;go-newrelic-plugin&gt;">
+    <CLASSES>
+      <root url="file://$USER_HOME$/goprojects/src/sourcegraph.com" />
+      <root url="file://$USER_HOME$/goprojects/src/github.com" />
+      <root url="file://$USER_HOME$/goprojects/src/golang.org" />
+      <root url="file://$USER_HOME$/goprojects/src/go-newrelic-plugin" />
+      <root url="file://$USER_HOME$/goprojects/src/gopkg.in" />
+    </CLASSES>
+    <SOURCES>
+      <root url="file://$USER_HOME$/goprojects/src/sourcegraph.com" />
+      <root url="file://$USER_HOME$/goprojects/src/github.com" />
+      <root url="file://$USER_HOME$/goprojects/src/golang.org" />
+      <root url="file://$USER_HOME$/goprojects/src/go-newrelic-plugin" />
+      <root url="file://$USER_HOME$/goprojects/src/gopkg.in" />
+    </SOURCES>
+    <excluded>
+      <root url="file://$PROJECT_DIR$" />
+    </excluded>
+  </library>
+</component>
