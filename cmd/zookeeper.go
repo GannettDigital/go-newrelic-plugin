@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/GannettDigital/go-newrelic-plugin/zookeeper"
+	"github.com/GannettDigital/go-newrelic-plugin/"
 	status "github.com/GannettDigital/goStateModule"
 	"github.com/spf13/cobra"
+	"go-newrelic-plugin/zookeeper"
 )
 
 func init() {
