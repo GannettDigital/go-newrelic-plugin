@@ -83,7 +83,7 @@ func TestScrapeStatus(t *testing.T) {
 		TestDescription string
 	}{
 		{
-			Data:            "Load Test Started: 25.0 seconds ago\n\nVersion: 2.2.0\nCustomer: None\nProject: None\nState: Running\nTest duration: 0:00:25\nSamples count: 178, 100.00\% failures\nAverage times: total 0.106, latency 0.106, connect 0.000\nPercentile 0.0\%: 0.037\nPercentile 50.0\%: 0.120\nPercentile 90.0\%: 0.125\nPercentile 95.0\%: 0.126\nPercentile 99.0\%: 0.167\nPercentile 99.9\%: 0.281\nPercentile 100.0\%: 0.281 "),
+			Data:            "Load Test Started: 25.0 seconds ago\n\nVersion: 2.2.0\nCustomer: None\nProject: None\nState: Running\nTest duration: 0:00:25\nSamples count: 178, 100.00. failures\nAverage times: total 0.106, latency 0.106, connect 0.000\nPercentile 0.0.: 0.037\nPercentile 50.0.: 0.120\nPercentile 90.0.: 0.125\nPercentile 95.0.: 0.126\nPercentile 99.0.: 0.167\nPercentile 99.9.: 0.281\nPercentile 100.0.: 0.281 "),
 			ExpectedResult:  result,
 			TestDescription: "Successfully scrape given status page",
 		},
