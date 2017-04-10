@@ -1,0 +1,13 @@
+name: com.gannettdigital.kraken
+description: Reports kraken metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/kraken
+    prefix: gannett
+    interval: 15
+    env:
+      KRAKEN_PORT: "8140"
+      KRAKEN_HOST: http://localhost
