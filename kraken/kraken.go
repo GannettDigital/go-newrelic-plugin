@@ -203,9 +203,13 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 		"avg_resp_time":  avg_resp_time,
 		"avg_latency":  avg_latency,
 		"avg_conn_time":  avg_conn_time,
+		"percentiles_50":  percentiles_50,
+		"percentiles_90":  percentiles_90,
+		"percentiles_95":  percentiles_95,
+		"percentiles_99":  percentiles_99,
+		"percentiles_100":  percentiles_100,
 		"sample_count": sample_count,
 		"sample_failure": sample_failure,
-		"avg_rt":  avg_rt,
 		"duration":  duration,
 	}).Debugf("Scraped KRAKEN values")
 	return map[string]interface{}{
