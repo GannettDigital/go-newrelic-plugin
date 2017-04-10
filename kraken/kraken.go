@@ -2,7 +2,6 @@ package kraken
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
@@ -53,31 +53,6 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-// OutputJSON takes an object and prints it as a JSON string to the stdout.
-// If the pretty attribute is set to true, the JSON will be idented for easy reading.
-func OutputJSON(data interface{}, pretty bool) error {
-	var output []byte
-	var err error
-
-	if pretty {
-		output, err = json.MarshalIndent(data, "", "\t")
-	} else {
-		output, err = json.Marshal(data)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Error outputting JSON: %s", err)
-	}
-
-	if string(output) == "null" {
-		fmt.Println("[]")
-	} else {
-		fmt.Println(string(output))
-	}
-
-	return nil
-}
-
 func init() {
 	runner = utilsHTTP.HTTPRunnerImpl{}
 }
@@ -103,7 +78,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var metric = scrapeStatus(log, getKrakenStatus(log, krakenConf))
 
 	data.Metrics = append(data.Metrics, metric)
-	fatalIfErr(log, OutputJSON(data, prettyPrint))
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
 func validateConfig(log *logrus.Logger, krakenConf Config) {
