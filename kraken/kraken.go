@@ -128,13 +128,13 @@ func getKrakenStatus(log *logrus.Logger, config Config) string {
 	code, data, err := runner.CallAPI(log, nil, httpReq, &http.Client{})
 	if err != nil || code != 200 {
 		log.WithFields(logrus.Fields{
-			"code":                   code,
-			"data":                   string(data),
-			"httpReq":                httpReq,
+			"code":                    code,
+			"data":                    string(data),
+			"httpReq":                 httpReq,
 			"config.KrakenStatusPage": config.KrakenHost,
 			"config.KrakenListenPort": config.KrakenListenPort,
 			"config.KrakenStatusURI":  config.KrakenStatusURI,
-			"error":                  err,
+			"error":                   err,
 		}).Fatal("Encountered error calling CallAPI")
 		return ""
 	}
@@ -164,6 +164,10 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 	contents := strings.Fields(multi)
 	sample_count := contents[0]
 	sample_failure := contents[1]
+
+	multi = regexp.MustCompile(`Test duration: (\s)`).FindString(status)
+	contents = strings.Fields(multi)
+	duration := contents[0]
 
 	multi = regexp.MustCompile(`Average times: total (\d+(\.\d+)?), latency (\d+(\.\d+)?), connect (\d+(\.\d+)?)`).FindString(status)
 	contents = strings.Fields(multi)
@@ -205,24 +209,23 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 		"duration":  duration,
 	}).Debugf("Scraped KRAKEN values")
 	return map[string]interface{}{
-		"event_type":               "KrakenSample",
-		"provider":                 PROVIDER,
-		"kraken.version":						krakenVersion,
-		"kraken.customer":			   	krakenCustomer,
-		"kraken.project":						krakenProject,
-		"kraken.state":				   		krakenState,
-		"kraken.kpi.avg_resp_time": toInt(log, avg_resp_time),
-		"kraken.kpi.avg_latency":   toInt(log, avg_latency),
-		"kraken.kpi.avg_conn_time": toInt(log, avg_conn_time),
+		"event_type":               	 "KrakenSample",
+		"provider":                 	 PROVIDER,
+		"kraken.version":							 krakenVersion,
+		"kraken.customer":			   	   krakenCustomer,
+		"kraken.project":							 krakenProject,
+		"kraken.state":				   			 krakenState,
+		"kraken.kpi.avg_resp_time": 	 toInt(log, avg_resp_time),
+		"kraken.kpi.avg_latency":   	 toInt(log, avg_latency),
+		"kraken.kpi.avg_conn_time": 	 toInt(log, avg_conn_time),
 		"kraken.kpi.percentiles.50":   toInt(log, percentiles_50),
 		"kraken.kpi.percentiles.90":   toInt(log, percentiles_90),
 		"kraken.kpi.percentiles.95":   toInt(log, percentiles_95),
 		"kraken.kpi.percentiles.99":   toInt(log, percentiles_99),
-		"kraken.kpi.percentiles.100":   toInt(log, percentiles_100),
-		"kraken.sample_count":      toInt(log, sample_count),
-		"kraken.sample_failure":    toInt(log, sample_failure),
-		"kraken.avg_rt":            toInt(log, avg_rt),
-		"kraken.duration":          toInt(log, duration),
+		"kraken.kpi.percentiles.100":  toInt(log, percentiles_100),
+		"kraken.sample_count":      	 toInt(log, sample_count),
+		"kraken.sample_failure":   		 toInt(log, sample_failure),
+		"kraken.duration":          	 toInt(log, duration),
 	}
 }
 

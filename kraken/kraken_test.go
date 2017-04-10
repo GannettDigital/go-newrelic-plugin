@@ -1,4 +1,4 @@
-package nginx
+package kraken
 
 import (
 	"fmt"
@@ -14,13 +14,13 @@ var fakeConfig Config
 
 func init() {
 	fakeConfig = Config{
-		NginxListenPort: "8140",
-		NginxStatusURI:  "nginx_status",
-		NginxHost:       "http://localhost",
+		KrakenListenPort: "8140",
+		KrakenStatusURI:  "/",
+		KrakenHost:       "http://localhost",
 	}
 }
 
-func TestGetNginxStatus(t *testing.T) {
+func TestGetKrakenStatus(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	var tests = []struct {
@@ -32,22 +32,22 @@ func TestGetNginxStatus(t *testing.T) {
 				ResultsList: []fake.Result{
 					{
 						Method: "GET",
-						URI:    "/nginx_status",
+						URI:    "/",
 						Code:   200,
-						Data:   []byte("Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 "),
+						Data:   []byte("Load Test Started: 25.0 seconds ago\n\nVersion: 2.2.0\nCustomer: None\nProject: None\nState: Running\nTest duration: 0:00:25\nSamples count: 178, 100.00% failures\nAverage times: total 0.106, latency 0.106, connect 0.000\nPercentile 0.0%: 0.037\nPercentile 50.0%: 0.120\nPercentile 90.0%: 0.125\nPercentile 95.0%: 0.126\nPercentile 99.0%: 0.167\nPercentile 99.9%: 0.281\nPercentile 100.0%: 0.281 "),
 						Err:    nil,
 					},
 				},
 			},
-			TestDescription: "Successfully GET Nginx status page",
+			TestDescription: "Successfully GET kraken status page",
 		},
 	}
 
 	for _, test := range tests {
-		g.Describe("getNginxStatus()", func() {
+		g.Describe("getKrakenStatus()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				result := getNginxStatus(logrus.New(), fakeConfig)
+				result := getKrakenStatus(logrus.New(), fakeConfig)
 				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.ResultsList[0].Data))).Equal(true)
 			})
 		})
@@ -58,15 +58,23 @@ func TestScrapeStatus(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	result := map[string]interface{}{
-		"event_type":            "LoadBalancerSample",
-		"provider":              "nginx",
-		"nginx.net.connections": 2,
-		"nginx.net.accepts":     29,
-		"nginx.net.handled":     29,
-		"nginx.net.requests":    31,
-		"nginx.net.writing":     1,
-		"nginx.net.waiting":     1,
-		"nginx.net.reading":     0,
+		"event_type":            				"GKrakenSample",
+		"provider":              				"kraken",
+		"kraken.version":						    "2.2.0",
+		"kraken.customer":			   	    "None",
+		"kraken.project":						    "None",
+		"kraken.state":				   		    "Running",
+		"kraken.kpi.avg_resp_time":     0.106,
+		"kraken.kpi.avg_latency":       0.106,
+		"kraken.kpi.avg_conn_time":     0.000,
+		"kraken.kpi.percentiles.50":    0.120,
+		"kraken.kpi.percentiles.90":    0.125,
+		"kraken.kpi.percentiles.95":    0.126,
+		"kraken.kpi.percentiles.99":    0.167,
+		"kraken.kpi.percentiles.100":   0.281,
+		"kraken.sample_count":          178,
+		"kraken.sample_failure":        100.00,
+		"kraken.duration":              "0:00:25"
 	}
 
 	var tests = []struct {
@@ -75,7 +83,7 @@ func TestScrapeStatus(t *testing.T) {
 		TestDescription string
 	}{
 		{
-			Data:            "Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 ",
+			Data:            "Load Test Started: 25.0 seconds ago\n\nVersion: 2.2.0\nCustomer: None\nProject: None\nState: Running\nTest duration: 0:00:25\nSamples count: 178, 100.00% failures\nAverage times: total 0.106, latency 0.106, connect 0.000\nPercentile 0.0%: 0.037\nPercentile 50.0%: 0.120\nPercentile 90.0%: 0.125\nPercentile 95.0%: 0.126\nPercentile 99.0%: 0.167\nPercentile 99.9%: 0.281\nPercentile 100.0%: 0.281 "),
 			ExpectedResult:  result,
 			TestDescription: "Successfully scrape given status page",
 		},

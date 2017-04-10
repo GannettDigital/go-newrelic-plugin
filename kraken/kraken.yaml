@@ -10,5 +10,5 @@ source:
     interval: 15
     env:
       KRAKEN_PORT: "8140"
-      KRAKEN_STATUSURI: status
+      KRAKEN_STATUSURI: /
       KRAKEN_HOST: http://localhost
