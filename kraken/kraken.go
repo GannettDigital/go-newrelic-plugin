@@ -207,10 +207,10 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 	return map[string]interface{}{
 		"event_type":               "KrakenSample",
 		"provider":                 PROVIDER,
-		"kraken.version":						krakenVersion
-		"kraken.customer":			   	krakenCustomer
-		"kraken.project":						krakenProject
-		"kraken.state":				   		krakenState
+		"kraken.version":						krakenVersion,
+		"kraken.customer":			   	krakenCustomer,
+		"kraken.project":						krakenProject,
+		"kraken.state":				   		krakenState,
 		"kraken.kpi.avg_resp_time": toInt(log, avg_resp_time),
 		"kraken.kpi.avg_latency":   toInt(log, avg_latency),
 		"kraken.kpi.avg_conn_time": toInt(log, avg_conn_time),
