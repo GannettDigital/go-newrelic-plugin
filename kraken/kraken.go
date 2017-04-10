@@ -144,8 +144,8 @@ func getKrakenStatus(log *logrus.Logger, config Config) string {
 
 func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 
-	multi = regexp.MustCompile(`Version: (\s)`).FindString(status)
-	contents = strings.Fields(multi)
+	multi := regexp.MustCompile(`Version: (\s)`).FindString(status)
+	contents := strings.Fields(multi)
 	krakenVersion := contents[0]
 
 	multi = regexp.MustCompile(`Customer: (\s)`).FindString(status)
@@ -160,8 +160,8 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 	contents = strings.Fields(multi)
 	krakenState := contents[0]
 
-	multi := regexp.MustCompile(`Samples count: (\d+), (\d+(\.\d+)?). failures`).FindString(status)
-	contents := strings.Fields(multi)
+	multi = regexp.MustCompile(`Samples count: (\d+), (\d+(\.\d+)?). failures`).FindString(status)
+	contents = strings.Fields(multi)
 	sample_count := contents[0]
 	sample_failure := contents[1]
 
