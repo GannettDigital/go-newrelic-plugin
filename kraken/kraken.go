@@ -140,57 +140,58 @@ func getKrakenStatus(log *logrus.Logger, config Config) string {
 }
 
 func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
+	var replacer = strings.NewReplacer(",", "", "\t", "")
 
-	multi := regexp.MustCompile(`Version: (\s)`).FindString(status)
+	multi := regexp.MustCompile(`Version: (\d+(\.\d+)?(\.\d+)?)`).FindString(status)
 	contents := strings.Fields(multi)
-	krakenVersion := contents[0]
+	krakenVersion := contents[1]
 
-	multi = regexp.MustCompile(`Customer: (\s)`).FindString(status)
+	multi = regexp.MustCompile(`Customer: (\w+)`).FindString(status)
 	contents = strings.Fields(multi)
-	krakenCustomer := contents[0]
+	krakenCustomer := contents[1]
 
-	multi = regexp.MustCompile(`Project: (\s)`).FindString(status)
+	multi = regexp.MustCompile(`Project: (\w+)`).FindString(status)
 	contents = strings.Fields(multi)
-	krakenProject := contents[0]
+	krakenProject := contents[1]
 
-	multi = regexp.MustCompile(`State: (\s)`).FindString(status)
+	multi = regexp.MustCompile(`State: (\w+)`).FindString(status)
 	contents = strings.Fields(multi)
-	krakenState := contents[0]
+	krakenState := contents[1]
 
 	multi = regexp.MustCompile(`Samples count: (\d+), (\d+(\.\d+)?). failures`).FindString(status)
 	contents = strings.Fields(multi)
-	sample_count := contents[0]
-	sample_failure := contents[1]
+	sample_count := replacer.Replace(contents[2])
+	sample_failure := contents[3]
 
-	multi = regexp.MustCompile(`Test duration: (\s)`).FindString(status)
+	multi = regexp.MustCompile(`Test duration: (.*)`).FindString(status)
 	contents = strings.Fields(multi)
-	duration := contents[0]
+	duration := contents[2]
 
 	multi = regexp.MustCompile(`Average times: total (\d+(\.\d+)?), latency (\d+(\.\d+)?), connect (\d+(\.\d+)?)`).FindString(status)
 	contents = strings.Fields(multi)
-	avg_resp_time := contents[0]
-	avg_latency := contents[1]
-	avg_conn_time := contents[2]
+	avg_resp_time := replacer.Replace(contents[3])
+	avg_latency := replacer.Replace(contents[5])
+	avg_conn_time := contents[7]
 
-	multi = regexp.MustCompile(`Percentile  50.0.: (\d+(\.\d+)?)`).FindString(status)
+	multi = regexp.MustCompile(`Percentile\s+50.0%:\s+(\d+(\.\d+)?).`).FindString(status)
 	contents = strings.Fields(multi)
-	percentiles_50 := contents[0]
+	percentiles_50 := contents[2]
 
-	multi = regexp.MustCompile(`Percentile  90.0.: (\d+(\.\d+)?)`).FindString(status)
+	multi = regexp.MustCompile(`Percentile\s+90.0.:\s+(\d+(\.\d+)?).`).FindString(status)
 	contents = strings.Fields(multi)
-	percentiles_90 := contents[0]
+	percentiles_90 := contents[2]
 
-	multi = regexp.MustCompile(`Percentile  95.0.: (\d+(\.\d+)?)`).FindString(status)
+	multi = regexp.MustCompile(`Percentile\s+95.0.:\s+(\d+(\.\d+)?).`).FindString(status)
 	contents = strings.Fields(multi)
-	percentiles_95 := contents[0]
+	percentiles_95 := contents[2]
 
-	multi = regexp.MustCompile(`Percentile  99.0.: (\d+(\.\d+)?)`).FindString(status)
+	multi = regexp.MustCompile(`Percentile\s+99.0.:\s+(\d+(\.\d+)?).`).FindString(status)
 	contents = strings.Fields(multi)
-	percentiles_99 := contents[0]
+	percentiles_99 := contents[2]
 
-	multi = regexp.MustCompile(`Percentile  100.0.: (\d+(\.\d+)?)`).FindString(status)
+	multi = regexp.MustCompile(`Percentile\s+100.0.:\s+(\d+(\.\d+)?).`).FindString(status)
 	contents = strings.Fields(multi)
-	percentiles_100 := contents[0]
+	percentiles_100 := contents[2]
 
 	log.WithFields(logrus.Fields{
 		"kraken_version":  krakenVersion,
@@ -210,23 +211,23 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 		"duration":  duration,
 	}).Debugf("Scraped KRAKEN values")
 	return map[string]interface{}{
-		"event_type":               	 "KrakenSample",
+		"event_type":               	 "GKrakenSample",
 		"provider":                 	 PROVIDER,
 		"kraken.version":							 krakenVersion,
 		"kraken.customer":			   	   krakenCustomer,
 		"kraken.project":							 krakenProject,
 		"kraken.state":				   			 krakenState,
-		"kraken.kpi.avg_resp_time": 	 toInt(log, avg_resp_time),
-		"kraken.kpi.avg_latency":   	 toInt(log, avg_latency),
-		"kraken.kpi.avg_conn_time": 	 toInt(log, avg_conn_time),
-		"kraken.kpi.percentiles.50":   toInt(log, percentiles_50),
-		"kraken.kpi.percentiles.90":   toInt(log, percentiles_90),
-		"kraken.kpi.percentiles.95":   toInt(log, percentiles_95),
-		"kraken.kpi.percentiles.99":   toInt(log, percentiles_99),
-		"kraken.kpi.percentiles.100":  toInt(log, percentiles_100),
-		"kraken.sample_count":      	 toInt(log, sample_count),
-		"kraken.sample_failure":   		 toInt(log, sample_failure),
-		"kraken.duration":          	 toInt(log, duration),
+		"kraken.kpi.avg_resp_time": 	 avg_resp_time,
+		"kraken.kpi.avg_latency":   	 avg_latency,
+		"kraken.kpi.avg_conn_time": 	 avg_conn_time,
+		"kraken.kpi.percentiles.50":   percentiles_50,
+		"kraken.kpi.percentiles.90":   percentiles_90,
+		"kraken.kpi.percentiles.95":   percentiles_95,
+		"kraken.kpi.percentiles.99":   percentiles_99,
+		"kraken.kpi.percentiles.100":  percentiles_100,
+		"kraken.sample_count":      	 sample_count,
+		"kraken.sample_failure":   		 sample_failure,
+		"kraken.duration":          	 duration,
 	}
 }
 
