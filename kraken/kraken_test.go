@@ -15,7 +15,6 @@ var fakeConfig Config
 func init() {
 	fakeConfig = Config{
 		KrakenListenPort: "8140",
-		KrakenStatusURI:  "/",
 		KrakenHost:       "http://localhost",
 	}
 }

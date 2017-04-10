@@ -28,7 +28,6 @@ const ProtocolVersion string = "1"
 //KrakenConfig is the keeper of the config
 type Config struct {
 	KrakenListenPort string
-	KrakenStatusURI  string
 	KrakenHost       string
 }
 
@@ -98,7 +97,6 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var krakenConf = Config{
 		KrakenListenPort: os.Getenv("KRAKEN_PORT"),
 		KrakenHost:       os.Getenv("KRAKEN_HOST"),
-		KrakenStatusURI:  os.Getenv("KRAKEN_STATUSURI"),
 	}
 	validateConfig(log, krakenConf)
 
@@ -109,7 +107,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 }
 
 func validateConfig(log *logrus.Logger, krakenConf Config) {
-	if krakenConf.KrakenHost == "" || krakenConf.KrakenListenPort == "" || krakenConf.KrakenStatusURI == "" {
+	if krakenConf.KrakenHost == "" || krakenConf.KrakenListenPort == ""{
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
@@ -121,7 +119,7 @@ func fatalIfErr(log *logrus.Logger, err error) {
 }
 
 func getKrakenStatus(log *logrus.Logger, config Config) string {
-	krakenStatus := fmt.Sprintf("%v:%v/%v", config.KrakenHost, config.KrakenListenPort, config.KrakenStatusURI)
+	krakenStatus := fmt.Sprintf("%v:%v/", config.KrakenHost, config.KrakenListenPort)
 	httpReq, err := http.NewRequest("GET", krakenStatus, bytes.NewBuffer([]byte("")))
 	// http.NewRequest error
 	fatalIfErr(log, err)
@@ -133,7 +131,6 @@ func getKrakenStatus(log *logrus.Logger, config Config) string {
 			"httpReq":                 httpReq,
 			"config.KrakenStatusPage": config.KrakenHost,
 			"config.KrakenListenPort": config.KrakenListenPort,
-			"config.KrakenStatusURI":  config.KrakenStatusURI,
 			"error":                   err,
 		}).Fatal("Encountered error calling CallAPI")
 		return ""
