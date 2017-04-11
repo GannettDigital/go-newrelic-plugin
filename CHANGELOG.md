@@ -3,9 +3,13 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 0.6.9
+# 0.7.1
 
 Tom Barber - update paas-api-ci version to start generating release notes
+
+# 0.7.0
+
+Ed De - PAAS-5120 Initial Kraken version
 
 # 0.6.8
 
