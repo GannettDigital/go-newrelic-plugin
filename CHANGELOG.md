@@ -3,6 +3,19 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.7.2
+
+Ed De - PAAS-5763 Replace regexp FindString with FindStringSubmatch for Kraken
+        Added Code Coverage reporting to Jenkinsfile
+        
+# 0.7.1
+
+Tom Barber - update paas-api-ci version to start generating release notes
+
+# 0.7.0
+
+Ed De - PAAS-5120 Initial Kraken version
+
 # 0.6.8
 
 Tom Barber - update mongo plugin event_type to use correct value

@@ -1,0 +1,16 @@
+coverage:
+  range: "40...70"
+  status:
+    project:
+      default:
+        enabled: true
+    patch:
+      default:
+        enabled: false
+    changes:
+      default:
+        enabled: false
+  ignore:
+    - cmd/*
+    - dockerfile-resources/*
+    - skel/*
