@@ -171,7 +171,6 @@ func getFLWmntr(log *logrus.Logger, ZKConf Config) string {
 
 func ScrapeFLWconf(log *logrus.Logger, status string) map[string]interface{} {
 	line := strings.Split(string(status), "\n")
-println("line", line)
 	clientPort := strings.Split(string(line[0]), "=")
 	dataDir := strings.Split(string(line[1]), "=")
 	tickTime := strings.Split(string(line[2]), "=")
@@ -220,6 +219,58 @@ func ScrapeFLWmntr(log *logrus.Logger, status string) map[string]interface{} {
 	zk_approximate_data_size := strings.Split(string(line[12]), "\t")
 	zk_open_file_descriptor_count := strings.Split(string(line[13]), "\t")
 	zk_max_file_descriptor_count := strings.Split(string(line[14]), "\t")
+
+	// Add additional attributes if this server is the leader
+	if (zk_server_state[1] == "leader") {
+
+		zk_followers := strings.Split(string(line[15]), "\t")
+		zk_synced_followers := strings.Split(string(line[14]), "\t")
+		zk_pending_syncs := strings.Split(string(line[14]), "\t")
+
+		log.WithFields(logrus.Fields{
+			"zk_version":  zk_version[1],
+			"zk_avg_latency":   zk_avg_latency[1],
+			"zk_max_latency":  zk_max_latency[1],
+			"zk_min_latency":  zk_min_latency[1],
+			"zk_packets_received":  zk_packets_received[1],
+			"zk_packets_sent":  zk_packets_sent[1],
+			"zk_num_alive_connections":  zk_num_alive_connections[1],
+			"zk_outstanding_requests":  zk_outstanding_requests[1],
+			"zk_server_state":  zk_server_state[1],
+			"zk_znode_count":  zk_znode_count[1],
+			"zk_watch_count":  zk_watch_count[1],
+			"zk_ephemerals_count":  zk_ephemerals_count[1],
+			"zk_approximate_data_size":  zk_approximate_data_size[1],
+			"zk_open_file_descriptor_count":  zk_open_file_descriptor_count[1],
+			"zk_max_file_descriptor_count":  zk_max_file_descriptor_count[1],
+			"zk_followers":  zk_followers[1],
+			"zk_synced_followers":  zk_synced_followers[1],
+			"zk_pending_syncs":  zk_pending_syncs[1],
+		}).Debugf("Scraped ZooKeeper values")
+		return map[string]interface{}{
+			"event_type":            "ZookeeperServerSample",
+			"provider":              PROVIDER,
+			"zookeeper.mntr.zk_version":     zk_version[1],
+			"zookeeper.mntr.zk_avg_latency": toInt(log, zk_avg_latency[1]),
+			"zookeeper.mntr.zk_max_latency": toInt(log, zk_max_latency[1]),
+			"zookeeper.mntr.zk_min_latency": toInt(log, zk_min_latency[1]),
+			"zookeeper.mntr.zk_packets_received": toInt(log, zk_packets_received[1]),
+			"zookeeper.mntr.zk_packets_sent": toInt(log, zk_packets_sent[1]),
+			"zookeeper.mntr.zk_num_alive_connections": toInt(log, zk_num_alive_connections[1]),
+			"zookeeper.mntr.zk_outstanding_requests": toInt(log, zk_outstanding_requests[1]),
+			"zookeeper.mntr.zk_server_state": zk_server_state[1],
+			"zookeeper.mntr.zk_znode_count": toInt(log, zk_znode_count[1]),
+			"zookeeper.mntr.zk_watch_count": toInt(log, zk_watch_count[1]),
+			"zookeeper.mntr.zk_ephemerals_count": toInt(log, zk_ephemerals_count[1]),
+			"zookeeper.mntr.zk_approximate_data_size": toInt(log, zk_approximate_data_size[1]),
+			"zookeeper.mntr.zk_open_file_descriptor_count": toInt(log, zk_open_file_descriptor_count[1]),
+			"zookeeper.mntr.zk_max_file_descriptor_count": toInt(log, zk_max_file_descriptor_count[1]),
+			"zookeeper.mntr.zk_followers": toInt(log, zk_followers[1]),
+			"zookeeper.mntr.zk_synced_followers": toInt(log, zk_synced_followers[1]),
+			"zookeeper.mntr.zk_pending_syncs": toInt(log, zk_pending_syncs[1]),
+
+		}
+	}
 
 	log.WithFields(logrus.Fields{
 		"zk_version":  zk_version[1],
