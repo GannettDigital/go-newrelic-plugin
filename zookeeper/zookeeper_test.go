@@ -27,3 +27,9 @@ func TestValidateConfig(t *testing.T) {
 
 func TestFatalIfErr(t *testing.T) {
 }
+
+func TestScrapeFLWconf(t *testing.T) {
+}
+
+func TestScrapeFLWmntr(t *testing.T) {
+}

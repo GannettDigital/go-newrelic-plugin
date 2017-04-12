@@ -1,8 +1,6 @@
 package zookeeper
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -10,6 +8,7 @@ import (
 	"time"
 	"net"
 	"io/ioutil"
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 )
 
 // NAME - name of plugin
@@ -21,33 +20,13 @@ const PROVIDER string = "zookeeper"
 // ProtocolVersion -
 const ProtocolVersion string = "1"
 
-//ZKConfig is the keeper of the config
+//Config is the keeper of the config
 type Config struct {
 	ZK_TICKTIME 		string
 	ZK_DATADIR  		string
 	ZK_HOST     		string
 	ZK_CLIENTPORT     	string
 }
-
-//Not used this time
-type ZKmntr struct {
-	ZookeeperVersion       	string
-	AvgLatency      	int32
-	MaxLatency        	int32
-	MinLatency     		int32
-	PacketsReceived        	int32
-	PacketsSent         	int32
-	NumAliveConnections    	int32
-	OutstandingRequests 	int32
-	ServerState    		string
-	zk_znode_count      	int32
-	zk_watch_count        	int32
-	zk_ephemerals_count    	int32
-	ApproximateDataSize     int32
-	OpenFileDescriptorCount int32
-	MaxFileDescriptorCount  int32
-}
-
 
 // InventoryData is the data type for inventory data produced by a plugin data
 // source and emitted to the agent's inventory data store
@@ -69,31 +48,6 @@ type PluginData struct {
 	Inventory       map[string]InventoryData `json:"inventory"`
 	Events          []EventData              `json:"events"`
 	Status          string                   `json:"status"`
-}
-
-// OutputJSON takes an object and prints it as a JSON string to the stdout.
-// If the pretty attribute is set to true, the JSON will be idented for easy reading.
-func OutputJSON(data interface{}, pretty bool) error {
-	var output []byte
-	var err error
-
-	if pretty {
-		output, err = json.MarshalIndent(data, "", "\t")
-	} else {
-		output, err = json.Marshal(data)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Error outputting JSON: %s", err)
-	}
-
-	if string(output) == "null" {
-		fmt.Println("[]")
-	} else {
-		fmt.Println(string(output))
-	}
-
-	return nil
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
@@ -123,7 +77,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var mntr_metric = ScrapeFLWmntr(log, getFLWmntr(log, ZKConf))
 	data.Metrics = append(data.Metrics, mntr_metric)
 
-	fatalIfErr(log, OutputJSON(data, prettyPrint))
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
 func validateConfig(log *logrus.Logger, ZKConf Config)  {

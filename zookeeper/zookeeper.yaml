@@ -10,6 +10,6 @@ source:
     interval: 15
     env:
       ZK_TICKTIME: 2000
-      ZK_DATADIR: "/var/zookeeper"
+      ZK_DATADIR: "/var/lib/zookeeper"
       ZK_HOST: "localhost"
       ZK_CLIENTPORT: 2181
