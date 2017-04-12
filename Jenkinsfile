@@ -28,8 +28,8 @@ node {
     --skip-deploy \
     --skip-docker \
     --skip-swagger \
-    --skip-source-check" \
-    --codecov-token=\"${env.CODECOV_GO_NEWRELIC_PLUGIN}\"
+    --skip-source-check \
+    --codecov-token=\"${env.CODECOV_GO_NEWRELIC_PLUGIN}\""
   }
   catch (err) {
     currentBuild.result = "FAILURE"
