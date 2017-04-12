@@ -22,6 +22,7 @@ Available Commands:
   help        Help about any command
   haproxy     execute a haproxy collection
   jenkins     execute a jenkins collection
+  kraken      execute a kraken collection
   mongo       execute a mongo collection
   nginx       execute an nginx collection
   rabbitmq    execute a rabbitmq collection

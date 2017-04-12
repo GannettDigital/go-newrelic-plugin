@@ -7,7 +7,6 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
@@ -115,58 +114,42 @@ func getKrakenStatus(log *logrus.Logger, config Config) string {
 }
 
 func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
-	var replacer = strings.NewReplacer(",", "", "\t", "")
+	krakenVersion := regexp.MustCompile(`Version: (\d+(\.\d+)?(\.\d+)?)`).FindStringSubmatch(status)[1]
+	krakenCustomer := regexp.MustCompile(`Customer: (\w+)`).FindStringSubmatch(status)[1]
+	krakenProject := regexp.MustCompile(`Project: (\w+)`).FindStringSubmatch(status)[1]
+	krakenState := regexp.MustCompile(`State: (\w+)`).FindStringSubmatch(status)[1]
+	sample_count := ""
+	sample_failure := ""
+	duration := ""
+	avg_resp_time := ""
+	avg_latency := ""
+	avg_conn_time := ""
+	percentiles_50 := ""
+	percentiles_90 := ""
+	percentiles_95 := ""
+	percentiles_99 := ""
+	percentiles_100 := ""
 
-	multi := regexp.MustCompile(`Version: (\d+(\.\d+)?(\.\d+)?)`).FindString(status)
-	contents := strings.Fields(multi)
-	krakenVersion := contents[1]
+  if krakenState=="Complete" {
+		re_samples := regexp.MustCompile(`Samples count: (\d+), (\d+(\.\d+)?). failures`)
+		multi := re_samples.FindString(status)
+		sample_count = re_samples.FindStringSubmatch(multi)[1]
+		sample_failure = re_samples.FindStringSubmatch(multi)[2]
 
-	multi = regexp.MustCompile(`Customer: (\w+)`).FindString(status)
-	contents = strings.Fields(multi)
-	krakenCustomer := contents[1]
+		duration = regexp.MustCompile(`Test duration: (.*)`).FindStringSubmatch(status)[1]
 
-	multi = regexp.MustCompile(`Project: (\w+)`).FindString(status)
-	contents = strings.Fields(multi)
-	krakenProject := contents[1]
+		re_avgtimes := regexp.MustCompile(`Average times: total (\d+\.\d+), latency (\d+\.\d+), connect (\d+\.\d+)`)
+		multi = re_avgtimes.FindString(status)
+		avg_resp_time = re_avgtimes.FindStringSubmatch(multi)[1]
+		avg_latency = re_avgtimes.FindStringSubmatch(multi)[2]
+		avg_conn_time = re_avgtimes.FindStringSubmatch(multi)[3]
 
-	multi = regexp.MustCompile(`State: (\w+)`).FindString(status)
-	contents = strings.Fields(multi)
-	krakenState := contents[1]
-
-	multi = regexp.MustCompile(`Samples count: (\d+), (\d+(\.\d+)?). failures`).FindString(status)
-	contents = strings.Fields(multi)
-	sample_count := replacer.Replace(contents[2])
-	sample_failure := contents[3]
-
-	multi = regexp.MustCompile(`Test duration: (.*)`).FindString(status)
-	contents = strings.Fields(multi)
-	duration := contents[2]
-
-	multi = regexp.MustCompile(`Average times: total (\d+(\.\d+)?), latency (\d+(\.\d+)?), connect (\d+(\.\d+)?)`).FindString(status)
-	contents = strings.Fields(multi)
-	avg_resp_time := replacer.Replace(contents[3])
-	avg_latency := replacer.Replace(contents[5])
-	avg_conn_time := contents[7]
-
-	multi = regexp.MustCompile(`Percentile\s+50.0%:\s+(\d+(\.\d+)?).`).FindString(status)
-	contents = strings.Fields(multi)
-	percentiles_50 := contents[2]
-
-	multi = regexp.MustCompile(`Percentile\s+90.0.:\s+(\d+(\.\d+)?).`).FindString(status)
-	contents = strings.Fields(multi)
-	percentiles_90 := contents[2]
-
-	multi = regexp.MustCompile(`Percentile\s+95.0.:\s+(\d+(\.\d+)?).`).FindString(status)
-	contents = strings.Fields(multi)
-	percentiles_95 := contents[2]
-
-	multi = regexp.MustCompile(`Percentile\s+99.0.:\s+(\d+(\.\d+)?).`).FindString(status)
-	contents = strings.Fields(multi)
-	percentiles_99 := contents[2]
-
-	multi = regexp.MustCompile(`Percentile\s+100.0.:\s+(\d+(\.\d+)?).`).FindString(status)
-	contents = strings.Fields(multi)
-	percentiles_100 := contents[2]
+		percentiles_50 = regexp.MustCompile(`Percentile\s+50.0%:\s+(\d+\.\d+)`).FindStringSubmatch(status)[1]
+		percentiles_90 = regexp.MustCompile(`Percentile\s+90.0%:\s+(\d+\.\d+)`).FindStringSubmatch(status)[1]
+		percentiles_95 = regexp.MustCompile(`Percentile\s+95.0%:\s+(\d+\.\d+)`).FindStringSubmatch(status)[1]
+		percentiles_99 = regexp.MustCompile(`Percentile\s+99.0%:\s+(\d+\.\d+)`).FindStringSubmatch(status)[1]
+		percentiles_100 = regexp.MustCompile(`Percentile\s+100.0%:\s+(\d+\.\d+)`).FindStringSubmatch(status)[1]
+	}
 
 	log.WithFields(logrus.Fields{
 		"kraken_version":  krakenVersion,
