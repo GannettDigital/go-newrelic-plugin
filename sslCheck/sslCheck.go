@@ -78,7 +78,6 @@ func Run(log *logrus.Logger, config Config, prettyPrint bool, version string) {
 	}
 
 	for _, host := range config.Hosts {
-		log.Debugf("Checking %v certificate\n", host)
 		result := checkHost(host)
 		if result.Err != nil {
 			data.Metrics = append(data.Metrics, map[string]interface{}{

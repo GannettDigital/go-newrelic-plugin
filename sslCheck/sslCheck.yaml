@@ -1,0 +1,12 @@
+name: com.gannettdigital.sslCheck
+description: Reports metrics on a list of hosts provided
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/go-newrelic-plugin sslCheck
+    prefix: gannett
+    interval: 45
+    env:
+      SSLCHECK_HOSTS: www.gannett.com:443,www.usatoday.com:443
