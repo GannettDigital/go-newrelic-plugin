@@ -3,11 +3,16 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.8.0
+
+Michael Dunton - Adding ssl Check Plugin.
+              - Adding a ToInt to helpers
+
 # 0.7.2
 
 Ed De - PAAS-5763 Replace regexp FindString with FindStringSubmatch for Kraken
         Added Code Coverage reporting to Jenkinsfile
-        
+
 # 0.7.1
 
 Tom Barber - update paas-api-ci version to start generating release notes
