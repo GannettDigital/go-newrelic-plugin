@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/GannettDigital/go-newrelic-plugin/sslCheck"
 	status "github.com/GannettDigital/goStateModule"
 	"github.com/spf13/cobra"
@@ -17,13 +16,12 @@ var sslCheckCmd = &cobra.Command{
 	Use:   "sslCheck",
 	Short: "Records events based on host certificate expirations",
 	Run: func(cmd *cobra.Command, args []string) {
-		expiredEventPeriod, err := helpers.ToInt(os.Getenv("SSLCHECK_EXPIRED_EVENT_PERIOD"))
+		hosts, err := sslCheck.ProcessHosts(os.Getenv("SSLCHECK_HOSTS"))
 		if err != nil {
-			log.Fatalf("Invaliding Integer for event period: %v\n", err)
+			log.Fatalf("Error Processing Hosts: %v\n", err)
 		}
 		var config = sslCheck.Config{
-			Hosts:              os.Getenv("SSLCHECK_HOSTS"),
-			ExpiredEventPeriod: expiredEventPeriod,
+			Hosts: hosts,
 		}
 		err = sslCheck.ValidateConfig(config)
 		if err != nil {

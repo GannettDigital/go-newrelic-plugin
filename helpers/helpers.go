@@ -2,14 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strconv"
-)
-
-var (
-	// ErrEmptyStringInToInt thrown when an empty string is passed into ToInt
-	ErrEmptyStringInToInt = errors.New("Empty String passed to ToInt")
 )
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -35,11 +28,4 @@ func OutputJSON(data interface{}, pretty bool) error {
 	}
 
 	return nil
-}
-
-func ToInt(value string) (int, error) {
-	if value == "" {
-		return 0, ErrEmptyStringInToInt
-	}
-	return strconv.Atoi(value)
 }

@@ -56,7 +56,8 @@ type pluginData struct {
 }
 
 const NAME string = "sslCheck"
-const EVENT_TYPE string = "GDSSLSample"
+const EVENT_TYPE_VALID string = "GSSLSampleValid"
+const EVENT_TYPE_INVALID string = "GSSLSampleInvalid"
 const PROVIDER string = "sslChecker"
 const PROTOCOL_VERSION string = "1"
 
@@ -74,6 +75,33 @@ func Run(log *logrus.Logger, config Config, prettyPrint bool, version string) {
 		Inventory:       make(map[string]inventoryData),
 		Metrics:         make([]metricData, 0),
 		Events:          make([]eventData, 0),
+	}
+
+	for _, host := range config.Hosts {
+		log.Debugf("Checking %v certificate\n", host)
+		result := checkHost(host)
+		if result.Err != nil {
+			data.Metrics = append(data.Metrics, map[string]interface{}{
+				"event_type": EVENT_TYPE_INVALID,
+				"provider":   PROVIDER,
+				"host":       result.Host,
+				"reason":     result.Err.Error(),
+			})
+		}
+		if len(result.CertErrors) > 0 {
+			for _, certError := range result.CertErrors {
+				data.Metrics = append(data.Metrics, map[string]interface{}{
+					"event_type":      EVENT_TYPE_VALID,
+					"provider":        PROVIDER,
+					"host":            certError.CommonName,
+					"expirationDate":  certError.ExpirationDate,
+					"expiresIn60Days": certError.ExpiresInSixtyDaysOrLess,
+					"expiresIn30Days": certError.ExpiresInThirtyDaysOrLess,
+					"expiresIn15Days": certError.ExpiresInFifteenDaysOrLess,
+					"expiresIn5Days":  certError.ExpiresInFiveDaysOrLess,
+				})
+			}
+		}
 	}
 
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
