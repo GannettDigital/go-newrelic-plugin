@@ -111,6 +111,9 @@ func TestCheckHost(t *testing.T) {
 				go func() {
 					config := &tls.Config{Certificates: []tls.Certificate{serverCrt}}
 					ln, err := tls.Listen("tcp", test.listenPort, config)
+					if err != nil {
+						fmt.Printf("Error listening on port  %v err: %v", test.listenPort, err)
+					}
 					conn, err := ln.Accept()
 					if err != nil {
 						fmt.Printf("Error Accepting Conn %v", err)
