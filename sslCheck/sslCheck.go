@@ -103,7 +103,10 @@ func Run(log *logrus.Logger, config Config, prettyPrint bool, version string) {
 		}
 	}
 
-	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
+	err := helpers.OutputJSON(data, prettyPrint)
+	if err != nil {
+		log.WithError(err).Fatal("can't continue")
+	}
 }
 
 func ValidateConfig(config Config) error {
@@ -111,12 +114,6 @@ func ValidateConfig(config Config) error {
 		return errors.New("You must provide hosts to check")
 	}
 	return nil
-}
-
-func fatalIfErr(log *logrus.Logger, err error) {
-	if err != nil {
-		log.WithError(err).Fatal("can't continue")
-	}
 }
 
 // ProcessHosts processes a string of hosts seperated by comma.
@@ -160,9 +157,7 @@ func checkHost(host string) (result hostResult) {
 			}
 			checkedCerts[string(cert.Signature)] = true
 			isCertValid, certError := validateCertificate(timeNow, *cert)
-			if isCertValid {
-				continue
-			} else {
+			if !isCertValid {
 				result.CertErrors = append(result.CertErrors, certError)
 			}
 		}
