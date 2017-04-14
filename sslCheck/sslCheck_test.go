@@ -1,15 +1,139 @@
 package sslCheck
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
+	"errors"
 	"fmt"
+	"math/big"
+	"net"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/franela/goblin"
 )
+
+func TestCheckHost(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		description         string
+		validForDays        int
+		listenPort          string
+		host                string
+		hostHasError        bool
+		shouldReturnCertErr bool
+		expectedCertErr     certError
+	}{
+		{
+			description:         "When cert is valid for 5",
+			validForDays:        5,
+			listenPort:          ":9443",
+			host:                "127.0.0.1:9443",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    true,
+				ExpiresInFifteenDaysOrLess: true,
+				ExpiresInThirtyDaysOrLess:  true,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
+		},
+		{
+			description:         "When cert is valid for 15",
+			validForDays:        15,
+			listenPort:          ":9443",
+			host:                "127.0.0.1:9443",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    false,
+				ExpiresInFifteenDaysOrLess: true,
+				ExpiresInThirtyDaysOrLess:  true,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
+		},
+		{
+			description:         "When cert is valid for 30",
+			validForDays:        30,
+			listenPort:          ":9443",
+			host:                "127.0.0.1:9443",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    false,
+				ExpiresInFifteenDaysOrLess: false,
+				ExpiresInThirtyDaysOrLess:  true,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
+		},
+		{
+			description:         "When cert is valid for 60",
+			validForDays:        60,
+			listenPort:          ":9443",
+			host:                "127.0.0.1:9443",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    false,
+				ExpiresInFifteenDaysOrLess: false,
+				ExpiresInThirtyDaysOrLess:  false,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
+		},
+		{
+			description:         "When cert is valid for 120",
+			validForDays:        120,
+			listenPort:          ":9443",
+			host:                "127.0.0.1:9443",
+			hostHasError:        false,
+			shouldReturnCertErr: false,
+		},
+		{
+			description:         "When cert is not valid",
+			validForDays:        0,
+			listenPort:          ":9443",
+			host:                "127.0.0.1:9443",
+			hostHasError:        true,
+			shouldReturnCertErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("ProcessHosts()", func() {
+			serverCrt, CAPem := GenerateCertBundle(test.validForDays)
+			g.Before(func() {
+				go func() {
+					config := &tls.Config{Certificates: []tls.Certificate{serverCrt}}
+					ln, err := tls.Listen("tcp", test.listenPort, config)
+					conn, err := ln.Accept()
+					if err != nil {
+						fmt.Printf("Error Accepting Conn %v", err)
+					}
+					conn.Write([]byte("test\n"))
+					conn.Close()
+					ln.Close()
+				}()
+			})
+			g.It(test.description, func() {
+				result := checkHost(test.host, CAPem)
+				fmt.Printf("result %s", result)
+				g.Assert(result.Err != nil).Equal(test.hostHasError)
+				if test.shouldReturnCertErr {
+					g.Assert(result.CertErrors[0].ExpiresInFifteenDaysOrLess).Equal(test.expectedCertErr.ExpiresInFifteenDaysOrLess)
+					g.Assert(result.CertErrors[0].ExpiresInFiveDaysOrLess).Equal(test.expectedCertErr.ExpiresInFiveDaysOrLess)
+					g.Assert(result.CertErrors[0].ExpiresInSixtyDaysOrLess).Equal(test.expectedCertErr.ExpiresInSixtyDaysOrLess)
+					g.Assert(result.CertErrors[0].ExpiresInThirtyDaysOrLess).Equal(test.expectedCertErr.ExpiresInThirtyDaysOrLess)
+				}
+			})
+		})
+	}
+}
 
 func TestValidateConfig(t *testing.T) {
 	g := goblin.Goblin(t)
@@ -229,4 +353,83 @@ func TestValidateCertificate(t *testing.T) {
 			})
 		})
 	}
+}
+
+// helper function to create a cert template with a serial number and other required fields
+func CertTemplate(validForDays int) (*x509.Certificate, error) {
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+	if err != nil {
+		return nil, errors.New("failed to generate serial number: " + err.Error())
+	}
+
+	tmpl := x509.Certificate{
+		SerialNumber:          serialNumber,
+		Subject:               pkix.Name{Organization: []string{"Gannett"}},
+		SignatureAlgorithm:    x509.SHA256WithRSA,
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour * 24 * time.Duration(validForDays)),
+		BasicConstraintsValid: true,
+	}
+	return &tmpl, nil
+}
+
+func CreateCert(template, parent *x509.Certificate, pub interface{}, parentPriv interface{}) (cert *x509.Certificate, certPEM []byte, err error) {
+	certDER, err := x509.CreateCertificate(rand.Reader, template, parent, pub, parentPriv)
+	if err != nil {
+		return
+	}
+	// parse the resulting certificate so we can use it again
+	cert, err = x509.ParseCertificate(certDER)
+	if err != nil {
+		return
+	}
+	// PEM encode the certificate (this is a standard TLS encoding)
+	b := pem.Block{Type: "CERTIFICATE", Bytes: certDER}
+	certPEM = pem.EncodeToMemory(&b)
+	return
+}
+
+func GenerateCertBundle(validForDays int) (tls.Certificate, []byte) {
+	//Generate the Root CA PEM
+	caCertTmpl, err := CertTemplate(validForDays)
+	if err != nil {
+		fmt.Errorf("creating cert template: %v", err)
+	}
+	// describe what the certificate will be used for
+	caCertTmpl.IsCA = true
+	caCertTmpl.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature
+	caCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
+	caCertTmpl.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+	// generate a new key-pair
+	caKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		fmt.Errorf("generating random key: %v", err)
+	}
+	CACert, CACertPEM, err := CreateCert(caCertTmpl, caCertTmpl, &caKey.PublicKey, caKey)
+
+	//Generate the Server PEM
+	if err != nil {
+		fmt.Errorf("generating random key: %v", err)
+	}
+
+	// create a template for the server
+	servCertTmpl, err := CertTemplate(validForDays)
+	if err != nil {
+		fmt.Errorf("creating cert template: %v", err)
+	}
+	servCertTmpl.KeyUsage = x509.KeyUsageDigitalSignature
+	servCertTmpl.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+	servCertTmpl.IPAddresses = []net.IP{net.ParseIP("127.0.0.1")}
+	servKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	_, servCertPEM, err := CreateCert(servCertTmpl, CACert, &servKey.PublicKey, caKey)
+
+	servKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(servKey),
+	})
+	serverTLSCert, err := tls.X509KeyPair(servCertPEM, servKeyPEM)
+	if err != nil {
+		fmt.Errorf("invalid key pair: %v", err)
+	}
+	return serverTLSCert, CACertPEM
 }

@@ -66,7 +66,7 @@ const FifteenDays = 15
 const ThirtyDays = 30
 const SixtyDays = 60
 
-func Run(log *logrus.Logger, config Config, prettyPrint bool, version string) {
+func Run(log *logrus.Logger, config Config, rootCAPem []byte, prettyPrint bool, version string) {
 	// Initialize the output structure
 	var data = pluginData{
 		Name:            NAME,
@@ -78,7 +78,7 @@ func Run(log *logrus.Logger, config Config, prettyPrint bool, version string) {
 	}
 
 	for _, host := range config.Hosts {
-		result := checkHost(host)
+		result := checkHost(host, rootCAPem)
 		if result.Err != nil {
 			data.Metrics = append(data.Metrics, map[string]interface{}{
 				"event_type": EVENT_TYPE_INVALID,
@@ -137,15 +137,22 @@ func validHost(host string) bool {
 	return regexp.MustCompile(`[\w\.]+:\d{1,5}`).Match([]byte(host))
 }
 
-func checkHost(host string) (result hostResult) {
+func checkHost(host string, CAPem []byte) (result hostResult) {
 	result = hostResult{
 		Host:       host,
 		CertErrors: []certError{},
 	}
-	conn, err := tls.Dial("tcp", host, nil)
+	var tlsConfig tls.Config
+	if len(CAPem) > 0 {
+		certPool := x509.NewCertPool()
+		certPool.AppendCertsFromPEM(CAPem)
+		tlsConfig = tls.Config{RootCAs: certPool}
+	}
+
+	conn, err := tls.Dial("tcp", host, &tlsConfig)
 	if err != nil {
 		result.Err = err
-		return
+		return result
 	}
 	defer conn.Close()
 	timeNow := time.Now()
