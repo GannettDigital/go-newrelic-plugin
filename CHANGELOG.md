@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.7.3
+
+Vinod Vydier - added zookeeper plugin
+
 # 0.7.2
 
 Ed De - PAAS-5763 Replace regexp FindString with FindStringSubmatch for Kraken
