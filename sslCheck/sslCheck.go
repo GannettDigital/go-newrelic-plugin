@@ -14,8 +14,7 @@ import (
 
 //Config is the keeper of the config
 type Config struct {
-	Hosts              []string
-	ExpiredEventPeriod int
+	Hosts []string
 }
 
 type certError struct {

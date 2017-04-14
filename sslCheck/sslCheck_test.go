@@ -15,8 +15,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
 )
+
+func TestRun(t *testing.T) {
+	g := goblin.Goblin(t)
+	var fakeLog = logrus.New()
+	var tests = []struct {
+		config Config
+	}{
+		{
+			config: Config{
+				Hosts: []string{"www.usatoday.com:443"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("Run()", func() {
+			g.It("Run Executes without error", func() {
+				Run(fakeLog, test.config, []byte{}, false, "version")
+			})
+		})
+	}
+}
 
 func TestCheckHost(t *testing.T) {
 	g := goblin.Goblin(t)
