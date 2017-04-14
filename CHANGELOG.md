@@ -3,9 +3,9 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 0.7.3
+# 0.8.0
 
-Vinod Vydier - added zookeeper plugin
+Vinod Vydier - added zookeeper plugin - uses zookeepers FLW commands conf and mntr
 
 # 0.7.2
 
