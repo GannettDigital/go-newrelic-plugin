@@ -163,36 +163,6 @@ func TestGetAllBucketsInfo(t *testing.T) {
 	}
 }
 
-func TestAvgIntSample(t *testing.T) {
-	g := goblin.Goblin(t)
-
-	var tests = []struct {
-		TestDescription string
-		TestData        []int
-		ExpectedResult  float32
-	}{
-		{
-			TestDescription: "Successfully Avg int [0, 100, 100]",
-			TestData:        []int{0, 100, 100},
-			ExpectedResult:  66.666664,
-		},
-		{
-			TestDescription: "Successfully Avg int []",
-			TestData:        []int{},
-			ExpectedResult:  0,
-		},
-	}
-
-	for _, test := range tests {
-		g.Describe("avgIntSample()", func() {
-			g.It(test.TestDescription, func() {
-				result := avgIntSample(test.TestData)
-				g.Assert(reflect.DeepEqual(result, test.ExpectedResult)).Equal(true)
-			})
-		})
-	}
-}
-
 func TestAvgInt64Sample(t *testing.T) {
 	g := goblin.Goblin(t)
 
@@ -257,7 +227,7 @@ func TestFormatBucketInfoStructToMap(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	var couchbucketStats CouchbaseBucketStats
-	couchbucketStats.OP.Samples.GetHits = []int{2, 2, 2}
+	couchbucketStats.OP.Samples.GetHits = []float32{2, 2, 2}
 	var tests = []struct {
 		TestDescription string
 		TestData        CompleteBucketInfo
@@ -293,7 +263,7 @@ func TestFormatBucketInfoEPStatsStructToMap(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	var couchbucketStats CouchbaseBucketStats
-	couchbucketStats.OP.Samples.EPBGFetched = []int{2, 2, 2}
+	couchbucketStats.OP.Samples.EPBGFetched = []float32{2, 2, 2}
 	var tests = []struct {
 		TestDescription string
 		TestData        CompleteBucketInfo

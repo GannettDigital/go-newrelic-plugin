@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.8.2
+
+Michael Dunton - More couchbase stats to use float32
+
 # 0.8.1
 
 Michael Dunton - Fixing bug in couchbase stats that was causing buckets to not show up in the metrics
