@@ -359,7 +359,7 @@ func getCouchBucketsStats(log *logrus.Logger, couchConfig CouchbaseConfig) (allB
 				log.WithFields(logrus.Fields{
 					"currentBucket": currentBucket,
 					"error":         err,
-				}).Error("Error Retreiving bucket stats")
+				}).Info("Error Retreiving bucket stats")
 			} else {
 				bucketStatsResponses <- CompleteBucketInfo{currentBucket, bucketStats}
 			}
