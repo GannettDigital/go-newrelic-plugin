@@ -18,7 +18,7 @@ func OutputJSON(data interface{}, pretty bool) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("Error outputting JSON: %s", err)
+		return fmt.Errorf("Error outputting JSON: %v \n data: %s", data, err)
 	}
 
 	if string(output) == "null" {
