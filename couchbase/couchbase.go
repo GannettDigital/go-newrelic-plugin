@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
@@ -36,7 +37,7 @@ type CouchbaseBucketStats struct {
 			BytesWritten               []float32 `json:"bytes_written"`                   //bytes
 			CasHits                    []int     `json:"cas_hits"`                        //hits
 			CasMisses                  []int     `json:"cas_misses"`                      //misses
-			CMDGet                     []int     `json:"cmd_get"`                         //gets
+			CMDGet                     []float32 `json:"cmd_get"`                         //gets
 			CMDSet                     []int     `json:"cmd_set"`                         //sets
 			CouchDocsActualDiskSize    []int     `json:"couch_docs_actual_disk_size"`     //bytes
 			CouchDocsDataSize          []int64   `json:"couch_docs_data_size"`            //bytes
@@ -60,7 +61,7 @@ type CouchbaseBucketStats struct {
 			Evictions                  []int     `json:"evictions"`                       //evictions
 			GetHits                    []int     `json:"get_hits"`                        //hits
 			GetMisses                  []int     `json:"get_misses"`                      //misses
-			HitRatio                   []int     `json:"hit_ratio"`                       //percent
+			HitRatio                   []float32 `json:"hit_ratio"`                       //percent
 			IncrHits                   []int     `json:"incr_hits"`                       //hits
 			MemFree                    []int64   `json:"mem_free"`                        //bytes
 			MemActuallFree             []int64   `json:"mem_actual_free"`                 //bytes
@@ -162,31 +163,6 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-// OutputJSON takes an object and prints it as a JSON string to the stdout.
-// If the pretty attribute is set to true, the JSON will be idented for easy reading.
-func OutputJSON(data interface{}, pretty bool) error {
-	var output []byte
-	var err error
-
-	if pretty {
-		output, err = json.MarshalIndent(data, "", "\t")
-	} else {
-		output, err = json.Marshal(data)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Error outputting JSON: %s", err)
-	}
-
-	if string(output) == "null" {
-		fmt.Println("[]")
-	} else {
-		fmt.Println(string(output))
-	}
-
-	return nil
-}
-
 func validateConfig(log *logrus.Logger, config CouchbaseConfig) {
 	if config.CouchbaseHost == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
@@ -249,7 +225,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	data.Metrics = append(data.Metrics, couchClusterResponses...)
 	data.Metrics = append(data.Metrics, couchBucketResponses...)
-	fatalIfErr(log, OutputJSON(data, prettyPrint))
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
 func avgIntSample(sampleSet []int) (result float32) {
@@ -299,7 +275,7 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 		"couchbase.by_bucket.bytes_written":                  avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.BytesWritten),
 		"couchbase.by_bucket.cas_hits":                       avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CasHits),
 		"couchbase.by_bucket.cas_misses":                     avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CasMisses),
-		"couchbase.by_bucket.cmd_get":                        avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CMDGet),
+		"couchbase.by_bucket.cmd_get":                        avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.CMDGet),
 		"couchbase.by_bucket.cmd_set":                        avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CMDSet),
 		"couchbase.by_bucket.couch_docs_actual_disk_size":    avgIntSample(completeBucketInfo.bucketStats.OP.Samples.CouchDocsActualDiskSize),
 		"couchbase.by_bucket.couch_docs_data_size":           avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.CouchDocsDataSize),
@@ -323,7 +299,7 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 		"couchbase.by_bucket.evictions":                      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.Evictions),
 		"couchbase.by_bucket.get_hits":                       avgIntSample(completeBucketInfo.bucketStats.OP.Samples.GetHits),
 		"couchbase.by_bucket.get_misses":                     avgIntSample(completeBucketInfo.bucketStats.OP.Samples.GetMisses),
-		"couchbase.by_bucket.hit_ratio":                      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.HitRatio),
+		"couchbase.by_bucket.hit_ratio":                      avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.HitRatio),
 		"couchbase.by_bucket.incr_hits":                      avgIntSample(completeBucketInfo.bucketStats.OP.Samples.IncrHits),
 		"couchbase.by_bucket.mem_free":                       avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemFree),
 		"couchbase.by_bucket.mem_actual_free":                avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemActuallFree),
