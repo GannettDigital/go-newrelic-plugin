@@ -7,6 +7,14 @@ This file is used to list changes made in each version of go-newrelic-plugin.
 
 Vinod Vydier - added zookeeper plugin - uses zookeepers FLW commands conf and mntr
 
+# 0.8.2
+
+Michael Dunton - More couchbase stats to use float32
+
+# 0.8.1
+
+Michael Dunton - Fixing bug in couchbase stats that was causing buckets to not show up in the metrics
+
 # 0.8.0
 Michael Dunton - Adding ssl Check Plugin.
               - Adding a ToInt to helpers
