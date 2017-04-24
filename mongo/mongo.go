@@ -29,6 +29,13 @@ func Run(log *logrus.Logger, session Session, mongoConfig Config, prettyPrint bo
 		data.Metrics = append(data.Metrics, formatDBStatsStructToMap(databaseStatsStruct))
 	}
 
+	replEnabled, databaseReplicatStats := readDBReplicaStats(log, session.DB("admin"))
+	if replEnabled {
+		for index := range databaseReplicatStats.Members {
+			data.Metrics = append(data.Metrics, formatReplStatsStructToMap(databaseReplicatStats, index))
+		}
+	}
+
 	serverStatusResult := readServerStats(log, session)
 	data.Metrics = append(data.Metrics, formatServerStatsStructToMap(serverStatusResult))
 
@@ -55,6 +62,18 @@ func readDBStats(log *logrus.Logger, session Session) []dbStats {
 	}
 	fatalIfErr(log, err)
 	return databaseStatsArray
+}
+
+func readDBReplicaStats(log *logrus.Logger, db DataLayer) (bool, ReplStats) {
+	databaseReplicaStats := ReplStats{}
+	err := db.Run("replSetGetStatus", &databaseReplicaStats)
+	if err != nil {
+		if err.Error() == "not running with --replSet" {
+			return false, ReplStats{}
+		}
+		fatalIfErr(log, err)
+	}
+	return true, databaseReplicaStats
 }
 
 // InitMongoClient - function to create a mongo client

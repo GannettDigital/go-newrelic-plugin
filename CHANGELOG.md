@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.9.0
+
+Tom Barber - adding support for replication set monitoring in mongo
+
 # 0.8.2
 
 Michael Dunton - More couchbase stats to use float32
