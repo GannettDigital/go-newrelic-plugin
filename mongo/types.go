@@ -2,6 +2,8 @@ package mongo
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"gopkg.in/mgo.v2"
 )
@@ -35,6 +37,7 @@ type MongoDatabase struct {
 type MockSession struct {
 	SessionResults  MockSessionResults
 	DatabaseResults map[string]MockDatabaseResults
+	Err             error
 }
 
 type MockSessionResults struct {
@@ -58,19 +61,26 @@ func (fs MockSession) DatabaseNames() ([]string, error) {
 }
 
 func (fs MockSession) Run(selector interface{}, update interface{}) error {
-	json.Unmarshal(fs.SessionResults.RunResult, &update)
-	return nil
+	err := json.Unmarshal(fs.SessionResults.RunResult, &update)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return fs.Err
 }
 
 // MockDatabase satisfies DataLayer and act as a mock.
 type MockDatabase struct {
 	DatabaseResults MockDatabaseResults
+	Err             error
 }
 
 // Run mocks mgo.Database(name).Collection(name).
 func (db MockDatabase) Run(selector interface{}, update interface{}) error {
-	json.Unmarshal(db.DatabaseResults.RunResult, &update)
-	return nil
+	err := json.Unmarshal(db.DatabaseResults.RunResult, &update)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return db.Err
 }
 
 //Config is the keeper of the config
@@ -288,4 +298,38 @@ type dbStats struct {
 	NumExtents  int    `bson:"numExtents"`
 	Indexes     int    `bson:"indexes"`
 	IndexSize   int64  `bson:"indexSize"`
+}
+
+type ReplStats struct {
+	Set                     string       `bson:"set" json:"set"`
+	Date                    time.Time    `bson:"date" json:"date"`
+	MyState                 int          `bson:"myState" json:"myState"`
+	Term                    int64        `bson:"term" json:"term"`
+	HeartbeatIntervalMillis int64        `bson:"heartbeatIntervalMillis" json:"heartbeatIntervalMillis"`
+	Members                 []ReplMember `bson:"members" json:"members"`
+	OK                      int          `bson:"ok" json:"ok"`
+}
+
+type ReplMember struct {
+	ID                int        `bson:"_id" json:"_id"`
+	Name              string     `bson:"name" json:"name"`
+	Health            int        `bson:"health" json:"health"`
+	State             int        `bson:"state" json:"state"`
+	StateStr          string     `bson:"stateStr" json:"stateStr"`
+	Uptime            int64      `bson:"uptime" json:"uptime"`
+	Optime            ReplOptime `bson:"optime" json:"optime"`
+	OptimeDate        time.Time  `bson:"optimeDate" json:"optimeDate"`
+	ElectionTime      int64      `bson:"electionTime" json:"electionTime"`
+	ElectionDate      time.Time  `bson:"electionDate" json:"electionDate"`
+	LastHeartbeat     time.Time  `bson:"lastHeartbeat" json:"lastHeartbeat"`
+	LastHeartbeatRecv time.Time  `bson:"lastHeartbeatRecv" json:"lastHeartbeatRecv"`
+	PingMS            int64      `bson:"pingMs" json:"pingMs"`
+	SyncingTo         string     `bson:"syncingTo" json:"syncingTo"`
+	ConfigVersion     int        `bson:"configVersion" json:"configVersion"`
+	Self              bool       `bson:"self" json:"self"`
+}
+
+type ReplOptime struct {
+	TS int64 `bson:"ts" json:"ts"`
+	T  int64 `bson:"t" json:"t"`
 }
