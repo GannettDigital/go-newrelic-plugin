@@ -151,7 +151,7 @@ func formatReplStatsStructToMap(replStats ReplStats, index int) map[string]inter
 		"mongo.repl.member.electionDate":      replStats.Members[index].ElectionDate,
 		"mongo.repl.member.lastHeartbeat":     replStats.Members[index].LastHeartbeat,
 		"mongo.repl.member.lastHeartbeatRecv": replStats.Members[index].LastHeartbeatRecv,
-		"mongo.repl.member.pintMS":            replStats.Members[index].PintMS,
+		"mongo.repl.member.pintMS":            replStats.Members[index].PingMS,
 		"mongo.repl.member.syncingTo":         replStats.Members[index].SyncingTo,
 		"mongo.repl.member.configVersion":     replStats.Members[index].ConfigVersion,
 		"mongo.repl.member.self":              replStats.Members[index].Self,

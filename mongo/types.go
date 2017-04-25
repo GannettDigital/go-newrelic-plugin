@@ -323,7 +323,7 @@ type ReplMember struct {
 	ElectionDate      time.Time  `bson:"electionDate" json:"electionDate"`
 	LastHeartbeat     time.Time  `bson:"lastHeartbeat" json:"lastHeartbeat"`
 	LastHeartbeatRecv time.Time  `bson:"lastHeartbeatRecv" json:"lastHeartbeatRecv"`
-	PintMS            int64      `bson:"pingMs" json:"pingMs"`
+	PingMS            int64      `bson:"pingMs" json:"pingMs"`
 	SyncingTo         string     `bson:"syncingTo" json:"syncingTo"`
 	ConfigVersion     int        `bson:"configVersion" json:"configVersion"`
 	Self              bool       `bson:"self" json:"self"`
