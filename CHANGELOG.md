@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.9.1
+
+Bridget Lane - use credentials instead of globals
+
 # 0.9.0
 
 Tom Barber - adding support for replication set monitoring in mongo
