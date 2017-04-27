@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.9.2
+
+Seth Dozier- Haproxy multi-frontend hotfix
+
 # 0.9.1
 
 Bridget Lane - use credentials instead of globals
