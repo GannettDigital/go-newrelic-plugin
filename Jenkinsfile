@@ -4,7 +4,7 @@ node {
   stage 'Execute Docker CI'
   try {
 
-    def paasApiCiVersion = "3.3.3-27"
+    def paasApiCiVersion = "3.6.4-43"
     def repo = "GannettDigital/go-newrelic-plugin"
     def environment = "staging"
     def region = "us-east-1"
