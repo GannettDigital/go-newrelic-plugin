@@ -171,6 +171,7 @@ func getFLWmntr(log *logrus.Logger, ZKConf Config) string {
 
 func ScrapeFLWconf(log *logrus.Logger, status string) map[string]interface{} {
 	line := strings.Split(string(status), "\n")
+
 	clientPort := strings.Split(string(line[0]), "=")
 	dataDir := strings.Split(string(line[1]), "=")
 	tickTime := strings.Split(string(line[2]), "=")
