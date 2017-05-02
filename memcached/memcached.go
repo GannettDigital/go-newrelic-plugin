@@ -91,25 +91,24 @@ func getMetric(config MemcachedConfig) (map[string]interface{}, error) {
 	}
 
 	for _, command := range strings.Split(config.Commands, ",") {
-		socketReader(conn, strings.TrimSpace(command), metrics)
+		command = strings.TrimSpace(command)
+		log.Debug(fmt.Sprintf("scanResult: command: %s", command))
+		fmt.Fprintf(conn, "%s\r\n", command)
+		scanner := bufio.NewScanner(bufio.NewReader(conn))
+		scanResult(scanner, command, metrics)
 	}
 	return metrics, nil
 }
 
-func socketReader(conn net.Conn, command string, metrics map[string]interface{}) {
-	log.Debug(fmt.Sprintf("socketReader: command: %s", command))
-	fmt.Fprintf(conn, "%s\r\n", command)
-
-	scanner := bufio.NewScanner(bufio.NewReader(conn))
-	log.Debug(fmt.Sprintf("socketReader: scanner"))
+func scanResult(scanner *bufio.Scanner, command string, metrics map[string]interface{}) {
 	for scanner.Scan() {
-		log.Debug(fmt.Sprintf("socketReader: scanning..."))
+		log.Debug(fmt.Sprintf("scanResult: scanning..."))
 
 		if err := scanner.Err(); err != nil {
 			log.WithError(err).Error("reading scanning connection")
 		}
 		result := strings.TrimSuffix(scanner.Text(), "\r")
-		log.Debug(fmt.Sprintf("socketReader: result: %s", result))
+		log.Debug(fmt.Sprintf("scanResult: result: %s", result))
 		if strings.Compare("END", result) == 0 {
 			break
 		}

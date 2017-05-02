@@ -79,7 +79,14 @@ func Run(logger *logrus.Logger, prettyPrint bool, version string) {
 
 	validateConfig()
 
-	metric, err := getMetrics()
+	db, err := sql.Open("mysql", generateDSN())
+	if err != nil {
+		log.WithError(err).Error(fmt.Sprintf("getMetric: Cannot connect to mysql %s:%s", config.host, config.port))
+		return 
+	}
+	defer db.Close()
+
+	metric, err := getMetrics(db)
 	if err != nil {
 		data.Status = err.Error()
 	}
@@ -87,13 +94,7 @@ func Run(logger *logrus.Logger, prettyPrint bool, version string) {
 	fatalIfErr(helpers.OutputJSON(data, prettyPrint), "OutputJSON error")
 }
 
-func getMetrics() (map[string]interface{}, error) {
-	db, err := sql.Open("mysql", generateDSN())
-	if err != nil {
-		log.WithError(err).Error(fmt.Sprintf("getMetric: Cannot connect to mysql %s:%s", config.host, config.port))
-		return nil, err
-	}
-	defer db.Close()
+func getMetrics(db *sql.DB) (map[string]interface{}, error) {
 
 	metrics := map[string]interface{}{
 		"event_type": "DatastoreSample",
