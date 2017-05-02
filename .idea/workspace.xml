@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="3c9b866c-1a32-47ac-b7f2-75a371bded9d" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/memcached/memcached.go" afterPath="$PROJECT_DIR$/memcached/memcached.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/memcached/memcached_test.go" afterPath="$PROJECT_DIR$/memcached/memcached_test.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/mysql/mysql.go" afterPath="$PROJECT_DIR$/mysql/mysql.go" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/mysql/mysql_test.go" afterPath="$PROJECT_DIR$/mysql/mysql_test.go" />
-    </list>
+    <list default="true" id="3c9b866c-1a32-47ac-b7f2-75a371bded9d" name="Default" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
