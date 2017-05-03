@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.10.0
+
+Vinod Vydier - added zookeeper plugin - uses zookeepers FLW commands conf and mntr (PAAS-5669)
+
 # 0.9.3
 
 Bridget Lane - Bump paas-api-ci
@@ -28,7 +32,6 @@ Michael Dunton - More couchbase stats to use float32
 Michael Dunton - Fixing bug in couchbase stats that was causing buckets to not show up in the metrics
 
 # 0.8.0
-
 Michael Dunton - Adding ssl Check Plugin.
               - Adding a ToInt to helpers
 

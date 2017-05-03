@@ -1,0 +1,15 @@
+name: com.gannettdigital.zookeeper
+description: Reports ZooKeeper metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/zookeeper
+    prefix: gannett
+    interval: 15
+    env:
+      ZK_TICKTIME: 2000
+      ZK_DATADIR: "/var/lib/zookeeper"
+      ZK_HOST: "localhost"
+      ZK_CLIENTPORT: 2181
