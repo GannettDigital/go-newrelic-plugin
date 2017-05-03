@@ -12,8 +12,8 @@ func NewSession(mongoUrl string) Session {
 	return MongoSession{mgoSession}
 }
 
-func NewMockSession(mockSessionResults MockSessionResults, mockDatabaseResults map[string]MockDatabaseResults) Session {
-	return MockSession{mockSessionResults, mockDatabaseResults}
+func NewMockSession(mockSessionResults MockSessionResults, mockDatabaseResults map[string]MockDatabaseResults, err error) Session {
+	return MockSession{mockSessionResults, mockDatabaseResults, err}
 }
 
 func formatDBStatsStructToMap(dbStats dbStats) (dbInfoMap map[string]interface{}) {
@@ -127,5 +127,34 @@ func formatServerStatsStructToMap(serverStatus serverStatus) (dbInfoMap map[stri
 		"mongo.metrics.operation.writeConflicts":                                  serverStatus.Metrics.Operation.WriteConflicts,
 		"mongo.metrics.queryExecutor.scanned":                                     serverStatus.Metrics.QueryExecutor.Scanned,
 		"mongo.metrics.queryExecutor.scannedObjects":                              serverStatus.Metrics.QueryExecutor.ScannedObjects,
+	}
+}
+
+func formatReplStatsStructToMap(replStats ReplStats, index int) map[string]interface{} {
+	return map[string]interface{}{
+		"event_type":                          EVENT_TYPE,
+		"provider":                            PROVIDER,
+		"mongo.repl.set":                      replStats.Set,
+		"mongo.repl.date":                     replStats.Date,
+		"mongo.repl.myState":                  replStats.MyState,
+		"mongo.repl.term":                     replStats.Term,
+		"mongo.repl.heartbeatIntervalMillis":  replStats.HeartbeatIntervalMillis,
+		"mongo.repl.member.id":                replStats.Members[index].ID,
+		"mongo.repl.member.name":              replStats.Members[index].Name,
+		"mongo.repl.member.health":            replStats.Members[index].Health,
+		"mongo.repl.member.state":             replStats.Members[index].State,
+		"mongo.repl.member.stateStr":          replStats.Members[index].StateStr,
+		"mongo.repl.member.uptime":            replStats.Members[index].Uptime,
+		"mongo.repl.member.optime":            replStats.Members[index].Optime,
+		"mongo.repl.member.optimeDate":        replStats.Members[index].OptimeDate,
+		"mongo.repl.member.electionTime":      replStats.Members[index].ElectionTime,
+		"mongo.repl.member.electionDate":      replStats.Members[index].ElectionDate,
+		"mongo.repl.member.lastHeartbeat":     replStats.Members[index].LastHeartbeat,
+		"mongo.repl.member.lastHeartbeatRecv": replStats.Members[index].LastHeartbeatRecv,
+		"mongo.repl.member.pintMS":            replStats.Members[index].PingMS,
+		"mongo.repl.member.syncingTo":         replStats.Members[index].SyncingTo,
+		"mongo.repl.member.configVersion":     replStats.Members[index].ConfigVersion,
+		"mongo.repl.member.self":              replStats.Members[index].Self,
+		"mongo.repl.ok":                       replStats.OK,
 	}
 }

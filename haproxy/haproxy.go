@@ -127,7 +127,7 @@ func getHaproxyStatus(log *logrus.Logger, haproxyConf Config) ([]MetricData, err
 	}
 	Stats := make([]MetricData, 0)
 	for _, record := range InitialStats {
-		if record[0] == "http_frontend" {
+		if record[0] != "stats" && record[1] == "FRONTEND" {
 			Stats = append(Stats, MetricData{
 				"event_type":                        EVENT_TYPE,
 				"provider":                          PROVIDER,
