@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.12.0
+
+Michael Dunton - Mysql Plugin (PAAS-6237)
+
 # 0.10.0
 
 Vinod Vydier - added zookeeper plugin - uses zookeepers FLW commands conf and mntr (PAAS-5669)
