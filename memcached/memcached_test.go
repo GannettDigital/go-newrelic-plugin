@@ -110,76 +110,10 @@ func TestMetricName(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		g.Describe("getMetricName)", func() {
+		g.Describe("getMetricName()", func() {
 			g.It(test.TestDescription, func() {
 				name := metricName(test.command, test.metric)
 				g.Assert(name).Equal(test.result)
-			})
-		})
-	}
-}
-
-func TestCamelCase(t *testing.T) {
-	g := goblin.Goblin(t)
-	var tests = []struct {
-		TestDescription string
-		src             string
-		result          string
-	}{
-		{
-			TestDescription: "Should convert to camel case without error",
-			src:             "one_two_three_four",
-			result:          "oneTwoThreeFour",
-		},
-		{
-			TestDescription: "Should convert to camel case with colon without error",
-			src:             "one:two_three_four",
-			result:          "one.twoThreeFour",
-		},
-	}
-	for _, test := range tests {
-		g.Describe("camelCase)", func() {
-			g.It(test.TestDescription, func() {
-				camel := camelCase(test.src)
-				g.Assert(camel).Equal(test.result)
-			})
-		})
-	}
-}
-
-func TestAsValue(t *testing.T) {
-	g := goblin.Goblin(t)
-	var tests = []struct {
-		TestDescription string
-		value           string
-		result          interface{}
-	}{
-		{
-			TestDescription: "Should convert string to string without error",
-			value:           "string",
-			result:          "string",
-		},
-		{
-			TestDescription: "Should convert string to int without error",
-			value:           "1",
-			result:          1,
-		},
-		{
-			TestDescription: "Should convert string to float without error",
-			value:           "1.0",
-			result:          1.0,
-		},
-		{
-			TestDescription: "Should convert string to boolean without error",
-			value:           "true",
-			result:          true,
-		},
-	}
-	for _, test := range tests {
-		g.Describe("asValue)", func() {
-			g.It(test.TestDescription, func() {
-				value := asValue(test.value)
-				g.Assert(value).Equal(test.result)
 			})
 		})
 	}

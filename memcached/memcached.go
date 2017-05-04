@@ -2,14 +2,11 @@ package memcached
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
 	"net"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -50,9 +47,8 @@ type PluginData struct {
 
 var log *logrus.Logger
 
-func Run(logger *logrus.Logger, prettyPrint bool, version string) {
+func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	// Initialize the output structure
-	log = logger
 	var data = PluginData{
 		Name:            NAME,
 		PluginVersion:   PLUGIN_VERSION,
@@ -115,7 +111,7 @@ func scanResult(scanner *bufio.Scanner, command string, metrics map[string]inter
 		line := strings.Split(result, " ")
 
 		name := metricName(command, line[1])
-		metrics[name] = asValue(strings.Join(line[2:], " "))
+		metrics[name] = helpers.AsValue(strings.Join(line[2:], " "))
 	}
 }
 
@@ -128,40 +124,9 @@ func metricName(command string, metric string) string {
 		result = fmt.Sprintf("%s.%s", result, (strings.Split(command, " "))[1])
 		log.Debug(fmt.Sprintf("metricName: result2: %s", result))
 	}
-	result = fmt.Sprintf("%s.%s", result, camelCase(metric))
+	result = fmt.Sprintf("%s.%s", result, helpers.CamelCase(metric))
 	log.Debug(fmt.Sprintf("metricName: result3: %s", result))
 	return result
-}
-
-var camelingRegex = regexp.MustCompile("[0-9A-Za-z.]+")
-
-func camelCase(src string) string {
-	log.Debug(fmt.Sprintf("camelCase: src: %s", src))
-	src = strings.Replace(src, ":", ".", -1)
-	byteSrc := []byte(src)
-	chunks := camelingRegex.FindAll(byteSrc, -1)
-	for idx, val := range chunks {
-		if idx > 0 {
-			chunks[idx] = bytes.Title(val)
-		}
-	}
-	result := string(bytes.Join(chunks, nil))
-	log.Debug(fmt.Sprintf("camelCase: result: %s", result))
-	return result
-}
-
-func asValue(value string) interface{} {
-	if i, err := strconv.Atoi(value); err == nil {
-		return i
-	}
-	if f, err := strconv.ParseFloat(value, 64); err == nil {
-		return f
-	}
-
-	if b, err := strconv.ParseBool(value); err == nil {
-		return b
-	}
-	return value
 }
 
 func validateConfig(config MemcachedConfig) {

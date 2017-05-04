@@ -1,8 +1,12 @@
 package helpers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -28,4 +32,32 @@ func OutputJSON(data interface{}, pretty bool) error {
 	}
 
 	return nil
+}
+
+func CamelCase(src string) string {
+	var camelingRegex = regexp.MustCompile("[0-9A-Za-z.]+")
+	src = strings.Replace(src, ":", ".", -1)
+	byteSrc := []byte(src)
+	chunks := camelingRegex.FindAll(byteSrc, -1)
+	for idx, val := range chunks {
+		if idx > 0 {
+			chunks[idx] = bytes.Title(val)
+		}
+	}
+	result := string(bytes.Join(chunks, nil))
+	return result
+}
+
+func AsValue(value string) interface{} {
+	if i, err := strconv.Atoi(value); err == nil {
+		return i
+	}
+	if f, err := strconv.ParseFloat(value, 64); err == nil {
+		return f
+	}
+
+	if b, err := strconv.ParseBool(value); err == nil {
+		return b
+	}
+	return value
 }
