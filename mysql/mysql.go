@@ -144,7 +144,7 @@ func getMetrics(db *sql.DB) (map[string]interface{}, error) {
 
 func metricName(metric string) string {
 	log.Debug(fmt.Sprintf("metricName: metric: %s", metric))
-	result := fmt.Sprintf("mysql.%s", helpers.CamelCase(metric))
+	result := fmt.Sprintf("mysql.%s", helpers.CamelCase(fixPrefix(metric)))
 	log.Debug(fmt.Sprintf("metricName: result3: %s", result))
 	return result
 }
