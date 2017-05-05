@@ -1,0 +1,18 @@
+name: com.gannettdigital.mysql
+description: Reports MySQL metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/mysql
+    prefix: gannett
+    interval: 15
+    env:
+      HOST: 52.87.202.38
+      PORT: 3306
+      USER: root
+      PASSWORD: dbpassword
+      DATABASE: mysql
+      QUERIES: "show status; show global variables; show master logs;"
+      PREFIXES: 'galera_ innodb_ net_ performance_ Galera_ Innodb_ Net_ Performance_'

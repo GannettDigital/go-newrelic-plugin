@@ -20,3 +20,4 @@ import:
 - package: github.com/jarcoal/httpmock
 - package: gopkg.in/redis.v5
 - package: gopkg.in/mgo.v2
+- package: gopkg.in/DATA-DOG/go-sqlmock.v1

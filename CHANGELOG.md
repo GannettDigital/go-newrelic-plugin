@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.12.0
+
+Michael Dunton - Mysql Plugin (PAAS-6237)
+
 # 0.11.0
 
 Michael Dunton - Memcached plugin added (PaaS-5495)
