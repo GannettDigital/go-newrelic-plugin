@@ -7,6 +7,10 @@ This file is used to list changes made in each version of go-newrelic-plugin.
 
 Michael Dunton - Mysql Plugin (PAAS-6237)
 
+# 0.11.0
+
+Michael Dunton - Memcached plugin added (PaaS-5495)
+
 # 0.10.0
 
 Vinod Vydier - added zookeeper plugin - uses zookeepers FLW commands conf and mntr (PAAS-5669)
