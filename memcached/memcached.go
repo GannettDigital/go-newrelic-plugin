@@ -74,8 +74,8 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	if err != nil {
 		data.Status = err.Error()
 	}
-	  data.Metrics = append(data.Metrics, metric)
-	  fatalIfErr(helpers.OutputJSON(data, prettyPrint), "OutputJSON error")
+	data.Metrics = append(data.Metrics, metric)
+	fatalIfErr(helpers.OutputJSON(data, prettyPrint), "OutputJSON error")
 }
 
 func getMetric(config MemcachedConfig) (map[string]interface{}, error) {
