@@ -45,14 +45,11 @@ type PluginData struct {
 	Events          []EventData              `json:"events"`
 }
 
-var log *logrus.Logger
-
-func init() {
-	log = logrus.New()
-}
+var localLog *logrus.Logger
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	// Initialize the output structure
+	localLog = log
 	var data = PluginData{
 		Name:            NAME,
 		PluginVersion:   PLUGIN_VERSION,
@@ -81,7 +78,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 func getMetric(config MemcachedConfig) (map[string]interface{}, error) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", config.MemcachedHost, config.MemcachedPort))
 	if err != nil {
-		log.WithError(err).Error(fmt.Sprintf("getMetric: Cannot connect to memcached %s:%s", config.MemcachedHost, config.MemcachedPort))
+		localLog.WithError(err).Error(fmt.Sprintf("getMetric: Cannot connect to memcached %s:%s", config.MemcachedHost, config.MemcachedPort))
 		return nil, err
 	}
 
@@ -92,7 +89,7 @@ func getMetric(config MemcachedConfig) (map[string]interface{}, error) {
 
 	for _, command := range strings.Split(config.Commands, ",") {
 		command = strings.TrimSpace(command)
-		log.Debug(fmt.Sprintf("scanResult: command: %s", command))
+		localLog.Debug(fmt.Sprintf("scanResult: command: %s", command))
 		fmt.Fprintf(conn, "%s\r\n", command)
 		scanner := bufio.NewScanner(bufio.NewReader(conn))
 		scanResult(scanner, command, metrics)
@@ -102,13 +99,13 @@ func getMetric(config MemcachedConfig) (map[string]interface{}, error) {
 
 func scanResult(scanner *bufio.Scanner, command string, metrics map[string]interface{}) {
 	for scanner.Scan() {
-		log.Debug(fmt.Sprintf("scanResult: scanning..."))
+		localLog.Debug(fmt.Sprintf("scanResult: scanning..."))
 
 		if err := scanner.Err(); err != nil {
-			log.WithError(err).Error("reading scanning connection")
+			localLog.WithError(err).Error("reading scanning connection")
 		}
 		result := strings.TrimSuffix(scanner.Text(), "\r")
-		log.Debug(fmt.Sprintf("scanResult: result: %s", result))
+		localLog.Debug(fmt.Sprintf("scanResult: result: %s", result))
 		if strings.Compare("END", result) == 0 {
 			break
 		}
@@ -120,33 +117,33 @@ func scanResult(scanner *bufio.Scanner, command string, metrics map[string]inter
 }
 
 func metricName(command string, metric string) string {
-	log.Debug(fmt.Sprintf("metricName: command: %s metric: %s", command, metric))
+	localLog.Debug(fmt.Sprintf("metricName: command: %s metric: %s", command, metric))
 	line := strings.Split(command, " ")
 	result := "memcached"
-	log.Debug(fmt.Sprintf("metricName: result1: %s", result))
+	localLog.Debug(fmt.Sprintf("metricName: result1: %s", result))
 	if len(line) == 2 {
 		result = fmt.Sprintf("%s.%s", result, (strings.Split(command, " "))[1])
-		log.Debug(fmt.Sprintf("metricName: result2: %s", result))
+		localLog.Debug(fmt.Sprintf("metricName: result2: %s", result))
 	}
 	result = fmt.Sprintf("%s.%s", result, helpers.CamelCase(metric))
-	log.Debug(fmt.Sprintf("metricName: result3: %s", result))
+	localLog.Debug(fmt.Sprintf("metricName: result3: %s", result))
 	return result
 }
 
 func validateConfig(config MemcachedConfig) {
 	if config.MemcachedHost == "" {
-		log.Fatal("Config Yaml is missing MEMCACHED_HOST value. Please check the config to continue")
+		localLog.Fatal("Config Yaml is missing MEMCACHED_HOST value. Please check the config to continue")
 	}
 	if config.MemcachedPort == "" {
-		log.Fatal("Config Yaml is missing MEMCACHED_PORT value. Please check the config to continue")
+		localLog.Fatal("Config Yaml is missing MEMCACHED_PORT value. Please check the config to continue")
 	}
 	if len(config.Commands) < 1 {
-		log.Fatal("Config Yaml is missing COMMANDS value. Please check the config to continue")
+		localLog.Fatal("Config Yaml is missing COMMANDS value. Please check the config to continue")
 	}
 }
 
 func fatalIfErr(err error, msg string) {
 	if err != nil {
-		log.WithError(err).Fatal(msg)
+		localLog.WithError(err).Fatal(msg)
 	}
 }
