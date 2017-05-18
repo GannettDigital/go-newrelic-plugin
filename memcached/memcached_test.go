@@ -15,7 +15,7 @@ var fakeConfig MemcachedConfig
 
 func init() {
 	logrus.SetLevel(logrus.DebugLevel)
-	log = logrus.New()
+	localLog = logrus.New()
 	var l = GetListener()
 	var port = l.Addr().(*net.TCPAddr).Port
 	// Spin the server out in a go routine
@@ -81,7 +81,7 @@ func TestGetMetric(t *testing.T) {
 		g.Describe("getMetric)", func() {
 			g.It(test.TestDescription, func() {
 				metric, _ := getMetric(fakeConfig)
-				log.Debug(metric)
+				localLog.Debug(metric)
 				g.Assert(metric).Equal(test.result)
 			})
 		})
