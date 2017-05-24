@@ -2,6 +2,7 @@ package couchbase
 
 import (
 	"errors"
+	"os"
 	"reflect"
 	"testing"
 
@@ -67,9 +68,10 @@ func TestGetCouchClusterStats(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	var tests = []struct {
-		HTTPRunner      fake.HTTPResult
-		ExpectedResult  []map[string]interface{}
-		TestDescription string
+		HTTPRunner        fake.HTTPResult
+		ExpectedScalrName string
+		ExpectedResult    []map[string]interface{}
+		TestDescription   string
 	}{
 		{
 			HTTPRunner: fake.HTTPResult{
@@ -82,23 +84,30 @@ func TestGetCouchClusterStats(t *testing.T) {
 					},
 				},
 			},
-			ExpectedResult:  []map[string]interface{}{},
-			TestDescription: "Successfully GET Couchbase Cluster stats",
+			ExpectedScalrName: "sometestname",
+			ExpectedResult:    []map[string]interface{}{},
+			TestDescription:   "Successfully GET Couchbase Cluster stats",
 		},
 	}
 
 	for _, test := range tests {
+		origValue := os.Getenv("CB_CLUSTER_NAME")
+		os.Setenv("CB_CLUSTER_NAME", test.ExpectedScalrName)
+
 		g.Describe("TestGetCouchBucketsStats()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				couchBucketResponses, getCouchBucketStatsError := getCouchClusterStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchBucketStatsError).Equal(nil)
 				g.Assert(len(couchBucketResponses)).Equal(1)
+				g.Assert(couchBucketResponses[0]["couchbase.cluster.scalrname"]).Equal(test.ExpectedScalrName)
 				g.Assert(couchBucketResponses[0]["couchbase.cluster.hdd.free"]).Equal(int64(55555))
 				g.Assert(couchBucketResponses[0]["event_type"]).Equal(EVENT_TYPE)
 				g.Assert(couchBucketResponses[0]["provider"]).Equal(PROVIDER)
 			})
 		})
+
+		os.Setenv("CB_CLUSTER_NAME", origValue)
 	}
 }
 
