@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.13.0
+
+Tom Barber - add additional scalrname for cluster name of couchbase cluster
+
 # 0.12.1
 
 Brian Lieberman - fix uninitialized logger in memcached plugin (PAAS-6521)

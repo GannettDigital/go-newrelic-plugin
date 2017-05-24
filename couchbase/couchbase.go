@@ -442,6 +442,7 @@ func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricD
 		MetricData{
 			"event_type":                         EVENT_TYPE,
 			"provider":                           PROVIDER,
+			"couchbase.cluster.scalrname":        os.Getenv("CB_CLUSTER_NAME"),
 			"couchbase.cluster.name":             clusterResponse.Name,
 			"couchbase.cluster.hdd.free":         clusterResponse.StorageTotals.HDD.HDDFree,
 			"couchbase.cluster.hdd.total":        clusterResponse.StorageTotals.HDD.HDDTotal,
