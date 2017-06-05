@@ -38,6 +38,7 @@ node {
       --skip-docker \
       --skip-swagger \
       --skip-source-check \
+      --skip-validate \
       --codecov-token=\"${CODECOV_GO_NEWRELIC_PLUGIN}\""
     }
   }

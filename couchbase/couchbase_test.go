@@ -100,7 +100,7 @@ func TestGetCouchClusterStats(t *testing.T) {
 				couchBucketResponses, getCouchBucketStatsError := getCouchClusterStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchBucketStatsError).Equal(nil)
 				g.Assert(len(couchBucketResponses)).Equal(1)
-				g.Assert(couchBucketResponses[0]["couchbase.cluster.scalrname"]).Equal(test.ExpectedScalrName)
+				g.Assert(couchBucketResponses[0]["couchbase.scalr.clustername"]).Equal(test.ExpectedScalrName)
 				g.Assert(couchBucketResponses[0]["couchbase.cluster.hdd.free"]).Equal(int64(55555))
 				g.Assert(couchBucketResponses[0]["event_type"]).Equal(EVENT_TYPE)
 				g.Assert(couchBucketResponses[0]["provider"]).Equal(PROVIDER)
