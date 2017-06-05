@@ -256,6 +256,7 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 	return map[string]interface{}{
 		"event_type":                                         EVENT_TYPE,
 		"provider":                                           PROVIDER,
+		"couchbase.scalr.clustername":                        os.Getenv("CB_CLUSTER_NAME"),
 		"couchbase.by_bucket.name":                           completeBucketInfo.bucketInfo.Name,
 		"couchbase.by_bucket.avg_bg_wait_time":               avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.AVGBGWaitTime),
 		"couchbase.by_bucket.avg_disk_commit_time":           avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.AVGDiskCommitTime),
@@ -316,6 +317,7 @@ func formatBucketInfoEPStatsStructToMap(completeBucketInfo CompleteBucketInfo) (
 	return map[string]interface{}{
 		"event_type":                                          EVENT_TYPE,
 		"provider":                                            PROVIDER,
+		"couchbase.scalr.clustername":                         os.Getenv("CB_CLUSTER_NAME"),
 		"couchbase.by_bucket.name":                            completeBucketInfo.bucketInfo.Name,
 		"couchbase.by_bucket.ep_bg_fetched":                   avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPBGFetched),
 		"couchbase.by_bucket.ep_cache_miss_rate":              avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPCacheMissRate),
@@ -442,7 +444,7 @@ func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricD
 		MetricData{
 			"event_type":                         EVENT_TYPE,
 			"provider":                           PROVIDER,
-			"couchbase.cluster.scalrname":        os.Getenv("CB_CLUSTER_NAME"),
+			"couchbase.scalr.clustername":        os.Getenv("CB_CLUSTER_NAME"),
 			"couchbase.cluster.name":             clusterResponse.Name,
 			"couchbase.cluster.hdd.free":         clusterResponse.StorageTotals.HDD.HDDFree,
 			"couchbase.cluster.hdd.total":        clusterResponse.StorageTotals.HDD.HDDTotal,
