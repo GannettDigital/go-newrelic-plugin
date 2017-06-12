@@ -1,0 +1,9 @@
+# /var/db/newrelic-infra/integrations.d/fastly.yaml
+
+integration_name: com.gannettdigital.fastly
+instances:
+  - name: com.gannettdigital.fastly
+    command: fastly
+    arguments:
+      SERVICE_ID: <someid>
+      FASTLY_API_KEY: <some api key>
