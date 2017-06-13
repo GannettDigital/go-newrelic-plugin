@@ -4,10 +4,40 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/Sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
 )
+
+// OutputJSON takes an object and prints it as a JSON string to the stdout.
+// If the pretty attribute is set to true, the JSON will be idented for easy reading.
+func OutputJSONLog(log *logrus.Logger, data interface{}, pretty bool) error {
+	log.Info("3")
+	var output []byte
+	var err error
+
+	if pretty {
+		output, err = json.MarshalIndent(data, "", "\t")
+	} else {
+		output, err = json.Marshal(data)
+	}
+
+	if err != nil {
+		log.Info("4")
+		return fmt.Errorf("Error outputting JSON: %v \n data: %s", data, err)
+	}
+
+	if string(output) == "null" {
+		log.Info("5")
+		fmt.Println("[]")
+	} else {
+		log.Info("6")
+		fmt.Println(string(output))
+	}
+
+	return nil
+}
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
 // If the pretty attribute is set to true, the JSON will be idented for easy reading.

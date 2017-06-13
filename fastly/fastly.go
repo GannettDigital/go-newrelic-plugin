@@ -51,7 +51,6 @@ type PluginData struct {
 	Metrics         []MetricData             `json:"metrics"`
 	Inventory       map[string]InventoryData `json:"inventory"`
 	Events          []EventData              `json:"events"`
-	Status          string                   `json:"status"`
 }
 
 type FastlyRealTimeDataV1 struct {
@@ -96,6 +95,7 @@ func init() {
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
+	log.Info("1")
 
 	// Initialize the output structure
 	var data = PluginData{
@@ -106,35 +106,19 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Metrics:         make([]MetricData, 0),
 		Events:          make([]EventData, 0),
 	}
-
+	log.Info("2")
 	var fastlyConf = Config{
 		FastlyAPIKey: os.Getenv("FASTLY_API_KEY"),
 		ServiceID:    os.Getenv("SERVICE_ID"),
 	}
+	log.Info("3")
 	validateConfig(log, fastlyConf)
+	log.Info("4")
 
 	fastlyStats := getFastlyStats(log, fastlyConf)
 
-	for k, _ := range fastlyStats.Data[0].Datacenter {
-		log.Error("dc", k)
-		if k != "LAX" {
-			log.Info("deleting", k)
-			delete(fastlyStats.Data[0].Datacenter, k)
-		}
-	}
-	// fastlyStats := FastlyRealTimeDataV1{
-	// 	Data: []FastlyDataObjects{{
-	// 		Datacenter: map[string]FastlyStats{
-	// 			"LAX": FastlyStats{
-	// 				Requests: 1715,
-	// 			},
-	// 		},
-	// 	},
-	// 	},
-	// }
-
-	log.Debug("whee")
-	fmt.Fprintln(os.Stderr, "gimme")
+	log.Info("whee")
+	//fmt.Fprintln(os.Stderr, "gimme")
 
 	//data.Metrics = append(data.Metrics, convertToNrMetric(fastlyStats.Data[0].Datacenter["MSP"], "MSP", fastlyConf, log))
 	//
@@ -193,7 +177,6 @@ func convertToNrMetric(stats FastlyStats, dataCenter string, config Config, log 
 
 func validateConfig(log *logrus.Logger, fastlyConf Config) {
 	if fastlyConf.FastlyAPIKey == "" || fastlyConf.ServiceID == "" {
-		os.Exit(-6)
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
@@ -201,7 +184,6 @@ func validateConfig(log *logrus.Logger, fastlyConf Config) {
 func fatalIfErr(log *logrus.Logger, err error) {
 	if err != nil {
 		log.Error("err", err.Error())
-		os.Exit(-5)
 		log.WithError(err).Fatal("can't continue")
 	}
 }
