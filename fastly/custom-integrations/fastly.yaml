@@ -1,0 +1,11 @@
+name: com.gannettdigital.fastly
+description: Reports Fastly Real time Metrics
+protocol_version: 1
+os: linux
+commands:
+  fastly:
+    command:
+     - /var/db/newrelic-infra/custom-integrations/bin/go-newrelic-plugin
+     - fastly
+    prefix: gannett
+    interval: 60
