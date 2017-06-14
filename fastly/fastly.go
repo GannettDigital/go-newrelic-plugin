@@ -118,7 +118,6 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	// // loop over datacenter items
 	for _, dataItem := range fastlyStats.Data {
 		for datacenter, datacenterStats := range dataItem.Datacenter {
-			log.Info("datacenter is", datacenter)
 			data.Metrics = append(data.Metrics, convertToNrMetric(datacenterStats, datacenter, fastlyConf, log))
 		}
 		// push the aggregated type onto the stack
