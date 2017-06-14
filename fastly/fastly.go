@@ -115,29 +115,6 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	fastlyStats := getFastlyStats(log, fastlyConf)
 
-	for k, _ := range fastlyStats.Data[0].Datacenter {
-		log.Error("dc", k)
-		if k != "LAX" {
-			log.Info("deleting", k)
-			delete(fastlyStats.Data[0].Datacenter, k)
-		}
-	}
-	// fastlyStats := FastlyRealTimeDataV1{
-	// 	Data: []FastlyDataObjects{{
-	// 		Datacenter: map[string]FastlyStats{
-	// 			"LAX": FastlyStats{
-	// 				Requests: 1715,
-	// 			},
-	// 		},
-	// 	},
-	// 	},
-	// }
-
-	log.Debug("whee")
-	fmt.Fprintln(os.Stderr, "gimme")
-
-	//data.Metrics = append(data.Metrics, convertToNrMetric(fastlyStats.Data[0].Datacenter["MSP"], "MSP", fastlyConf, log))
-	//
 	// // loop over datacenter items
 	for _, dataItem := range fastlyStats.Data {
 		for datacenter, datacenterStats := range dataItem.Datacenter {
@@ -145,28 +122,21 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 			data.Metrics = append(data.Metrics, convertToNrMetric(datacenterStats, datacenter, fastlyConf, log))
 		}
 		// push the aggregated type onto the stack
-		//data.Metrics = append(data.Metrics, convertToNrMetric(dataItem.Aggregated, "aggregated", fastlyConf, log))
+		data.Metrics = append(data.Metrics, convertToNrMetric(dataItem.Aggregated, "aggregated", fastlyConf, log))
 	}
 
-	// data.Metrics = append(data.Metrics, map[string]interface{}{
-	// 	"event_type":        "LoadBalancerSample",
-	// 	"provider":          PROVIDER,
-	// 	"fastly.serviceId":  fastlyConf.ServiceID,
-	// 	"fastly.datacenter": "fake",
-	// })
-
-	fatalIfErr(log, helpers.OutputJSONLog(log, data, prettyPrint))
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
 func convertToNrMetric(stats FastlyStats, dataCenter string, config Config, log *logrus.Logger) map[string]interface{} {
 
 	return map[string]interface{}{
-		"event_type": "LoadBalancerSample",
-		"provider":   PROVIDER,
-		/*"fastly.serviceId":  config.ServiceID,*/
-		"fastly.datacenter": dataCenter,
-		"fastly.requests":   stats.Requests,
-		/*"fastly.headerSize":       stats.HeaderSize,
+		"event_type":              "LoadBalancerSample",
+		"provider":                PROVIDER,
+		"fastly.serviceId":        config.ServiceID,
+		"fastly.datacenter":       dataCenter,
+		"fastly.requests":         stats.Requests,
+		"fastly.headerSize":       stats.HeaderSize,
 		"fastly.bodySize":         stats.BodySize,
 		"fastly.reqHeaderBytes":   stats.ReqHeaderBytes,
 		"fastly.respHeaderBytes":  stats.RespHeaderBytes,
@@ -187,21 +157,18 @@ func convertToNrMetric(stats FastlyStats, dataCenter string, config Config, log 
 		"fastly.synth":            stats.Synth,
 		"fastly.errors":           stats.Errors,
 		"fastly.hitTime":          stats.HitsTime,
-		"fastly.missTime":         stats.MissTime,*/
+		"fastly.missTime":         stats.MissTime,
 	}
 }
 
 func validateConfig(log *logrus.Logger, fastlyConf Config) {
 	if fastlyConf.FastlyAPIKey == "" || fastlyConf.ServiceID == "" {
-		os.Exit(-6)
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
 	if err != nil {
-		log.Error("err", err.Error())
-		os.Exit(-5)
 		log.WithError(err).Fatal("can't continue")
 	}
 }
@@ -216,7 +183,6 @@ func getFastlyStats(log *logrus.Logger, config Config) FastlyRealTimeDataV1 {
 	code, data, err := runner.CallAPI(log, nil, httpReq, &http.Client{})
 	if err != nil || code != 200 {
 		fmt.Fprintln(os.Stderr, err.Error())
-		os.Exit(-4)
 		log.WithFields(logrus.Fields{
 			"code":             code,
 			"data":             string(data),
@@ -234,7 +200,5 @@ func getFastlyStats(log *logrus.Logger, config Config) FastlyRealTimeDataV1 {
 		log.Panic("unable to unmarshal return data into fastly stats type: ", err.Error())
 	}
 
-	log.Info("data is")
-	log.Info(fastlyData.Data[0].Datacenter["LAX"].Hits)
 	return fastlyData
 }
