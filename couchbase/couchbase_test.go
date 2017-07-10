@@ -80,7 +80,7 @@ func TestGetCouchClusterStats(t *testing.T) {
 						Method: "GET",
 						URI:    "/pools/default",
 						Code:   200,
-						Data:   []byte("{\"storageTotals\":{\"ram\":{\"total\":1,\"quotaTotal\":22,\"quotaUsed\":333,\"used\":4444,\"usedByData\":55555,\"quotaUsedPerNode\":666666,\"quotaTotalPerNode\":7777777},\"hdd\":{\"total\":1,\"quotaTotal\":22,\"used\":333,\"usedByData\":4444,\"free\":55555}}}"),
+						Data:   []byte(`{"storageTotals":{"ram":{"total":1,"quotaTotal":22,"quotaUsed":333,"used":4444,"usedByData":55555,"quotaUsedPerNode":666666,"quotaTotalPerNode":7777777},"hdd":{"total":1,"quotaTotal":22,"used":333,"usedByData":4444,"free":55555}},"nodes":[{"systemStats":{"cpu_utilization_rate":0.7731958762886598,"swap_total":4192202752,"swap_used":0,"mem_total":2095890432,"mem_free":1118621696},"interestingStats":{"cmd_get":0,"couch_docs_actual_disk_size":23087235,"couch_docs_data_size":14033920,"couch_spatial_data_size":0,"couch_spatial_disk_size":0,"couch_views_actual_disk_size":2792937,"couch_views_data_size":2792937,"curr_items":7303,"curr_items_tot":7303,"ep_bg_fetched":0,"get_hits":0,"mem_used":104462392,"ops":0,"vb_replica_curr_items":0},"uptime":"4963","memoryTotal":2095890432,"memoryFree":1118621696,"mcdMemoryReserved":1599,"mcdMemoryAllocated":1599,"couchApiBase":"http://172.17.0.2:8092/","couchApiBaseHTTPS":"https://172.17.0.2:18092/","clusterMembership":"active","recoveryType":"none","status":"healthy","otpNode":"ns_1@127.0.0.1","thisNode":true,"hostname":"172.17.0.2:8091","clusterCompatibility":262149,"version":"4.5.1-2844-enterprise","os":"x86_64-unknown-linux-gnu","ports":{"sslProxy":11214,"httpsMgmt":18091,"httpsCAPI":18092,"proxy":11211,"direct":11210},"services":["index","kv","n1ql"]}]}`),
 					},
 				},
 			},
@@ -99,11 +99,14 @@ func TestGetCouchClusterStats(t *testing.T) {
 				runner = test.HTTPRunner
 				couchBucketResponses, getCouchBucketStatsError := getCouchClusterStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchBucketStatsError).Equal(nil)
-				g.Assert(len(couchBucketResponses)).Equal(1)
-				g.Assert(couchBucketResponses[0]["couchbase.scalr.clustername"]).Equal(test.ExpectedScalrName)
-				g.Assert(couchBucketResponses[0]["couchbase.cluster.hdd.free"]).Equal(int64(55555))
-				g.Assert(couchBucketResponses[0]["event_type"]).Equal(EVENT_TYPE)
-				g.Assert(couchBucketResponses[0]["provider"]).Equal(PROVIDER)
+				g.Assert(len(couchBucketResponses)).Equal(2)
+				g.Assert(couchBucketResponses[1]["couchbase.scalr.clustername"]).Equal(test.ExpectedScalrName)
+				g.Assert(couchBucketResponses[1]["couchbase.cluster.hdd.free"]).Equal(int64(55555))
+				g.Assert(couchBucketResponses[1]["event_type"]).Equal(EVENT_TYPE)
+				g.Assert(couchBucketResponses[1]["provider"]).Equal(PROVIDER)
+				g.Assert(couchBucketResponses[0]["couchbase.cluster.by_node.status"]).Equal("healthy")
+				g.Assert(couchBucketResponses[0]["couchbase.cluster.by_node.hostname"]).Equal("172.17.0.2:8091")
+				g.Assert(couchBucketResponses[0]["couchbase.cluster.by_node.cluster_membership"]).Equal("active")
 			})
 		})
 
