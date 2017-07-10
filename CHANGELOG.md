@@ -3,6 +3,11 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.16.0
+
+Ryan Grothouse - adding additional couchbase metrics
+
+
 # 0.14.0
 
 Ryan Grothouse - added fastly collector to get real-time metrics
