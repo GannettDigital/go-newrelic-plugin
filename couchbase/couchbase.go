@@ -31,57 +31,55 @@ type CouchbaseConfig struct {
 type CouchbaseBucketStats struct {
 	OP struct {
 		Samples struct {
-			AVGBGWaitTime              []float32 `json:"avg_bg_wait_time"`               //seconds
-			AVGDiskCommitTime          []float32 `json:"avg_disk_commit_time"`           //seconds
-			BytesRead                  []float32 `json:"bytes_read"`                     //bytes
-			BytesWritten               []float32 `json:"bytes_written"`                  //bytes
-			CasHits                    []float32 `json:"cas_hits"`                       //hits
-			CasMisses                  []float32 `json:"cas_misses"`                     //misses
-			CMDGet                     []float32 `json:"cmd_get"`                        //gets
-			CMDSet                     []float32 `json:"cmd_set"`                        //sets
-			CouchDocsActualDiskSize    []int64   `json:"couch_docs_actual_disk_size"`    //bytes
-			CouchDocsDataSize          []int64   `json:"couch_docs_data_size"`           //bytes
-			CouchDocsDiskSize          []int64   `json:"couch_docs_disk_size"`           //bytes
-			CouchDocsFragmentation     []float32 `json:"couch_docs_fragmentation"`       //percent
-			CouchTotalDiskSize         []int64   `json:"couch_total_disk_size"`          //bytes
-			CouchViewsFragmentation    []float32 `json:"couch_views_fragmentation"`      //percent
-			CouchViewsOps              []float32 `json:"couch_views_ops"`                //operations
-			CPUIdleTime                []float32 `json:"cpu_idle_ms"`                    //milliseconds
-			CPUUtilizationRate         []float32 `json:"cpu_utilization_rate"`           //percent
-			CurrConnections            []float32 `json:"curr_connections"`               //connections
-			CurrItems                  []float32 `json:"curr_items"`                     //items
-			CurrItemsTotal             []float32 `json:"curr_items_tot"`                 //items
-			DecrHits                   []float32 `json:"decr_hits"`                      //hits
-			DecrMisses                 []float32 `json:"decr_misses"`                    //misses
-			DeleteHits                 []float32 `json:"delete_hits"`                    //hits
-			DeleteMisses               []float32 `json:"delete_misses"`                  //misses
-			DiskCommitCount            []float32 `json:"disk_commit_count"`              //operations
-			DiskUpdateCount            []float32 `json:"disk_update_count"`              //operations
-			DiskWriteQueue             []float32 `json:"disk_write_queue"`               //operations
-			Evictions                  []float32 `json:"evictions"`                      //evictions
-			GetHits                    []float32 `json:"get_hits"`                       //hits
-			GetMisses                  []float32 `json:"get_misses"`                     //misses
-			HitRatio                   []float32 `json:"hit_ratio"`                      //percent
-			IncrHits                   []float32 `json:"incr_hits"`                      //hits
-			MemFree                    []int64   `json:"mem_free"`                       //bytes
-			MemActuallFree             []int64   `json:"mem_actual_free"`                //bytes
-			MemTotal                   []int64   `json:"mem_total"`                      //bytes
-			MemUsed                    []int64   `json:"mem_used"`                       //bytes
-			MemActuallUsed             []int64   `json:"mem_actual_used"`                //bytes
-			Misses                     []float32 `json:"misses"`                         //misses
-			Ops                        []float32 `json:"ops"`                            //operations
-			VBActiveNums               []float32 `json:"vb_active_num"`                  //items
-			VBActiveQueueDrain         []float32 `json:"vb_active_queue_drain"`          //items
-			VBActiveQueueSize          []float32 `json:"vb_active_queue_size"`           //items
-			VBActiveResidentItemsRatio []float32 `json:"vb_active_resident_items_ratio"` //items
-			VBActiveNumNonResident     []float32 `json:"vb_active_num_non_resident"`     //items
-			//VBActivePercMemResident     []float32 `json:"vb_active_perc_mem_resident"`
-			VBAvgTotalQueueAge      []float32 `json:"vb_avg_total_queue_age"`      //Seconds
-			VBPendingOpsCreate      []float32 `json:"vb_pending_ops_create"`       //operations
-			VBPendingQueueFill      []float32 `json:"vb_pending_queue_fill"`       //items
-			VBReplicaCurrItems      []float32 `json:"vb_replica_curr_items"`       //items
-			VBReplicaMetaDataMemory []int64   `json:"vb_replica_meta_data_memory"` //bytes
-			//VBReplicaPercMemResident    []float32 `json:"vb_replica_perc_mem_resident"`
+			AVGBGWaitTime               []float32 `json:"avg_bg_wait_time"`               //seconds
+			AVGDiskCommitTime           []float32 `json:"avg_disk_commit_time"`           //seconds
+			BytesRead                   []float32 `json:"bytes_read"`                     //bytes
+			BytesWritten                []float32 `json:"bytes_written"`                  //bytes
+			CasHits                     []float32 `json:"cas_hits"`                       //hits
+			CasMisses                   []float32 `json:"cas_misses"`                     //misses
+			CMDGet                      []float32 `json:"cmd_get"`                        //gets
+			CMDSet                      []float32 `json:"cmd_set"`                        //sets
+			CouchDocsActualDiskSize     []int64   `json:"couch_docs_actual_disk_size"`    //bytes
+			CouchDocsDataSize           []int64   `json:"couch_docs_data_size"`           //bytes
+			CouchDocsDiskSize           []int64   `json:"couch_docs_disk_size"`           //bytes
+			CouchDocsFragmentation      []float32 `json:"couch_docs_fragmentation"`       //percent
+			CouchTotalDiskSize          []int64   `json:"couch_total_disk_size"`          //bytes
+			CouchViewsFragmentation     []float32 `json:"couch_views_fragmentation"`      //percent
+			CouchViewsOps               []float32 `json:"couch_views_ops"`                //operations
+			CPUIdleTime                 []float32 `json:"cpu_idle_ms"`                    //milliseconds
+			CPUUtilizationRate          []float32 `json:"cpu_utilization_rate"`           //percent
+			CurrConnections             []float32 `json:"curr_connections"`               //connections
+			CurrItems                   []float32 `json:"curr_items"`                     //items
+			CurrItemsTotal              []float32 `json:"curr_items_tot"`                 //items
+			DecrHits                    []float32 `json:"decr_hits"`                      //hits
+			DecrMisses                  []float32 `json:"decr_misses"`                    //misses
+			DeleteHits                  []float32 `json:"delete_hits"`                    //hits
+			DeleteMisses                []float32 `json:"delete_misses"`                  //misses
+			DiskCommitCount             []float32 `json:"disk_commit_count"`              //operations
+			DiskUpdateCount             []float32 `json:"disk_update_count"`              //operations
+			DiskWriteQueue              []float32 `json:"disk_write_queue"`               //operations
+			Evictions                   []float32 `json:"evictions"`                      //evictions
+			GetHits                     []float32 `json:"get_hits"`                       //hits
+			GetMisses                   []float32 `json:"get_misses"`                     //misses
+			HitRatio                    []float32 `json:"hit_ratio"`                      //percent
+			IncrHits                    []float32 `json:"incr_hits"`                      //hits
+			MemFree                     []int64   `json:"mem_free"`                       //bytes
+			MemActuallFree              []int64   `json:"mem_actual_free"`                //bytes
+			MemTotal                    []int64   `json:"mem_total"`                      //bytes
+			MemUsed                     []int64   `json:"mem_used"`                       //bytes
+			MemActuallUsed              []int64   `json:"mem_actual_used"`                //bytes
+			Misses                      []float32 `json:"misses"`                         //misses
+			Ops                         []float32 `json:"ops"`                            //operations
+			VBActiveNums                []float32 `json:"vb_active_num"`                  //items
+			VBActiveQueueDrain          []float32 `json:"vb_active_queue_drain"`          //items
+			VBActiveQueueSize           []float32 `json:"vb_active_queue_size"`           //items
+			VBActiveResidentItemsRatio  []float32 `json:"vb_active_resident_items_ratio"` //items
+			VBActiveNumNonResident      []float32 `json:"vb_active_num_non_resident"`     //items
+			VBAvgTotalQueueAge          []float32 `json:"vb_avg_total_queue_age"`         //Seconds
+			VBPendingOpsCreate          []float32 `json:"vb_pending_ops_create"`          //operations
+			VBPendingQueueFill          []float32 `json:"vb_pending_queue_fill"`          //items
+			VBReplicaCurrItems          []float32 `json:"vb_replica_curr_items"`          //items
+			VBReplicaMetaDataMemory     []int64   `json:"vb_replica_meta_data_memory"`    //bytes
 			VBReplicaResidentItemsRatio []int64   `json:"vb_replica_resident_items_ratio"`
 			VBReplicaNum                []float32 `json:"vb_replica_num"`        //items
 			VBReplicaQueueSize          []float32 `json:"vb_replica_queue_size"` //items
@@ -90,35 +88,32 @@ type CouchbaseBucketStats struct {
 			EPCacheMissRate             []float32 `json:"ep_cache_miss_rate"`    //misses
 			EPDcp2iItemsRemaining       []int64   `json:"ep_dcp_2i_items_remaining"`
 			EPDcpFtsItemsRemaining      []int64   `json:"ep_dcp_fts_items_remaining"`
+			EPDcpOtherItemsRemaining    []int64   `json:"ep_dcp_other_items_remaining"`
 			EPDcpReplicaItemsRemaining  []int64   `json:"ep_dcp_replica_items_remaining"`
-			//EPDcpTotalQueue             []float32 `json:"ep_dcp_total_queue"`
-			//EPDcpView                   []float32 `json:"ep_dcp_views"`
-			EPDcpViewItemsRemaining []int64   `json:"ep_dcp_views_items_remaining"`
-			EPDcpXDCRItemsRemaining []int64   `json:"ep_dcp_xdcr_items_remaining"`
-			EPDiskQueueItems        []float32 `json:"ep_diskqueue_items"`    //items
-			EPDiskQueueDrain        []float32 `json:"ep_diskqueue_drain"`    //items
-			EPDiskQueueFill         []float32 `json:"ep_diskqueue_fill"`     //items
-			EPFlusherTodo           []float32 `json:"ep_flusher_todo"`       //items
-			EpItemCommitFailed      []float32 `json:"ep_item_commit_failed"` //errors
-			//EpIONumRead                 []float32 `json:"ep_io_num_read"`
-			//EpIONumWrite                []float32 `json:"ep_io_num_write"`
-			EPKVSize                   []int64   `json:"ep_kv_size"`
-			EPMaxSize                  []int64   `json:"ep_max_size"`     //bytes
-			EPMemHighWater             []int64   `json:"ep_mem_high_wat"` //bytes
-			EPMemLowWater              []int64   `json:"ep_mem_low_wat"`
-			EPNumNonResident           []float32 `json:"ep_num_non_resident"`             //Items
-			EPNumValueEjects           []float32 `json:"ep_num_value_ejects"`             //Items
-			EPOOMErrors                []float32 `json:"ep_oom_errors"`                   //errors
-			EPOPSCreate                []float32 `json:"ep_ops_create"`                   //operations
-			EPOPSUpdate                []float32 `json:"ep_ops_update"`                   //operations
-			EPOverhead                 []int64   `json:"ep_overhead"`                     //bytes
-			EPQueueSize                []float32 `json:"ep_queue_size"`                   //items
-			EPResidentItemsRate        []float32 `json:"ep_resident_items_rate"`          //items
-			EPTapReplicaQueueDrain     []float32 `json:"ep_tap_replica_queue_drain"`      //items
-			EPTapTotalQueueDrain       []float32 `json:"ep_tap_total_queue_drain"`        //items
-			EPTapTotalQueueFill        []float32 `json:"ep_tap_total_queue_fill"`         //items
-			EPTapTotalTotalBacklogSize []float32 `json:"ep_tap_total_total_backlog_size"` //items
-			EPTMPOOMErrors             []float32 `json:"ep_tmp_oom_errors"`               //errors
+			EPDcpViewItemsRemaining     []int64   `json:"ep_dcp_views_items_remaining"`
+			EPDcpXDCRItemsRemaining     []int64   `json:"ep_dcp_xdcr_items_remaining"`
+			EPDiskQueueItems            []float32 `json:"ep_diskqueue_items"`    //items
+			EPDiskQueueDrain            []float32 `json:"ep_diskqueue_drain"`    //items
+			EPDiskQueueFill             []float32 `json:"ep_diskqueue_fill"`     //items
+			EPFlusherTodo               []float32 `json:"ep_flusher_todo"`       //items
+			EpItemCommitFailed          []float32 `json:"ep_item_commit_failed"` //errors
+			EPKVSize                    []int64   `json:"ep_kv_size"`
+			EPMaxSize                   []int64   `json:"ep_max_size"`     //bytes
+			EPMemHighWater              []int64   `json:"ep_mem_high_wat"` //bytes
+			EPMemLowWater               []int64   `json:"ep_mem_low_wat"`
+			EPNumNonResident            []float32 `json:"ep_num_non_resident"`             //Items
+			EPNumValueEjects            []float32 `json:"ep_num_value_ejects"`             //Items
+			EPOOMErrors                 []float32 `json:"ep_oom_errors"`                   //errors
+			EPOPSCreate                 []float32 `json:"ep_ops_create"`                   //operations
+			EPOPSUpdate                 []float32 `json:"ep_ops_update"`                   //operations
+			EPOverhead                  []int64   `json:"ep_overhead"`                     //bytes
+			EPQueueSize                 []float32 `json:"ep_queue_size"`                   //items
+			EPResidentItemsRate         []float32 `json:"ep_resident_items_rate"`          //items
+			EPTapReplicaQueueDrain      []float32 `json:"ep_tap_replica_queue_drain"`      //items
+			EPTapTotalQueueDrain        []float32 `json:"ep_tap_total_queue_drain"`        //items
+			EPTapTotalQueueFill         []float32 `json:"ep_tap_total_queue_fill"`         //items
+			EPTapTotalTotalBacklogSize  []float32 `json:"ep_tap_total_total_backlog_size"` //items
+			EPTMPOOMErrors              []float32 `json:"ep_tmp_oom_errors"`               //errors
 		} `json:"samples"`
 	} `json:"op"`
 }
@@ -330,14 +325,6 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 		"couchbase.by_bucket.vb_replica_queue_size":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaQueueSize),
 		"couchbase.by_bucket.xdc_ops":                          avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.XDCOPS),
 		"couchbase.by_bucket.vb_replica_resident_items_ration": avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaResidentItemsRatio),
-		"couchbase.by_bucket.ep_kv_size":                       avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPKVSize),
-		"couchbase.by_bucket.ep_mem_high_wat":                  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMemHighWater),
-		"couchbase.by_bucket.ep_mem_low_wat":                   avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMemLowWater),
-		"couchbase.by_bucket.ep_dcp_replica_items_remaining":   avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaItemsRemaining),
-		"couchbase.by_bucket.ep_dcp_xdcr_items_remaining":      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRItemsRemaining),
-		"couchbase.by_bucket.ep_dcp_views_items_remaining":     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpViewItemsRemaining),
-		"couchbase.by_bucket.ep_dcp_2i_items_remaining":        avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcp2iItemsRemaining),
-		"couchbase.by_bucket.ep_dcp_fts_items_remaining":       avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpFtsItemsRemaining),
 	}
 }
 
@@ -369,6 +356,14 @@ func formatBucketInfoEPStatsStructToMap(completeBucketInfo CompleteBucketInfo) (
 		"couchbase.by_bucket.ep_tap_total_queue_fill":         avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPTapTotalQueueFill),
 		"couchbase.by_bucket.ep_tap_total_total_backlog_size": avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPTapTotalTotalBacklogSize),
 		"couchbase.by_bucket.ep_tmp_oom_errors":               avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPTMPOOMErrors),
+		"couchbase.by_bucket.ep_kv_size":                      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPKVSize),
+		"couchbase.by_bucket.ep_mem_low_wat":                  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMemLowWater),
+		"couchbase.by_bucket.ep_dcp_replica_items_remaining":  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaItemsRemaining),
+		"couchbase.by_bucket.ep_dcp_xdcr_items_remaining":     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRItemsRemaining),
+		"couchbase.by_bucket.ep_dcp_views_items_remaining":    avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpViewItemsRemaining),
+		"couchbase.by_bucket.ep_dcp_2i_items_remaining":       avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcp2iItemsRemaining),
+		"couchbase.by_bucket.ep_dcp_fts_items_remaining":      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpFtsItemsRemaining),
+		"couchbase.by_bucket.ep_dcp_other_items_remaining":    avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpOtherItemsRemaining),
 	}
 }
 
