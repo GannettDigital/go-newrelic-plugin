@@ -1,7 +1,6 @@
 package redis
 
 import (
-	"encoding/json"
 	"testing"
 
 	redis "gopkg.in/redis.v5"
@@ -9,6 +8,9 @@ import (
 	"github.com/GannettDigital/go-newrelic-plugin/redis/fake"
 	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/metric"
+	newrelicsdk "github.com/newrelic/infra-integrations-sdk/sdk"
 )
 
 func TestOutputJSON(t *testing.T) {
@@ -252,31 +254,35 @@ func TestParseRawData(t *testing.T) {
 	}
 }
 
-func TestFormatMetric(t *testing.T) {
+func TestFormatMetrics(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	var tests = []struct {
 		InputLog        *logrus.Logger
+		InputVersion    string
 		InputData       string
-		ExpectedRes     []byte
+		ExpectedMetrics []*metric.MetricSet
 		TestDescription string
 	}{
 		{
-			InputLog:        logrus.New(),
-			InputData:       "redis.redis_version:0.0.1\r\nredis.redis_git_sha1:00000000\r\nredis.redis_git_dirty:1\r\n",
-			ExpectedRes:     []byte(`{"event_type":"RedisInfo","providor":"redis","redis.aof_current_rewrite_time_sec":0,"redis.aof_enabled":0,"redis.aof_last_bgrewrite_status":"","redis.aof_last_rewrite_time_sec":0,"redis.aof_last_write_status":"","redis.aof_rewrite_in_progress":0,"redis.aof_rewrite_scheduled":0,"redis.arch_bits":0,"redis.blocked_clients":0,"redis.client_biggest_input_buf":0,"redis.client_longest_output_list":0,"redis.cluster_enabled":0,"redis.config_file":"","redis.connected_clients":0,"redis.connected_slaves":0,"redis.evicted_keys":0,"redis.executable":"","redis.expired_keys":0,"redis.gcc_version":"","redis.hz":0,"redis.instantaneous_input_kbps":0,"redis.instantaneous_ops_per_sec":0,"redis.instantaneous_output_kbps":0,"redis.keyspace_hits":0,"redis.keyspace_misses":0,"redis.latest_fork_usec":0,"redis.loading":0,"redis.lru_clock":0,"redis.master_repl_offset":0,"redis.maxmemory":0,"redis.maxmemory_human":"","redis.maxmemory_policy":"","redis.mem_allocator":"","redis.mem_fragmentation_ratio":0,"redis.migrate_cached_sockets":0,"redis.multiplexing_api":"","redis.os":"","redis.process_id":0,"redis.pubsub_channels":0,"redis.pubsub_patterns":0,"redis.rdb_bgsave_in_progress":0,"redis.rdb_changes_since_last_save":0,"redis.rdb_current_bgsave_time_sec":0,"redis.rdb_last_bgsave_status":"","redis.rdb_last_bgsave_time_sec":0,"redis.rdb_last_save_time":0,"redis.redis_build_id":"","redis.redis_git_dirty":0,"redis.redis_git_sha1":"","redis.redis_mode":"","redis.redis_version":"","redis.rejected_connections":0,"redis.repl_backlog_active":0,"redis.repl_backlog_first_byte_offset":0,"redis.repl_backlog_histlen":0,"redis.repl_backlog_size":0,"redis.role":"","redis.run_id":"","redis.sync_full":0,"redis.sync_partial_err":0,"redis.sync_partial_ok":0,"redis.tcp_port":0,"redis.total_commands_processed":0,"redis.total_connections_received":0,"redis.total_net_input_bytes":0,"redis.total_net_output_bytes":0,"redis.total_system_memory":0,"redis.total_system_memory_human":"","redis.uptime_in_days":0,"redis.uptime_in_seconds":0,"redis.used_cpu_sys":0,"redis.used_cpu_sys_children":0,"redis.used_cpu_user":0,"redis.used_cpu_user_children":0,"redis.used_memory":0,"redis.used_memory_human":"","redis.used_memory_lua":0,"redis.used_memory_lua_human":"","redis.used_memory_peak":0,"redis.used_memory_peak_human":"","redis.used_memory_rss":0,"redis.used_memory_rss_human":""}`),
+			InputLog:     logrus.New(),
+			InputVersion: "1",
+			InputData:    "redis.redis_version:0.0.1\r\nredis.redis_git_sha1:00000000\r\nredis.redis_git_dirty:1\r\n",
+			ExpectedMetrics: []*metric.MetricSet{
+				{},
+			}, /*[]byte(`{"event_type":"RedisInfo","providor":"redis","redis.aof_current_rewrite_time_sec":0,"redis.aof_enabled":0,"redis.aof_last_bgrewrite_status":"","redis.aof_last_rewrite_time_sec":0,"redis.aof_last_write_status":"","redis.aof_rewrite_in_progress":0,"redis.aof_rewrite_scheduled":0,"redis.arch_bits":0,"redis.blocked_clients":0,"redis.client_biggest_input_buf":0,"redis.client_longest_output_list":0,"redis.cluster_enabled":0,"redis.config_file":"","redis.connected_clients":0,"redis.connected_slaves":0,"redis.evicted_keys":0,"redis.executable":"","redis.expired_keys":0,"redis.gcc_version":"","redis.hz":0,"redis.instantaneous_input_kbps":0,"redis.instantaneous_ops_per_sec":0,"redis.instantaneous_output_kbps":0,"redis.keyspace_hits":0,"redis.keyspace_misses":0,"redis.latest_fork_usec":0,"redis.loading":0,"redis.lru_clock":0,"redis.master_repl_offset":0,"redis.maxmemory":0,"redis.maxmemory_human":"","redis.maxmemory_policy":"","redis.mem_allocator":"","redis.mem_fragmentation_ratio":0,"redis.migrate_cached_sockets":0,"redis.multiplexing_api":"","redis.os":"","redis.process_id":0,"redis.pubsub_channels":0,"redis.pubsub_patterns":0,"redis.rdb_bgsave_in_progress":0,"redis.rdb_changes_since_last_save":0,"redis.rdb_current_bgsave_time_sec":0,"redis.rdb_last_bgsave_status":"","redis.rdb_last_bgsave_time_sec":0,"redis.rdb_last_save_time":0,"redis.redis_build_id":"","redis.redis_git_dirty":0,"redis.redis_git_sha1":"","redis.redis_mode":"","redis.redis_version":"","redis.rejected_connections":0,"redis.repl_backlog_active":0,"redis.repl_backlog_first_byte_offset":0,"redis.repl_backlog_histlen":0,"redis.repl_backlog_size":0,"redis.role":"","redis.run_id":"","redis.sync_full":0,"redis.sync_partial_err":0,"redis.sync_partial_ok":0,"redis.tcp_port":0,"redis.total_commands_processed":0,"redis.total_connections_received":0,"redis.total_net_input_bytes":0,"redis.total_net_output_bytes":0,"redis.total_system_memory":0,"redis.total_system_memory_human":"","redis.uptime_in_days":0,"redis.uptime_in_seconds":0,"redis.used_cpu_sys":0,"redis.used_cpu_sys_children":0,"redis.used_cpu_user":0,"redis.used_cpu_user_children":0,"redis.used_memory":0,"redis.used_memory_human":"","redis.used_memory_lua":0,"redis.used_memory_lua_human":"","redis.used_memory_peak":0,"redis.used_memory_peak_human":"","redis.used_memory_rss":0,"redis.used_memory_rss_human":""}`),*/
 			TestDescription: "Should successfully parse and format output capable of being formatted into json",
 		},
 	}
 
 	for _, test := range tests {
-		g.Describe("formatMetric()", func() {
+		g.Describe("formatMetrics()", func() {
 			g.It(test.TestDescription, func() {
-				res := formatMetric(test.InputLog, test.InputData)
-				js, err := json.Marshal(res)
+				integration, err := newrelicsdk.NewIntegration(NAME, test.InputVersion, &args.DefaultArgumentList{})
+				formatMetrics(test.InputLog, integration, test.InputData)
 
 				g.Assert(err).Equal(nil)
-				g.Assert(string(js)).Equal(string(test.ExpectedRes))
+				g.Assert(integration.Metrics).Equal(test.ExpectedMetrics)
 			})
 		})
 	}
