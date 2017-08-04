@@ -3,6 +3,11 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+
+# 0.17.0
+
+Michael Dunton - Adding the mysql cmd
+
 # 0.16.0
 
 Ryan Grothouse - adding additional couchbase metrics
