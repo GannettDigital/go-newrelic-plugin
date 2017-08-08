@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 	"fmt"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
