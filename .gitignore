@@ -33,3 +33,5 @@ _testmain.go
 
 glide.lock
 coverage/
+
+go-newrelic-plugin
