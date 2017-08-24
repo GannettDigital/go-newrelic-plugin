@@ -3,6 +3,7 @@ package couchbase
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -187,19 +188,20 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-func validateConfig(log *logrus.Logger, config CouchbaseConfig) {
+func validateConfig(log *logrus.Logger, config CouchbaseConfig) error {
 	if config.CouchbaseHost == "" {
-		log.Fatal("Config Yaml is missing CouchbaseHost value. Please check the config to continue")
+		return errors.New("Config Yaml is missing CouchbaseHost value. Please check the config to continue")
 	}
 	if config.CouchbasePassword == "" {
-		log.Fatal("Config Yaml is missing CouchbasePassword value. Please check the config to continue")
+		return errors.New("Config Yaml is missing CouchbasePassword value. Please check the config to continue")
 	}
 	if config.CouchbasePort == "" {
-		log.Fatal("Config Yaml is missing CouchbasePort value. Please check the config to continue")
+		return errors.New("Config Yaml is missing CouchbasePort value. Please check the config to continue")
 	}
 	if config.CouchbaseUser == "" {
-		log.Fatal("Config Yaml is missing CouchbaseUser value. Please check the config to continue")
+		return errors.New("Config Yaml is missing CouchbaseUser value. Please check the config to continue")
 	}
+	return nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
@@ -244,7 +246,8 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		CouchbasePort:     os.Getenv("COUCHBASE_PORT"),
 		CouchbaseHost:     os.Getenv("COUCHBASE_HOST"),
 	}
-	validateConfig(log, config)
+	err := validateConfig(log, config)
+	fatalIfErr(log, err)
 
 	couchClusterResponses, getCouchClusterStatsError := getCouchClusterStats(log, config)
 	couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(log, config)

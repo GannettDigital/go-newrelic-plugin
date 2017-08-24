@@ -22,6 +22,71 @@ func init() {
 	}
 }
 
+func TestValidateConfig(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		InputLog        *logrus.Logger
+		InputConfig     CouchbaseConfig
+		ExpectedErr     error
+		TestDescription string
+	}{
+		{
+			InputLog:        logrus.New(),
+			InputConfig:     CouchbaseConfig{},
+			ExpectedErr:     errors.New("Config Yaml is missing CouchbaseHost value. Please check the config to continue"),
+			TestDescription: "Should Error when CouchbaseHost is not set",
+		},
+		{
+			InputLog: logrus.New(),
+			InputConfig: CouchbaseConfig{
+				CouchbaseHost: "Derp",
+			},
+			ExpectedErr:     errors.New("Config Yaml is missing CouchbasePassword value. Please check the config to continue"),
+			TestDescription: "Should Error when CouchbasePassword is not set",
+		},
+		{
+			InputLog: logrus.New(),
+			InputConfig: CouchbaseConfig{
+				CouchbaseHost:     "Derp",
+				CouchbasePassword: "Derp",
+			},
+			ExpectedErr:     errors.New("Config Yaml is missing CouchbasePort value. Please check the config to continue"),
+			TestDescription: "Should Error when CouchbasPort is not set",
+		},
+		{
+			InputLog: logrus.New(),
+			InputConfig: CouchbaseConfig{
+				CouchbaseHost:     "Derp",
+				CouchbasePassword: "Derp",
+				CouchbasePort:     "DerpPort",
+			},
+			ExpectedErr:     errors.New("Config Yaml is missing CouchbaseUser value. Please check the config to continue"),
+			TestDescription: "Should Error when CouchbaseUser is not set",
+		},
+		{
+			InputLog: logrus.New(),
+			InputConfig: CouchbaseConfig{
+				CouchbaseHost:     "Derp",
+				CouchbasePassword: "Derp",
+				CouchbasePort:     "DerpPort",
+				CouchbaseUser:     "User",
+			},
+			ExpectedErr:     nil,
+			TestDescription: "Should not error when all config values are set",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("validateConfig()", func() {
+			g.It(test.TestDescription, func() {
+				err := validateConfig(test.InputLog, test.InputConfig)
+				g.Assert(err).Equal(test.ExpectedErr)
+			})
+		})
+	}
+}
+
 func TestGetCouchBucketsStats(t *testing.T) {
 	g := goblin.Goblin(t)
 
@@ -80,7 +145,13 @@ func TestGetCouchClusterStats(t *testing.T) {
 						Method: "GET",
 						URI:    "/pools/default",
 						Code:   200,
-						Data:   []byte(`{"storageTotals":{"ram":{"total":1,"quotaTotal":22,"quotaUsed":333,"used":4444,"usedByData":55555,"quotaUsedPerNode":666666,"quotaTotalPerNode":7777777},"hdd":{"total":1,"quotaTotal":22,"used":333,"usedByData":4444,"free":55555}},"nodes":[{"systemStats":{"cpu_utilization_rate":0.7731958762886598,"swap_total":4192202752,"swap_used":0,"mem_total":2095890432,"mem_free":1118621696},"interestingStats":{"cmd_get":0,"couch_docs_actual_disk_size":23087235,"couch_docs_data_size":14033920,"couch_spatial_data_size":0,"couch_spatial_disk_size":0,"couch_views_actual_disk_size":2792937,"couch_views_data_size":2792937,"curr_items":7303,"curr_items_tot":7303,"ep_bg_fetched":0,"get_hits":0,"mem_used":104462392,"ops":0,"vb_replica_curr_items":0},"uptime":"4963","memoryTotal":2095890432,"memoryFree":1118621696,"mcdMemoryReserved":1599,"mcdMemoryAllocated":1599,"couchApiBase":"http://172.17.0.2:8092/","couchApiBaseHTTPS":"https://172.17.0.2:18092/","clusterMembership":"active","recoveryType":"none","status":"healthy","otpNode":"ns_1@127.0.0.1","thisNode":true,"hostname":"172.17.0.2:8091","clusterCompatibility":262149,"version":"4.5.1-2844-enterprise","os":"x86_64-unknown-linux-gnu","ports":{"sslProxy":11214,"httpsMgmt":18091,"httpsCAPI":18092,"proxy":11211,"direct":11210},"services":["index","kv","n1ql"]}]}`),
+						Data:   []byte(`{"indexStatusURI":"indexStatus?v=74148774","storageTotals":{"ram":{"total":1,"quotaTotal":22,"quotaUsed":333,"used":4444,"usedByData":55555,"quotaUsedPerNode":666666,"quotaTotalPerNode":7777777},"hdd":{"total":1,"quotaTotal":22,"used":333,"usedByData":4444,"free":55555}},"nodes":[{"systemStats":{"cpu_utilization_rate":0.7731958762886598,"swap_total":4192202752,"swap_used":0,"mem_total":2095890432,"mem_free":1118621696},"interestingStats":{"cmd_get":0,"couch_docs_actual_disk_size":23087235,"couch_docs_data_size":14033920,"couch_spatial_data_size":0,"couch_spatial_disk_size":0,"couch_views_actual_disk_size":2792937,"couch_views_data_size":2792937,"curr_items":7303,"curr_items_tot":7303,"ep_bg_fetched":0,"get_hits":0,"mem_used":104462392,"ops":0,"vb_replica_curr_items":0},"uptime":"4963","memoryTotal":2095890432,"memoryFree":1118621696,"mcdMemoryReserved":1599,"mcdMemoryAllocated":1599,"couchApiBase":"http://172.17.0.2:8092/","couchApiBaseHTTPS":"https://172.17.0.2:18092/","clusterMembership":"active","recoveryType":"none","status":"healthy","otpNode":"ns_1@127.0.0.1","thisNode":true,"hostname":"172.17.0.2:8091","clusterCompatibility":262149,"version":"4.5.1-2844-enterprise","os":"x86_64-unknown-linux-gnu","ports":{"sslProxy":11214,"httpsMgmt":18091,"httpsCAPI":18092,"proxy":11211,"direct":11210},"services":["index","kv","n1ql"]}]}`),
+					},
+					fake.Result{
+						Method: "GET",
+						URI:    "/indexStatus?v=74148774",
+						Code:   200,
+						Data:   []byte(`{"indexes":[{"storageMode":"forestdb","hosts":["10.84.96.220:8091"],"progress":100,"definition":"CREATE PRIMARY INDEX #primary ON deployments","status":"Ready","bucket":"deployments","index":"#primary","id":8893382884342514204},{"storageMode":"forestdb","hosts":["10.84.96.220:8091"],"progress":100,"definition":"CREATE PRIMARY INDEX #primary ON dns-manager","status":"Ready","bucket":"dns-manager","index":"#primary","id":7168709155480627845}]}`),
 					},
 				},
 			},
