@@ -17,7 +17,7 @@ var runner utilsHTTP.HTTPRunner
 
 const EVENT_TYPE string = "DatastoreSample"
 const NAME string = "couchbase"
-const PROVIDER string = "couchbase" //we might want to make this an env tied to nginx version or app name maybe...
+const PROVIDER string = "couchbase"
 const PROTOCOL_VERSION string = "1"
 
 //CouchbaseConfig is the keeper of the config
@@ -118,6 +118,15 @@ type CouchbaseBucketStats struct {
 	} `json:"op"`
 }
 
+type CouchbaseIndex struct {
+	ID         uint64 `json:"id"`
+	Bucket     string `json:"bucket"`
+	Index      string `json:"index"`
+	Status     string `json:"status"`
+	Definition string `json:"definition"`
+	Progress   int8   `json:"progress"`
+}
+
 type CouchbaseBucketStatsURI struct {
 	Name        string `json:"name"`
 	URI         string `json:"uri"`
@@ -127,8 +136,9 @@ type CouchbaseBucketStatsURI struct {
 }
 
 type CouchbaseClusterInfo struct {
-	Name          string `json:"name"`
-	StorageTotals struct {
+	Name           string `json:"name"`
+	IndexStatusURI string `json:"indexStatusURI"`
+	StorageTotals  struct {
 		HDD struct {
 			HDDFree       int64 `json:"free"`
 			HDDTotal      int64 `json:"total"`
@@ -179,7 +189,16 @@ type PluginData struct {
 
 func validateConfig(log *logrus.Logger, config CouchbaseConfig) {
 	if config.CouchbaseHost == "" {
-		log.Fatal("Config Yaml is missing values. Please check the config to continue")
+		log.Fatal("Config Yaml is missing CouchbaseHost value. Please check the config to continue")
+	}
+	if config.CouchbasePassword == "" {
+		log.Fatal("Config Yaml is missing CouchbasePassword value. Please check the config to continue")
+	}
+	if config.CouchbasePort == "" {
+		log.Fatal("Config Yaml is missing CouchbasePort value. Please check the config to continue")
+	}
+	if config.CouchbaseUser == "" {
+		log.Fatal("Config Yaml is missing CouchbaseUser value. Please check the config to continue")
 	}
 }
 
@@ -454,6 +473,29 @@ func getClusterInfo(log *logrus.Logger, config CouchbaseConfig) (clusterRecord C
 	return clusterRecord, nil
 }
 
+type CouchbaseIndexStatusResponse struct {
+	Indexes []CouchbaseIndex
+}
+
+func getClusterIndexStatus(log *logrus.Logger, config CouchbaseConfig, indexStatusUrl string) ([]CouchbaseIndex, error) {
+	couchbaseStatsURI := fmt.Sprintf("%v:%v/%v", config.CouchbaseHost, config.CouchbasePort, indexStatusUrl)
+	httpReq, err := http.NewRequest("GET", couchbaseStatsURI, bytes.NewBuffer([]byte("")))
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"couchbaseStatsURI": couchbaseStatsURI,
+			"error":             err,
+		}).Error("Encountered error creating http.NewRequest")
+		return []CouchbaseIndex{}, err
+	}
+	httpReq.SetBasicAuth(config.CouchbaseUser, config.CouchbasePassword)
+	var couchbaseIndexesResponse CouchbaseIndexStatusResponse
+	err = executeAndDecode(log, *httpReq, &couchbaseIndexesResponse)
+	if err != nil {
+		return []CouchbaseIndex{}, err
+	}
+	return couchbaseIndexesResponse.Indexes, nil
+}
+
 func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricData, error) {
 	clusterResponse, err := getClusterInfo(log, config)
 	if err != nil {
@@ -467,7 +509,6 @@ func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricD
 	var returnMetrics []MetricData
 	// add by node cluster metrics
 	for _, node := range clusterResponse.Nodes {
-
 		returnMetrics = append(returnMetrics,
 			MetricData{
 				"event_type":                                   EVENT_TYPE,
@@ -478,6 +519,30 @@ func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricD
 				"couchbase.cluster.by_node.cluster_membership": node.ClusterMembership,
 			},
 		)
+	}
+
+	if clusterResponse.IndexStatusURI != "" {
+		couchbaseIndexes, err := getClusterIndexStatus(log, config, clusterResponse.IndexStatusURI)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"CouchbaseConfig": config,
+				"error":           err,
+			}).Error("Encountered error querying Cluster Indexes")
+		}
+		for _, node := range couchbaseIndexes {
+			returnMetrics = append(returnMetrics,
+				MetricData{
+					"event_type":                  "CouchbaseIndexSample",
+					"provider":                    PROVIDER,
+					"couchbase.scalr.clustername": os.Getenv("CB_CLUSTER_NAME"),
+					"couchbase.index.id":          node.ID,
+					"couchbase.index.index":       node.Index,
+					"couchbase.index.definition":  node.Definition,
+					"couchbase.index.status":      node.Status,
+					"couchbase.index.progress":    node.Progress,
+				},
+			)
+		}
 	}
 
 	// finally, add top level cluster metrics
