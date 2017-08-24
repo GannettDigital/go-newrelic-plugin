@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.17.2
+
+Michael Dunton - Adding Additional Metrics on couchbase indexes
+
 # 0.17.1
 
 Charles Dinkle - added "github.com/go-sql-driver/mysql" to mysql.go imports
