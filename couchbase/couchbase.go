@@ -251,7 +251,8 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	couchClusterResponses, getCouchClusterStatsError := getCouchClusterStats(log, config)
 	couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(log, config)
-	for _, currentError := range []interface{}{getCouchClusterStatsError, getCouchBucketStatsError} {
+	couchReplicationResponses, getCouchReplicationStatsError := getCouchReplicationStats(log, config)
+	for _, currentError := range []interface{}{getCouchClusterStatsError, getCouchBucketStatsError, getCouchReplicationStatsError} {
 		if getCouchClusterStatsError != nil {
 			log.WithFields(logrus.Fields{
 				"err": currentError,
@@ -261,6 +262,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	data.Metrics = append(data.Metrics, couchClusterResponses...)
 	data.Metrics = append(data.Metrics, couchBucketResponses...)
+	data.Metrics = append(data.Metrics, couchReplicationResponses...)
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
@@ -566,4 +568,50 @@ func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricD
 			"couchbase.cluster.ram.used_by_data": clusterResponse.StorageTotals.RAM.RAMUsedByData,
 		},
 	), nil
+}
+
+type couchbaseReplicationStats struct {
+	Hostname string `json:"hostname"`
+	Name     string `json:"name"`
+	URI      string `json:"uri"`
+	Username string `json:"username"`
+	UUID     string `json:"uuid"`
+	Deleted  bool   `json:"deleted"`
+}
+
+func getCouchReplicationStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricData, error) {
+	couchbaseReplicationStatsURI := fmt.Sprintf("%v:%v/%v", config.CouchbaseHost, config.CouchbasePort, "pools/default/remoteClusters")
+	httpReq, err := http.NewRequest("GET", couchbaseReplicationStatsURI, bytes.NewBuffer([]byte("")))
+	returnMetrics := make([]MetricData, 0)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"couchbaseReplicationStatsURI": couchbaseReplicationStatsURI,
+			"error": err,
+		}).Error("Encountered error creating http.NewRequest")
+		return returnMetrics, err
+	}
+	httpReq.SetBasicAuth(config.CouchbaseUser, config.CouchbasePassword)
+	var replicationStats []couchbaseReplicationStats
+	err = executeAndDecode(log, *httpReq, &replicationStats)
+	if err != nil {
+		return returnMetrics, err
+	}
+
+	// add by node cluster metrics
+	for _, replication := range replicationStats {
+		returnMetrics = append(returnMetrics,
+			MetricData{
+				"event_type":                     "CouchbaseReplicationSample",
+				"provider":                       PROVIDER,
+				"couchbase.replication.hostname": replication.Hostname,
+				"couchbase.replication.name":     replication.Name,
+				"couchbase.replication.uri":      replication.URI,
+				"couchbase.replication.username": replication.Username,
+				"couchbase.replication.uuid":     replication.UUID,
+				"couchbase.replication.deleted":  replication.Deleted,
+			},
+		)
+	}
+
+	return returnMetrics, nil
 }

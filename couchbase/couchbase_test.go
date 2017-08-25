@@ -184,6 +184,50 @@ func TestGetCouchClusterStats(t *testing.T) {
 	}
 }
 
+func TestGetCouchReplicationStats(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		HTTPRunner        fake.HTTPResult
+		ExpectedScalrName string
+		ExpectedResult    []map[string]interface{}
+		TestDescription   string
+	}{
+		{
+			HTTPRunner: fake.HTTPResult{
+				ResultsList: []fake.Result{
+					fake.Result{
+						Method: "GET",
+						URI:    "/pools/default/remoteClusters",
+						Code:   200,
+						Data:   []byte(`[{"deleted":false,"hostname":"172.17.0.2:8091","name":"paas-api-west","uri":"/pools/default/remoteClusters/paas-api-west","username":"paas-api","uuid":"derp","validateURI":"/pools/default/remoteClusters/paas-api-west?just_validate=1"}]`),
+					},
+				},
+			},
+			ExpectedScalrName: "sometestname",
+			ExpectedResult:    []map[string]interface{}{},
+			TestDescription:   "Successfully GET Couchbase Cluster stats",
+		},
+	}
+
+	for _, test := range tests {
+		origValue := os.Getenv("CB_CLUSTER_NAME")
+		os.Setenv("CB_CLUSTER_NAME", test.ExpectedScalrName)
+
+		g.Describe("TestGetCouchReplicationStats()", func() {
+			g.It(test.TestDescription, func() {
+				runner = test.HTTPRunner
+				couchReplicationResponses, getCouchReplicationStatsError := getCouchReplicationStats(logrus.New(), couchbaseFakeConfig)
+				g.Assert(getCouchReplicationStatsError).Equal(nil)
+				g.Assert(couchReplicationResponses[0]["couchbase.replication.hostname"]).Equal("172.17.0.2:8091")
+				g.Assert(couchReplicationResponses[0]["couchbase.replication.uuid"]).Equal("derp")
+			})
+		})
+
+		os.Setenv("CB_CLUSTER_NAME", origValue)
+	}
+}
+
 func TestGetAllBucketsInfo(t *testing.T) {
 	g := goblin.Goblin(t)
 
