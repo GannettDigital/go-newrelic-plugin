@@ -3,6 +3,8 @@ package skel
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 
 	"github.com/Sirupsen/logrus"
@@ -12,7 +14,7 @@ import (
 const NAME string = "saucelabs"
 
 // ProviderName - what app is sending the data
-const PROVIDER string = "saucelabs" 
+const PROVIDER string = "saucelabs"
 
 // ProtocolVersion - nr-infra protocol version
 const PROTOCOL_VERSION string = "1"
@@ -22,7 +24,7 @@ const url = "https://saucelabs.com/rest/v1/users/"
 //SkelConfig is the keeper of the config
 type Config struct {
 	SauceAPIuser string
-	SauceAPIkey string
+	SauceAPIkey  string
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -49,7 +51,7 @@ type PluginData struct {
 
 // UserMetric holds the user metrics
 type User struct {
-	UserName	string	`json:"username"`
+	UserName string `json:"username"`
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -121,10 +123,10 @@ func fatalIfErr(log *logrus.Logger, err error) {
 }
 
 func gerUserList(client http.Client, Config config) []User {
-	var userList := []User
-	var getUserListURL := url + config.SauceAPIuser + "/subaccounts"
+	userList := []User{}
+	getUserListURL := url + config.SauceAPIuser + "/subaccounts"
 
-	req, err := http.NewRequest(http.MethodGet, getUserListURL , nil)
+	req, err := http.NewRequest(http.MethodGet, getUserListURL, nil)
 	if err != nil {
 		return -1, -1
 	}
@@ -141,11 +143,15 @@ func gerUserList(client http.Client, Config config) []User {
 	if errread != nil {
 		return -1, -1
 	}
-
+	fmt.println(body)
 	//for loop to get user list
-	for i := 0; i < len(body) ; i++ {
-        userList.UserName =  append(userList.UserName, body.username)
-    }
+	for _, name := range body {
+		userList = append(userList, body.username)
+	}
+
+	// for i := 0; i < len(body) ; i++ {
+	//     userList.UserName =  append(userList.UserName, body.username)
+	// }
 
 	return userList
 }
