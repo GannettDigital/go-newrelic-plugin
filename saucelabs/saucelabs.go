@@ -107,9 +107,10 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 func getMetric(log *logrus.Logger, config SauceConfig) string {
 
 	client := http.Client{
-		Timeout: time.Second * 2,
+		Timeout: time.Second * 20,
 	}
 
+	fmt.Println("first")
 	test := gerUserList(client, config)
 	fmt.Println(test)
 	return "test1"
@@ -139,21 +140,28 @@ func gerUserList(client http.Client, config SauceConfig) []User {
 	if err != nil {
 		return nil
 	}
-	//set User-Agent to be a good internet citizen
-	req.Header.Set("User-Agent", "GannettDigital-API")
+
+	println("user: " + config.SauceAPIUser + " key: " + config.SauceAPIKey)
 	//set api key
 	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
 
+	fmt.Printf("Req: %+v", req)
+	//fmt.Printf(string(req))
 	res, errdo := client.Do(req)
+	fmt.Printf("\nRESP: %+v. err: %v", res, errdo)
 	if errdo != nil {
 		return nil
 	}
+
 	body, errread := ioutil.ReadAll(res.Body)
 	if errread != nil {
+		fmt.Println("test3")
 		return nil
 	}
 	fmt.Println("test2")
-	fmt.Println(body)
+	fmt.Print("Body: ")
+	//s := string(body)
+	fmt.Printf(string(body))
 
 	//for loop to get user list
 	// for _, name := range body {
