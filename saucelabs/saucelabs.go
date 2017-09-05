@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -97,21 +98,22 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 	validateConfig(config)
 
-	//TODO
-	//var metric = getMetric(log, config)
-
+	var metric = getMetric(log, config)
+	fmt.Println(metric)
 	//data.Metrics = append(data.Metrics, metric)
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-//TODO
-// func getMetric(log *logrus.Logger, config SauceConfig) map[string]interface{} {
-// 	return map[string]interface{}{
-// 		"event_type":     "LoadBalancerSample",
-// 		"provider":       PROVIDER,
-// 		"saucelabs.stat": 1,
-// 	}
-// }
+func getMetric(log *logrus.Logger, config SauceConfig) string {
+
+	client := http.Client{
+		Timeout: time.Second * 2,
+	}
+
+	test := gerUserList(client, config)
+	fmt.Println(test)
+	return "test1"
+}
 
 func validateConfig(config SauceConfig) error {
 	if config.SauceAPIUser != "" && config.SauceAPIKey == "" {
@@ -150,7 +152,7 @@ func gerUserList(client http.Client, config SauceConfig) []User {
 	if errread != nil {
 		return nil
 	}
-
+	fmt.Println("test2")
 	fmt.Println(body)
 
 	//for loop to get user list
