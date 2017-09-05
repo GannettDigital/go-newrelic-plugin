@@ -15,6 +15,6 @@ var saucelabsCmd = &cobra.Command{
 	Short: "execute a saucelabs collection",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("saucelabs collection")
-		skel.Run(log, prettyPrint, status.GetInfo().Version)
+		saucelabs.Run(log, prettyPrint, status.GetInfo().Version)
 	},
 }
