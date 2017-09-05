@@ -156,6 +156,5 @@ func gerUserList(client http.Client, config SauceConfig) []User {
 		return nil
 	}
 	fmt.Println(userList)
-
 	return userList
 }
