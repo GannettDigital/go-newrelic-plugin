@@ -109,8 +109,6 @@ func getMetric(log *logrus.Logger, config SauceConfig) string {
 	client := http.Client{
 		Timeout: time.Second * 20,
 	}
-
-	fmt.Println("first")
 	test := gerUserList(client, config)
 	fmt.Println(test)
 	return "test1"
@@ -133,44 +131,31 @@ func fatalIfErr(log *logrus.Logger, err error) {
 }
 
 func gerUserList(client http.Client, config SauceConfig) []User {
-	userList := []User{}
+	var userList []User
 	getUserListURL := url + config.SauceAPIUser + "/subaccounts"
 
+	//set url
 	req, err := http.NewRequest(http.MethodGet, getUserListURL, nil)
 	if err != nil {
 		return nil
 	}
-
-	println("user: " + config.SauceAPIUser + " key: " + config.SauceAPIKey)
 	//set api key
 	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
-
-	fmt.Printf("Req: %+v", req)
-	//fmt.Printf(string(req))
+	//make request
 	res, errdo := client.Do(req)
 	fmt.Printf("\nRESP: %+v. err: %v", res, errdo)
 	if errdo != nil {
 		return nil
 	}
-
 	body, errread := ioutil.ReadAll(res.Body)
 	if errread != nil {
-		fmt.Println("test3")
 		return nil
 	}
-	fmt.Println("test2")
-	fmt.Print("Body: ")
-	//s := string(body)
-	fmt.Printf(string(body))
-
-	//for loop to get user list
-	// for _, name := range body {
-	// 	userList = append(userList, body.username)
-	// }
-
-	// for i := 0; i < len(body); i++ {
-	// 	userList.UserName = append(userList.UserName, body.username)
-	// }
+	err = json.Unmarshal(body, &userList)
+	if err != nil {
+		return nil
+	}
+	fmt.Println(userList)
 
 	return userList
 }
