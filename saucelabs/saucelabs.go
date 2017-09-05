@@ -1,4 +1,4 @@
-package skel
+package saucelabs
 
 import (
 	"encoding/json"
@@ -21,10 +21,10 @@ const PROTOCOL_VERSION string = "1"
 
 const url = "https://saucelabs.com/rest/v1/users/"
 
-//SkelConfig is the keeper of the config
-type Config struct {
-	SauceAPIuser string
-	SauceAPIkey  string
+//SauceConfig is the keeper of the config
+type SauceConfig struct {
+	SauceAPIUser string
+	SauceAPIKey  string
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -91,29 +91,36 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	var config = SkelConfig{
-		SkelHost: os.Getenv("KEY"),
+	var config = SauceConfig{
+		SauceAPIUser: os.Getenv("SAUCE_API_USER"),
+		SauceAPIKey:  os.Getenv("SAUCE_API_KEY"),
 	}
-	validateConfig(log, config)
+	validateConfig(config)
 
-	var metric = getMetric(log, config)
+	//TODO
+	//var metric = getMetric(log, config)
 
-	data.Metrics = append(data.Metrics, metric)
+	//data.Metrics = append(data.Metrics, metric)
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func getMetric(log *logrus.Logger, config SkelConfig) map[string]interface{} {
-	return map[string]interface{}{
-		"event_type": "LoadBalancerSample",
-		"provider":   PROVIDER,
-		"skel.stat":  1,
-	}
-}
+//TODO
+// func getMetric(log *logrus.Logger, config SauceConfig) map[string]interface{} {
+// 	return map[string]interface{}{
+// 		"event_type":     "LoadBalancerSample",
+// 		"provider":       PROVIDER,
+// 		"saucelabs.stat": 1,
+// 	}
+// }
 
-func validateConfig(log *logrus.Logger, config SkelConfig) {
-	if config.SkelHost == "" {
-		log.Fatal("Config Yaml is missing values. Please check the config to continue")
+func validateConfig(config SauceConfig) error {
+	if config.SauceAPIUser != "" && config.SauceAPIKey == "" {
+		return fmt.Errorf("You must also set SAUCE_API_KEY if SAUCE_API_USER is set")
 	}
+	if config.SauceAPIUser == "" && config.SauceAPIKey != "" {
+		return fmt.Errorf("You must also set SAUCE_API_USER if SAUCE_API_KEY is set")
+	}
+	return nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
@@ -122,35 +129,37 @@ func fatalIfErr(log *logrus.Logger, err error) {
 	}
 }
 
-func gerUserList(client http.Client, Config config) []User {
+func gerUserList(client http.Client, config SauceConfig) []User {
 	userList := []User{}
-	getUserListURL := url + config.SauceAPIuser + "/subaccounts"
+	getUserListURL := url + config.SauceAPIUser + "/subaccounts"
 
 	req, err := http.NewRequest(http.MethodGet, getUserListURL, nil)
 	if err != nil {
-		return -1, -1
+		return nil
 	}
 	//set User-Agent to be a good internet citizen
 	req.Header.Set("User-Agent", "GannettDigital-API")
 	//set api key
-	req.SetBasicAuth(config.SauceAPIuser, config.SauceAPIkey)
+	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
 
 	res, errdo := client.Do(req)
 	if errdo != nil {
-		return -1, -1
+		return nil
 	}
 	body, errread := ioutil.ReadAll(res.Body)
 	if errread != nil {
-		return -1, -1
-	}
-	fmt.println(body)
-	//for loop to get user list
-	for _, name := range body {
-		userList = append(userList, body.username)
+		return nil
 	}
 
-	// for i := 0; i < len(body) ; i++ {
-	//     userList.UserName =  append(userList.UserName, body.username)
+	fmt.Println(body)
+
+	//for loop to get user list
+	// for _, name := range body {
+	// 	userList = append(userList, body.username)
+	// }
+
+	// for i := 0; i < len(body); i++ {
+	// 	userList.UserName = append(userList.UserName, body.username)
 	// }
 
 	return userList
