@@ -11,16 +11,16 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-// CollectorName - the name of this thing
+// NAME - the name of this thing
 const NAME string = "saucelabs"
 
-// ProviderName - what app is sending the data
+// PROVIDER - what app is sending the data
 const PROVIDER string = "saucelabs"
 
-// ProtocolVersion - nr-infra protocol version
+// PROTOCOL_VERSION - nr-infra protocol version
 const PROTOCOL_VERSION string = "1"
 
-const url = "https://saucelabs.com/rest/v1/users/"
+const url = "https://saucelabs.com/rest/v1/"
 
 //SauceConfig is the keeper of the config
 type SauceConfig struct {
@@ -50,9 +50,22 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-// UserMetric holds the user metrics
+// User Metric holds the user metrics
 type User struct {
 	UserName string `json:"username"`
+}
+
+// Activity Metric tracks the users in activity
+type Activity struct {
+	SubAccounts map[string]SubAccount `json:"subaccounts"`
+	Totals      SubAccount            `json:"totals"`
+}
+
+// SubAccount holds the job queued information
+type SubAccount struct {
+	InProgress int `json:"in progress"`
+	All        int `json:"all"`
+	Queued     int `json:"queued"`
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -105,12 +118,18 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 }
 
 func getMetric(log *logrus.Logger, config SauceConfig) string {
-
 	client := http.Client{
 		Timeout: time.Second * 20,
 	}
-	test := gerUserList(client, config)
-	fmt.Println(test)
+	test1 := getUserList(client, config)
+	test2 := getUserActivity(client, config)
+
+	fmt.Print("User List: ")
+	fmt.Println(test1)
+
+	fmt.Print("\n\n User Activity")
+	fmt.Println(test2)
+
 	return "test1"
 }
 
@@ -130,9 +149,9 @@ func fatalIfErr(log *logrus.Logger, err error) {
 	}
 }
 
-func gerUserList(client http.Client, config SauceConfig) []User {
+func getUserList(client http.Client, config SauceConfig) []User {
 	var userList []User
-	getUserListURL := url + config.SauceAPIUser + "/subaccounts"
+	getUserListURL := url + "users/" + config.SauceAPIUser + "/subaccounts"
 
 	//set url
 	req, err := http.NewRequest(http.MethodGet, getUserListURL, nil)
@@ -143,7 +162,6 @@ func gerUserList(client http.Client, config SauceConfig) []User {
 	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
 	//make request
 	res, errdo := client.Do(req)
-	fmt.Printf("\nRESP: %+v. err: %v", res, errdo)
 	if errdo != nil {
 		return nil
 	}
@@ -155,6 +173,34 @@ func gerUserList(client http.Client, config SauceConfig) []User {
 	if err != nil {
 		return nil
 	}
-	fmt.Println(userList)
+
 	return userList
+}
+
+func getUserActivity(client http.Client, config SauceConfig) Activity {
+	var userActivity Activity
+	getUserActivityURL := url + config.SauceAPIUser + "/activity"
+
+	//set url
+	req, err := http.NewRequest(http.MethodGet, getUserActivityURL, nil)
+	if err != nil {
+		return Activity{}
+	}
+	//set api key
+	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
+	//make request
+	res, errdo := client.Do(req)
+	if errdo != nil {
+		return Activity{}
+	}
+	body, errread := ioutil.ReadAll(res.Body)
+	if errread != nil {
+		return Activity{}
+	}
+	err = json.Unmarshal(body, &userActivity)
+	if err != nil {
+		return Activity{}
+	}
+
+	return userActivity
 }
