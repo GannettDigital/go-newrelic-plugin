@@ -68,6 +68,21 @@ type SubAccount struct {
 	Queued     int `json:"queued"`
 }
 
+// concurrency metric
+type Data struct {
+	Concurrency map[string]TeamData `json:"concurrency"`
+}
+
+type TeamData struct {
+	Current Allocation `json:"current"`
+	Remaining Allocation `json:"remaining"`
+}
+type Allocation struct {
+	Overall int `json:"overall"`
+	Mac int `json:"mac"`
+	Manual int `json:"manual"`
+}
+
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
 // If the pretty attribute is set to true, the JSON will be idented for easy reading.
 func OutputJSON(data interface{}, pretty bool) error {
@@ -203,4 +218,32 @@ func getUserActivity(client http.Client, config SauceConfig) Activity {
 	}
 
 	return userActivity
+}
+
+func getConcurrency(client http.Client, config SauceConfig) Data {
+	var concurrencyList Data
+	getConcurrencyURL := url + config.SauceAPIUser + "/concurrency"
+
+	//set url
+	req, err := http.NewRequest(http.MethodGet, getConcurrencyURL, nil)
+	if err != nil {
+		return Data{}
+	}
+	//set api key
+	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
+	//make request
+	res, errdo := client.Do(req)
+	//fmt.Printf("\nRESP: %+v. err: %v", res, errdo)
+	if errdo != nil {
+		return Data{}
+	}
+	body, errread := ioutil.ReadAll(res.Body)
+	if errread != nil {
+		return Data{}
+	}
+	err = json.Unmarshal(body, &concurrencyList)
+	if err != nil {
+		return Data{}
+	}
+	return concurrencyList
 }
