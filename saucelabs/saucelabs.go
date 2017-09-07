@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -128,39 +129,87 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	validateConfig(config)
 
 	var metric = getMetric(log, config)
-	fmt.Println(metric)
-	//data.Metrics = append(data.Metrics, metric)
+	data.Metrics = append(data.Metrics, metric...)
+
+	fmt.Println("\n\n\n\n ")
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func getMetric(log *logrus.Logger, config SauceConfig) string {
+func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 	client := http.Client{
 		Timeout: time.Second * 20,
 	}
-	test1 := getUserList(client, config)
-	test2 := getUserActivity(client, config)
-	test3 := getConcurrency(client, config)
+	UserList := getUserList(client, config)
+	UserActivity := getUserActivity(client, config)
+	UserConcurrency := getConcurrency(client, config)
 
 	fmt.Print("User List: ")
-	fmt.Println(test1)
+	fmt.Println(UserList)
 
 	fmt.Print("\n\nUser Activity: ")
-	fmt.Println(test2)
+	fmt.Println(UserActivity)
 
 	fmt.Print("\n\nUser Concurrency: ")
-	fmt.Println(test3)
+	fmt.Println(UserConcurrency)
+	fmt.Println("\n\n ")
 
-	return "test1"
+	var metricsData []MetricData
+
+	// User List
+	metricsData = append(metricsData, MetricData{
+		"entity_name":           "SauceUserList",
+		"event_type":            "SauceUserList",
+		"provider":              "saucelabs",
+		"userActivity.username": UserList,
+	})
+
+	// User Activity
+	for key, value := range UserActivity.SubAccounts {
+		metricsData = append(metricsData, MetricData{
+			"entity_name":             "SauceUserActivity",
+			"event_type":              "SauceUserActivity",
+			"provider":                "saucelabs",
+			"userActivity.username":   key,
+			"userActivity.inprogress": value.InProgress,
+			"userActivity.all":        value.All,
+			"userActivity.queued":     value.Queued,
+		})
+	}
+	metricsData = append(metricsData, MetricData{
+		"entity_name":                   "SauceUserActivityTotal",
+		"event_type":                    "SauceUserActivityTotal",
+		"provider":                      "saucelabs",
+		"userActivity.total.inprogress": UserActivity.Totals.InProgress,
+		"userActivity.total.all":        UserActivity.Totals.All,
+		"userActivity.total.queued":     UserActivity.Totals.Queued,
+	})
+
+	// User Cuncurency
+	for key, value := range UserConcurrency.Concurrency {
+		metricsData = append(metricsData, MetricData{
+			"entity_name":                      "SauceUserConcurrency",
+			"event_type":                       "SauceUserConcurrency",
+			"provider":                         "saucelabs",
+			"userConcurrency.username":         key,
+			"userConcurrency.current.overall":  value.Current.Overall,
+			"userConcurrency.current.mac":      value.Current.Mac,
+			"userConcurrency.current.manual":   value.Current.Manual,
+			"userConcurrency.Remaning.overall": value.Remaining.Overall,
+			"userConcurrency.Remaning.mac":     value.Remaining.Mac,
+			"userConcurrency.Remaning.manual":  value.Remaining.Manual,
+		})
+	}
+
+	return metricsData
 }
 
-func validateConfig(config SauceConfig) error {
-	if config.SauceAPIUser != "" && config.SauceAPIKey == "" {
-		return fmt.Errorf("You must also set SAUCE_API_KEY if SAUCE_API_USER is set")
+func validateConfig(config SauceConfig) {
+	if config.SauceAPIUser == "" {
+		log.Fatal("Config Yaml is missing SAUCE_API_USER value. Please check the config to continue")
 	}
-	if config.SauceAPIUser == "" && config.SauceAPIKey != "" {
-		return fmt.Errorf("You must also set SAUCE_API_USER if SAUCE_API_KEY is set")
+	if config.SauceAPIKey == "" {
+		log.Fatal("Config Yaml is missing SAUCE_API_KEY value. Please check the config to continue")
 	}
-	return nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
@@ -238,7 +287,6 @@ func getConcurrency(client http.Client, config SauceConfig) Data {
 	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
 	//make request
 	res, errdo := client.Do(req)
-	//fmt.Printf("\nRESP: %+v. err: %v", res, errdo)
 	if errdo != nil {
 		return Data{}
 	}
