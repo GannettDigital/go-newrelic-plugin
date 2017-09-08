@@ -12,18 +12,18 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
-// NAME - the name of this thing
-const NAME string = "saucelabs"
+// Name - the name of this thing
+const Name string = "saucelabs"
 
-// PROVIDER - what app is sending the data
-const PROVIDER string = "saucelabs"
+// Provider - what app is sending the data
+const Provider string = "saucelabs"
 
-// PROTOCOL_VERSION - nr-infra protocol version
-const PROTOCOL_VERSION string = "1"
+// ProtocolVersion - nr-infra protocol version
+const ProtocolVersion string = "1"
 
 const url = "https://saucelabs.com/rest/v1/"
 
-//SauceConfig is the keeper of the config
+// SauceConfig is the keeper of the config
 type SauceConfig struct {
 	SauceAPIUser string
 	SauceAPIKey  string
@@ -51,7 +51,7 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-// User Metric holds the user metrics
+// User Metric holds the usernames for getUserList
 type User struct {
 	UserName string `json:"username"`
 }
@@ -62,7 +62,7 @@ type Activity struct {
 	Totals      SubAccount            `json:"totals"`
 }
 
-// SubAccount holds the job queued information
+// SubAccount holds the active job queued information
 type SubAccount struct {
 	InProgress int `json:"in progress"`
 	All        int `json:"all"`
@@ -74,11 +74,13 @@ type Data struct {
 	Concurrency map[string]TeamData `json:"concurrency"`
 }
 
+// TeamData for concurrency
 type TeamData struct {
 	Current   Allocation `json:"current"`
 	Remaining Allocation `json:"remaining"`
 }
 
+// Allocation holds TeamData concurrency stats
 type Allocation struct {
 	Overall int `json:"overall"`
 	Mac     int `json:"mac"`
@@ -110,12 +112,13 @@ func OutputJSON(data interface{}, pretty bool) error {
 	return nil
 }
 
+// Run - Function that is ran from the main cmd
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	// Initialize the output structure
 	var data = PluginData{
-		Name:            NAME,
-		ProtocolVersion: PROTOCOL_VERSION,
+		Name:            Name,
+		ProtocolVersion: ProtocolVersion,
 		PluginVersion:   version,
 		Inventory:       make(map[string]InventoryData),
 		Metrics:         make([]MetricData, 0),
@@ -131,11 +134,12 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var metric = getMetric(log, config)
 	data.Metrics = append(data.Metrics, metric...)
 
-	fmt.Println("\n\n\n\n ")
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
 func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
+	var metricsData []MetricData
+
 	client := http.Client{
 		Timeout: time.Second * 20,
 	}
@@ -143,19 +147,7 @@ func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 	UserActivity := getUserActivity(client, config)
 	UserConcurrency := getConcurrency(client, config)
 
-	fmt.Print("User List: ")
-	fmt.Println(UserList)
-
-	fmt.Print("\n\nUser Activity: ")
-	fmt.Println(UserActivity)
-
-	fmt.Print("\n\nUser Concurrency: ")
-	fmt.Println(UserConcurrency)
-	fmt.Println("\n\n ")
-
-	var metricsData []MetricData
-
-	// User List
+	// User List Metrics
 	metricsData = append(metricsData, MetricData{
 		"entity_name":           "SauceUserList",
 		"event_type":            "SauceUserList",
@@ -163,14 +155,14 @@ func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 		"userActivity.username": UserList,
 	})
 
-	// User Activity
+	// User Activity Metrics
 	for key, value := range UserActivity.SubAccounts {
 		metricsData = append(metricsData, MetricData{
 			"entity_name":             "SauceUserActivity",
 			"event_type":              "SauceUserActivity",
 			"provider":                "saucelabs",
 			"userActivity.username":   key,
-			"userActivity.inprogress": value.InProgress,
+			"userActivity.inProgress": value.InProgress,
 			"userActivity.all":        value.All,
 			"userActivity.queued":     value.Queued,
 		})
@@ -179,12 +171,12 @@ func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 		"entity_name":                   "SauceUserActivityTotal",
 		"event_type":                    "SauceUserActivityTotal",
 		"provider":                      "saucelabs",
-		"userActivity.total.inprogress": UserActivity.Totals.InProgress,
+		"userActivity.total.inProgress": UserActivity.Totals.InProgress,
 		"userActivity.total.all":        UserActivity.Totals.All,
 		"userActivity.total.queued":     UserActivity.Totals.Queued,
 	})
 
-	// User Cuncurency
+	// User Concurency Metrics
 	for key, value := range UserConcurrency.Concurrency {
 		metricsData = append(metricsData, MetricData{
 			"entity_name":                      "SauceUserConcurrency",
@@ -199,15 +191,15 @@ func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 			"userConcurrency.Remaning.manual":  value.Remaining.Manual,
 		})
 	}
-
 	return metricsData
 }
 
 func validateConfig(config SauceConfig) {
-	if config.SauceAPIUser == "" {
+	if config.SauceAPIUser == "" && config.SauceAPIKey == "" {
+		log.Fatal("Config Yaml is missing SAUCE_API_USER and SAUCE_API_KEY values. Please check the config to continue")
+	} else if config.SauceAPIUser == "" {
 		log.Fatal("Config Yaml is missing SAUCE_API_USER value. Please check the config to continue")
-	}
-	if config.SauceAPIKey == "" {
+	} else if config.SauceAPIKey == "" {
 		log.Fatal("Config Yaml is missing SAUCE_API_KEY value. Please check the config to continue")
 	}
 }
@@ -225,24 +217,27 @@ func getUserList(client http.Client, config SauceConfig) []User {
 	//set url
 	req, err := http.NewRequest(http.MethodGet, getUserListURL, nil)
 	if err != nil {
-		return nil
+		log.Fatal("Bad New Request")
+		return userList
 	}
 	//set api key
 	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
 	//make request
 	res, errdo := client.Do(req)
 	if errdo != nil {
-		return nil
+		log.Fatal("Bad Client Request")
+		return userList
 	}
 	body, errread := ioutil.ReadAll(res.Body)
 	if errread != nil {
-		return nil
+		log.Fatal("Error Reading Body")
+		return userList
 	}
 	err = json.Unmarshal(body, &userList)
 	if err != nil {
-		return nil
+		log.Fatal("Error Unmarshalling Body")
+		return userList
 	}
-
 	return userList
 }
 
@@ -253,6 +248,7 @@ func getUserActivity(client http.Client, config SauceConfig) Activity {
 	//set url
 	req, err := http.NewRequest(http.MethodGet, getUserActivityURL, nil)
 	if err != nil {
+		log.Fatal("Bad New Request")
 		return Activity{}
 	}
 	//set api key
@@ -260,17 +256,19 @@ func getUserActivity(client http.Client, config SauceConfig) Activity {
 	//make request
 	res, errdo := client.Do(req)
 	if errdo != nil {
+		log.Fatal("Bad Client Request")
 		return Activity{}
 	}
 	body, errread := ioutil.ReadAll(res.Body)
 	if errread != nil {
+		log.Fatal("Error Reading Body")
 		return Activity{}
 	}
 	err = json.Unmarshal(body, &userActivity)
 	if err != nil {
+		log.Fatal("Error Unmarshalling Body")
 		return Activity{}
 	}
-
 	return userActivity
 }
 
@@ -281,6 +279,7 @@ func getConcurrency(client http.Client, config SauceConfig) Data {
 	//set url
 	req, err := http.NewRequest(http.MethodGet, getConcurrencyURL, nil)
 	if err != nil {
+		log.Fatal("Bad New Request")
 		return Data{}
 	}
 	//set api key
@@ -288,14 +287,17 @@ func getConcurrency(client http.Client, config SauceConfig) Data {
 	//make request
 	res, errdo := client.Do(req)
 	if errdo != nil {
+		log.Fatal("Bad Client Request")
 		return Data{}
 	}
 	body, errread := ioutil.ReadAll(res.Body)
 	if errread != nil {
+		log.Fatal("Error Reading Body")
 		return Data{}
 	}
 	err = json.Unmarshal(body, &concurrencyList)
 	if err != nil {
+		log.Fatal("Error Unmarshalling Body")
 		return Data{}
 	}
 	return concurrencyList
