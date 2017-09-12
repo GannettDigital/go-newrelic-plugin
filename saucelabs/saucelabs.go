@@ -200,7 +200,7 @@ func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 	}
 
 	// User Usage
-	for i := 0; i < len(UserHistory.Usage); i++ {
+	for i := range UserHistory.Usage {
 		metricsData = append(metricsData, MetricData{
 			"entity_name":                 "SauceUserHistory",
 			"event_type":                  "SauceUserHistory",
