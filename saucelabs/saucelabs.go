@@ -87,8 +87,14 @@ type Allocation struct {
 	Manual  int `json:"manual"`
 }
 
+// History holds the username and total number of jobs and VM time used, in seconds grouped by day.
+type History struct {
+	UserName string          `json:"username"`
+	Usage    [][]interface{} `json:"usage"`
+}
+
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
-// If the pretty attribute is set to true, the JSON will be idented for easy reading.
+// If the pretty attribute is set to true, the JSON will be indented for easy reading.
 func OutputJSON(data interface{}, pretty bool) error {
 	var output []byte
 	var err error
@@ -146,6 +152,7 @@ func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 	UserList := getUserList(client, config)
 	UserActivity := getUserActivity(client, config)
 	UserConcurrency := getConcurrency(client, config)
+	UserHistory := getUsage(client, config)
 
 	// User List Metrics
 	metricsData = append(metricsData, MetricData{
@@ -189,6 +196,19 @@ func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
 			"userConcurrency.Remaning.overall": value.Remaining.Overall,
 			"userConcurrency.Remaning.mac":     value.Remaining.Mac,
 			"userConcurrency.Remaning.manual":  value.Remaining.Manual,
+		})
+	}
+
+	// User Usage
+	for i := 0; i < len(UserHistory.Usage); i++ {
+		metricsData = append(metricsData, MetricData{
+			"entity_name":                 "SauceUserHistory",
+			"event_type":                  "SauceUserHistory",
+			"provider":                    "saucelabs",
+			"userHistory.username":        UserHistory.UserName,
+			"userHistory.date":            UserHistory.Usage[i][0].(string),
+			"userHistory.totalJobs":       UserHistory.Usage[i][1].([]interface{})[0].(float64),
+			"userHistory.totalTimeInSecs": UserHistory.Usage[i][1].([]interface{})[1].(float64),
 		})
 	}
 	return metricsData
@@ -301,4 +321,39 @@ func getConcurrency(client http.Client, config SauceConfig) Data {
 		return Data{}
 	}
 	return concurrencyList
+}
+
+func getUsage(client http.Client, config SauceConfig) History {
+
+	fmt.Println("\n\nTESTLINE\n\n ")
+
+	var usageList History
+	getUsageURL := url + "users/" + config.SauceAPIUser + "/usage"
+
+	//set url
+	req, err := http.NewRequest(http.MethodGet, getUsageURL, nil)
+	if err != nil {
+		log.Fatal("Bad New Request")
+		return History{}
+	}
+	//set api key
+	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
+	//make request
+	res, errdo := client.Do(req)
+	if errdo != nil {
+		log.Fatal("Bad Client Request")
+		return History{}
+	}
+	body, errread := ioutil.ReadAll(res.Body)
+	if errread != nil {
+		log.Fatal("Error Reading Body")
+		return History{}
+	}
+
+	err = json.Unmarshal(body, &usageList)
+	if err != nil {
+		log.Fatal("Error Unmarshalling Body")
+		return History{}
+	}
+	return usageList
 }
