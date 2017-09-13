@@ -47,7 +47,7 @@ type PluginData struct {
 	PluginVersion   string                   `json:"plugin_version"`
 	Metrics         []MetricData             `json:"metrics"`
 	Inventory       map[string]InventoryData `json:"inventory"`
-	Events          []EventData              `json:"events"`
+	Events          []EventDa                `json:"events"`
 	Status          string                   `json:"status"`
 }
 
