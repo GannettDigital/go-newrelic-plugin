@@ -44,8 +44,8 @@ func TestUserActivity(t *testing.T) {
 		g.Describe("getUserActivity()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				result := getUserActivity(logrus.New(), fakeConfig)
-				g.Assert(result.subaccounts.steelers.all).Equal(7)
+				result := getUserActivity(client, fakeConfig)
+				g.Assert(result.SubAccounts[0].all).Equal(7)
 			})
 		})
 	}
@@ -53,8 +53,8 @@ func TestUserActivity(t *testing.T) {
 		g.Describe("getUserActivity()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				result := getUserActivity(logrus.New(), fakeConfig)
-				g.Assert(result.subaccounts.steelers.all).Equal(7)
+				result := getUserActivity(client, fakeConfig)
+				g.Assert(result.SubAccounts[0].all).Equal(7)
 			})
 		})
 	}
@@ -88,8 +88,8 @@ func TestGetConcurrency(t *testing.T) {
 		g.Describe("getConcurrency()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				result := getConcurrency(logrus.New(), fakeConfig)
-				g.Assert(result.Timestamp).Equal(877129302.308904)
+				result := getConcurrency(client, fakeConfig)
+				g.Assert(result.TeamData[0].Current.Allocation).Equal()
 			})
 		})
 	}
@@ -120,7 +120,7 @@ func TestGetUserList(t *testing.T) {
 		g.Describe("getUserList()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				result := getUserList(logrus.New(), fakeConfig)
+				result := getUserList(client, fakeConfig)
 				g.Assert(result.users[0].username).Equal("FIRSTUSER")
 			})
 		})
@@ -153,7 +153,7 @@ func TestGetUsage(t *testing.T) {
 		g.Describe("getUsage()", func() {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
-				result := getUsage(logrus.New(), fakeConfig)
+				result := getUsage(client, fakeConfig)
 				g.Assert(result.usage[0][0]).Equal("2017-7-14")
 			})
 		})
