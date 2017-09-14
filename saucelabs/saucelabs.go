@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 )
+var runner utilsHTTP.HTTPRunner
 
 // Name - the name of this thing
 const Name string = "saucelabs"
@@ -121,6 +123,10 @@ func OutputJSON(data interface{}, pretty bool) error {
 	}
 
 	return nil
+}
+
+func init() {
+	runner = utilsHTTP.HTTPRunnerImpl{}
 }
 
 // Run - Function that is ran from the main cmd
