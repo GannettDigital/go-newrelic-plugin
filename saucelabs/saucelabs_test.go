@@ -73,6 +73,13 @@ func TestUserActivity(t *testing.T) {
 				g.Assert(result.subaccounts.steelers.all).Equal(7)
 			})
 		})
+		g.Describe("getUserActivity()", func() {
+			g.It(test.TestDescription, func() {
+				runner = test.HTTPRunner
+				result := getUserActivity(logrus.New(), fakeConfig)
+				g.Assert(result.subaccounts.steelers.all).Equal(6)
+			})
+		})
 	}
 
 }
@@ -137,6 +144,13 @@ func TestGetConcurrency(t *testing.T) {
 				runner = test.HTTPRunner
 				result := getConcurrency(logrus.New(), fakeConfig)
 				g.Assert(result.Timestamp).Equal(877129302.308904)
+			})
+		})
+		g.Describe("getConcurrency()", func() {
+			g.It(test.TestDescription, func() {
+				runner = test.HTTPRunner
+				result := getConcurrency(logrus.New(), fakeConfig)
+				g.Assert(result.Timestamp).Equal(8930)
 			})
 		})
 	}
@@ -277,6 +291,13 @@ func TestGetUserList(t *testing.T) {
 				g.Assert(result.users[0].username).Equal("FIRSTUSER")
 			})
 		})
+		g.Describe("getUserList()", func() {
+			g.It(test.TestDescription, func() {
+				runner = test.HTTPRunner
+				result := getUserList(logrus.New(), fakeConfig)
+				g.Assert(result.users[0].username).Equal("LASTUSER")
+			})
+		})
 	}
 }
 
@@ -328,6 +349,13 @@ func TestGetUsage(t *testing.T) {
 				runner = test.HTTPRunner
 				result := getUsage(logrus.New(), fakeConfig)
 				g.Assert(result.usage[0][0]).Equal("2017-7-14")
+			})
+		})
+		g.Describe("getUsage()", func() {
+			g.It(test.TestDescription, func() {
+				runner = test.HTTPRunner
+				result := getUsage(logrus.New(), fakeConfig)
+				g.Assert(result.usage[0][0]).Equal("2017-7-15")
 			})
 		})
 	}
