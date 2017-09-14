@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -47,7 +48,7 @@ type PluginData struct {
 	PluginVersion   string                   `json:"plugin_version"`
 	Metrics         []MetricData             `json:"metrics"`
 	Inventory       map[string]InventoryData `json:"inventory"`
-	Events          []EventDa                `json:"events"`
+	Events          []EventData              `json:"events"`
 	Status          string                   `json:"status"`
 }
 
@@ -91,6 +92,10 @@ type Allocation struct {
 type History struct {
 	UserName string          `json:"username"`
 	Usage    [][]interface{} `json:"usage"`
+}
+
+var client = http.Client{
+	Timeout: time.Second * 20,
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -137,81 +142,108 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 	validateConfig(config)
 
-	var metric = getMetric(log, config)
+	var metric = getMetric(log, config, client)
 	data.Metrics = append(data.Metrics, metric...)
 
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
 }
 
-func getMetric(log *logrus.Logger, config SauceConfig) []MetricData {
+func fatalIfErr(log *logrus.Logger, err error) {
+	if err != nil {
+		log.WithError(err).Fatal("Can't Continue")
+	}
+}
+
+func getMetric(log *logrus.Logger, config SauceConfig, client http.Client) []MetricData {
 	var metricsData []MetricData
 
-	client := http.Client{
-		Timeout: time.Second * 20,
-	}
-	UserList := getUserList(client, config)
-	UserActivity := getUserActivity(client, config)
-	UserConcurrency := getConcurrency(client, config)
-	UserHistory := getUsage(client, config)
+	userList := getUserList(client, config)
+	userActivity := getUserActivity(client, config)
+	userConcurrency := getConcurrency(client, config)
+	userHistory := getUsage(client, config)
 
 	// User List Metrics
 	metricsData = append(metricsData, MetricData{
-		"entity_name":           "SauceUserList",
-		"event_type":            "SauceUserList",
-		"provider":              "saucelabs",
-		"userActivity.username": UserList,
+		"entity_name":                     "SauceUserList",
+		"event_type":                      "SauceUserList",
+		"provider":                        "saucelabs",
+		"saucelabs.userActivity.username": userList,
 	})
 
 	// User Activity Metrics
-	for key, value := range UserActivity.SubAccounts {
+	for key, value := range userActivity.SubAccounts {
 		metricsData = append(metricsData, MetricData{
-			"entity_name":             "SauceUserActivity",
-			"event_type":              "SauceUserActivity",
-			"provider":                "saucelabs",
-			"userActivity.username":   key,
-			"userActivity.inProgress": value.InProgress,
-			"userActivity.all":        value.All,
-			"userActivity.queued":     value.Queued,
+			"entity_name":                       "SauceUserActivity",
+			"event_type":                        "SauceUserActivity",
+			"provider":                          "saucelabs",
+			"saucelabs.userActivity.username":   key,
+			"saucelabs.userActivity.inProgress": value.InProgress,
+			"saucelabs.userActivity.all":        value.All,
+			"saucelabs.userActivity.queued":     value.Queued,
 		})
 	}
 	metricsData = append(metricsData, MetricData{
-		"entity_name":                   "SauceUserActivityTotal",
-		"event_type":                    "SauceUserActivityTotal",
-		"provider":                      "saucelabs",
-		"userActivity.total.inProgress": UserActivity.Totals.InProgress,
-		"userActivity.total.all":        UserActivity.Totals.All,
-		"userActivity.total.queued":     UserActivity.Totals.Queued,
+		"entity_name": "SauceUserActivityTotal",
+		"event_type":  "SauceUserActivityTotal",
+		"provider":    "saucelabs",
+		"saucelabs.userActivity.total.inProgress": userActivity.Totals.InProgress,
+		"saucelabs.userActivity.total.all":        userActivity.Totals.All,
+		"saucelabs.userActivity.total.queued":     userActivity.Totals.Queued,
 	})
 
 	// User Concurency Metrics
-	for key, value := range UserConcurrency.Concurrency {
+	for key, value := range userConcurrency.Concurrency {
 		metricsData = append(metricsData, MetricData{
-			"entity_name":                      "SauceUserConcurrency",
-			"event_type":                       "SauceUserConcurrency",
-			"provider":                         "saucelabs",
-			"userConcurrency.username":         key,
-			"userConcurrency.current.overall":  value.Current.Overall,
-			"userConcurrency.current.mac":      value.Current.Mac,
-			"userConcurrency.current.manual":   value.Current.Manual,
-			"userConcurrency.Remaning.overall": value.Remaining.Overall,
-			"userConcurrency.Remaning.mac":     value.Remaining.Mac,
-			"userConcurrency.Remaning.manual":  value.Remaining.Manual,
+			"entity_name":                                "SauceUserConcurrency",
+			"event_type":                                 "SauceUserConcurrency",
+			"provider":                                   "saucelabs",
+			"saucelabs.userConcurrency.username":         key,
+			"saucelabs.userConcurrency.current.overall":  value.Current.Overall,
+			"saucelabs.userConcurrency.current.mac":      value.Current.Mac,
+			"saucelabs.userConcurrency.current.manual":   value.Current.Manual,
+			"saucelabs.userConcurrency.Remaning.overall": value.Remaining.Overall,
+			"saucelabs.userConcurrency.Remaning.mac":     value.Remaining.Mac,
+			"saucelabs.userConcurrency.Remaning.manual":  value.Remaining.Manual,
 		})
 	}
 
 	// User Usage
-	for i := range UserHistory.Usage {
+	for index := range userHistory.Usage {
 		metricsData = append(metricsData, MetricData{
-			"entity_name":                 "SauceUserHistory",
-			"event_type":                  "SauceUserHistory",
-			"provider":                    "saucelabs",
-			"userHistory.username":        UserHistory.UserName,
-			"userHistory.date":            UserHistory.Usage[i][0].(string),
-			"userHistory.totalJobs":       UserHistory.Usage[i][1].([]interface{})[0].(float64),
-			"userHistory.totalTimeInSecs": UserHistory.Usage[i][1].([]interface{})[1].(float64),
+			"entity_name":                           "SauceUserHistory",
+			"event_type":                            "SauceUserHistory",
+			"provider":                              "saucelabs",
+			"saucelabs.userHistory.username":        userHistory.UserName,
+			"saucelabs.userHistory.date":            getHistoryDate(userHistory, index),
+			"saucelabs.userHistory.totalJobs":       getHistoryTotalJobs(userHistory, index),
+			"saucelabs.userHistory.totalTimeInSecs": getHistoryTotalTime(userHistory, index),
 		})
 	}
 	return metricsData
+}
+func getHistoryDate(userHistory History, index int) string {
+	r, _ := regexp.Compile("([0-9]{4})+[-]([0-9]{1,2})+[-]+([0-9]{1,2})")
+	if r.MatchString(userHistory.Usage[index][0].(string)) {
+		return userHistory.Usage[index][0].(string)
+	}
+	log.Fatal("Error parsing users history date")
+	return ""
+}
+func getHistoryTotalJobs(userHistory History, index int) float64 {
+	totalJobs, check := userHistory.Usage[index][1].([]interface{})[0].(float64)
+	if check == true {
+		return totalJobs
+	}
+	log.Fatal("Error parsing users total jobs")
+	return 0
+}
+func getHistoryTotalTime(userHistory History, index int) float64 {
+	totalTime, check := userHistory.Usage[index][1].([]interface{})[1].(float64)
+	if check == true {
+		return totalTime
+	}
+	log.Fatal("Error parsing users total time")
+	return 0
 }
 
 func validateConfig(config SauceConfig) {
@@ -224,36 +256,13 @@ func validateConfig(config SauceConfig) {
 	}
 }
 
-func fatalIfErr(log *logrus.Logger, err error) {
-	if err != nil {
-		log.WithError(err).Fatal("can't continue")
-	}
-}
-
 func getUserList(client http.Client, config SauceConfig) []User {
 	var userList []User
 	getUserListURL := url + "users/" + config.SauceAPIUser + "/subaccounts"
 
-	//set url
-	req, err := http.NewRequest(http.MethodGet, getUserListURL, nil)
-	if err != nil {
-		log.Fatal("Bad New Request")
-		return userList
-	}
-	//set api key
-	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
-	//make request
-	res, errdo := client.Do(req)
-	if errdo != nil {
-		log.Fatal("Bad Client Request")
-		return userList
-	}
-	body, errread := ioutil.ReadAll(res.Body)
-	if errread != nil {
-		log.Fatal("Error Reading Body")
-		return userList
-	}
-	err = json.Unmarshal(body, &userList)
+	body := httpRequest(client, config, getUserListURL)
+
+	var err = json.Unmarshal(body, &userList)
 	if err != nil {
 		log.Fatal("Error Unmarshalling Body")
 		return userList
@@ -265,26 +274,9 @@ func getUserActivity(client http.Client, config SauceConfig) Activity {
 	var userActivity Activity
 	getUserActivityURL := url + config.SauceAPIUser + "/activity"
 
-	//set url
-	req, err := http.NewRequest(http.MethodGet, getUserActivityURL, nil)
-	if err != nil {
-		log.Fatal("Bad New Request")
-		return Activity{}
-	}
-	//set api key
-	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
-	//make request
-	res, errdo := client.Do(req)
-	if errdo != nil {
-		log.Fatal("Bad Client Request")
-		return Activity{}
-	}
-	body, errread := ioutil.ReadAll(res.Body)
-	if errread != nil {
-		log.Fatal("Error Reading Body")
-		return Activity{}
-	}
-	err = json.Unmarshal(body, &userActivity)
+	body := httpRequest(client, config, getUserActivityURL)
+
+	var err = json.Unmarshal(body, &userActivity)
 	if err != nil {
 		log.Fatal("Error Unmarshalling Body")
 		return Activity{}
@@ -296,26 +288,9 @@ func getConcurrency(client http.Client, config SauceConfig) Data {
 	var concurrencyList Data
 	getConcurrencyURL := url + "users/" + config.SauceAPIUser + "/concurrency"
 
-	//set url
-	req, err := http.NewRequest(http.MethodGet, getConcurrencyURL, nil)
-	if err != nil {
-		log.Fatal("Bad New Request")
-		return Data{}
-	}
-	//set api key
-	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
-	//make request
-	res, errdo := client.Do(req)
-	if errdo != nil {
-		log.Fatal("Bad Client Request")
-		return Data{}
-	}
-	body, errread := ioutil.ReadAll(res.Body)
-	if errread != nil {
-		log.Fatal("Error Reading Body")
-		return Data{}
-	}
-	err = json.Unmarshal(body, &concurrencyList)
+	body := httpRequest(client, config, getConcurrencyURL)
+
+	var err = json.Unmarshal(body, &concurrencyList)
 	if err != nil {
 		log.Fatal("Error Unmarshalling Body")
 		return Data{}
@@ -324,17 +299,24 @@ func getConcurrency(client http.Client, config SauceConfig) Data {
 }
 
 func getUsage(client http.Client, config SauceConfig) History {
-
-	fmt.Println("\n\nTESTLINE\n\n ")
-
 	var usageList History
 	getUsageURL := url + "users/" + config.SauceAPIUser + "/usage"
 
-	//set url
-	req, err := http.NewRequest(http.MethodGet, getUsageURL, nil)
+	body := httpRequest(client, config, getUsageURL)
+
+	var err = json.Unmarshal(body, &usageList)
+	if err != nil {
+		log.Fatal("Error Unmarshalling Body")
+		return History{}
+	}
+	return usageList
+}
+
+func httpRequest(client http.Client, config SauceConfig, url string) []byte {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		log.Fatal("Bad New Request")
-		return History{}
+		return nil
 	}
 	//set api key
 	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
@@ -342,18 +324,12 @@ func getUsage(client http.Client, config SauceConfig) History {
 	res, errdo := client.Do(req)
 	if errdo != nil {
 		log.Fatal("Bad Client Request")
-		return History{}
+		return nil
 	}
 	body, errread := ioutil.ReadAll(res.Body)
 	if errread != nil {
 		log.Fatal("Error Reading Body")
-		return History{}
+		return nil
 	}
-
-	err = json.Unmarshal(body, &usageList)
-	if err != nil {
-		log.Fatal("Error Unmarshalling Body")
-		return History{}
-	}
-	return usageList
+	return body
 }
