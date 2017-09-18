@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
 )
 
@@ -45,21 +44,10 @@ func TestUserActivity(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUserActivity(client, fakeConfig)
-				g.Assert(result.SubAccounts[0].all).Equal(7)
+				g.Assert(result.SubAccounts["steelers"].All).Equal(7)
 			})
 		})
 	}
-	for _, test := range tests {
-		g.Describe("getUserActivity()", func() {
-			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
-				result := getUserActivity(client, fakeConfig)
-				g.Assert(result.SubAccounts[0].all).Equal(7)
-			})
-		})
-	}
-
-
 }
 
 func TestGetConcurrency(t *testing.T) {
@@ -89,7 +77,7 @@ func TestGetConcurrency(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getConcurrency(client, fakeConfig)
-				g.Assert(result.TeamData[0].Current.Allocation).Equal()
+				g.Assert(result.TeamData["self"].Current.Overall).Equal(4)
 			})
 		})
 	}
@@ -121,7 +109,7 @@ func TestGetUserList(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUserList(client, fakeConfig)
-				g.Assert(result.users[0].username).Equal("FIRSTUSER")
+				g.Assert(result.users[].username).Equal("FIRSTUSER")
 			})
 		})
 	}
