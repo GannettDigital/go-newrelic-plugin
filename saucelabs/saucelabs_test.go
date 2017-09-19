@@ -109,7 +109,7 @@ func TestGetUserList(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUserList(client, fakeConfig)
-				g.Assert(result.Users[0].UserName).Equal("FIRSTUSER")
+				g.Assert(result[0].UserName).Equal("FIRSTUSER")
 			})
 		})
 	}
@@ -142,7 +142,7 @@ func TestGetUsage(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUsage(client, fakeConfig)
-				g.Assert(result.usage[0][0]).Equal("2017-7-14")
+				g.Assert(result.Usage[0][0]).Equal("2017-7-14")
 			})
 		})
 	}
