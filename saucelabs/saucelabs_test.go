@@ -3,6 +3,7 @@ package saucelabs
 import (
 	"os"
 	"testing"
+	"fmt"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
 	"github.com/franela/goblin"
