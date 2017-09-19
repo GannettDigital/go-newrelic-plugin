@@ -77,7 +77,7 @@ func TestGetConcurrency(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getConcurrency(client, fakeConfig)
-				g.Assert(result.TeamData["self"].Current.Overall).Equal(4)
+				g.Assert(result.Concurrency["self"].Current.Overall).Equal(4)
 			})
 		})
 	}
