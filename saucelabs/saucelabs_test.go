@@ -109,7 +109,7 @@ func TestGetUserList(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUserList(client, fakeConfig)
-				g.Assert(result.users[0].UserName).Equal("FIRSTUSER")
+				g.Assert(result.Users[0].UserName).Equal("FIRSTUSER")
 			})
 		})
 	}
