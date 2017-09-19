@@ -44,6 +44,7 @@ func TestUserActivity(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUserActivity(client, fakeConfig)
+				fmt.Println(result.SubAccounts["steelers"].All)
 				g.Assert(result.SubAccounts["steelers"].All).Equal(7)
 			})
 		})
@@ -77,6 +78,7 @@ func TestGetConcurrency(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getConcurrency(client, fakeConfig)
+				fmt.Println(result.Concurrency["self"].Current.Overall)
 				g.Assert(result.Concurrency["self"].Current.Overall).Equal(4)
 			})
 		})
@@ -109,6 +111,7 @@ func TestGetUserList(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUserList(client, fakeConfig)
+				fmt.Println(result[0].UserName)
 				g.Assert(result[0].UserName).Equal("FIRSTUSER")
 			})
 		})
@@ -142,6 +145,7 @@ func TestGetUsage(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUsage(client, fakeConfig)
+				fmt.Println(result.Usage[0][0]))
 				g.Assert(result.Usage[0][0]).Equal("2017-7-14")
 			})
 		})
