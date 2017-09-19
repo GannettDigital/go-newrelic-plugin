@@ -145,7 +145,7 @@ func TestGetUsage(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = test.HTTPRunner
 				result := getUsage(client, fakeConfig)
-				fmt.Println(result.Usage[0][0]))
+				fmt.Println(result.Usage[0][0])
 				g.Assert(result.Usage[0][0]).Equal("2017-7-14")
 			})
 		})
