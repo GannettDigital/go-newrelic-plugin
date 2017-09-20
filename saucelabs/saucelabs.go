@@ -10,9 +10,10 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
+	"github.com/Sirupsen/logrus"
 )
+
 var runner utilsHTTP.HTTPRunner
 
 // Name - the name of this thing
@@ -98,6 +99,22 @@ type History struct {
 
 var client = http.Client{
 	Timeout: time.Second * 20,
+}
+
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+type MockClient struct {
+	DoFunc func(req *http.Request) (*http.Response, error)
+}
+
+func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
+	if m.DoFunc != nil {
+		return m.DoFunc(req)
+	}
+	// just in case you want default correct return value
+	return &http.Response{}, nil
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
