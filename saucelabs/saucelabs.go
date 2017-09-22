@@ -3,18 +3,14 @@ package saucelabs
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
-	"time"
 
-	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Sirupsen/logrus"
 )
-
-var runner utilsHTTP.HTTPRunner
 
 // Name - the name of this thing
 const Name string = "saucelabs"
@@ -25,12 +21,108 @@ const Provider string = "saucelabs"
 // ProtocolVersion - nr-infra protocol version
 const ProtocolVersion string = "1"
 
-const url = "https://saucelabs.com/rest/v1/"
-
 // SauceConfig is the keeper of the config
 type SauceConfig struct {
 	SauceAPIUser string
 	SauceAPIKey  string
+}
+
+// SauceClient holds sauce http connection information
+type SauceClient struct {
+	URL    url.URL
+	Client *http.Client
+	Config SauceConfig
+}
+
+// NewSauceClient creates a new sauce client
+func NewSauceClient(config SauceConfig) (*SauceClient, error) {
+	base, err := url.Parse("https://saucelabs.com/rest/v1/")
+	if err != nil {
+		return nil, err
+	}
+	return &SauceClient{
+		*base,
+		new(http.Client),
+		config,
+	}, nil
+}
+
+func (sc *SauceClient) do(method, path string, into interface{}, args map[string]string) error {
+	baseURL := sc.URL
+	request := &http.Request{
+		Method: method,
+		URL:    &baseURL,
+		Header: http.Header{
+			"Accept": {"application/json"},
+		},
+	}
+	request.URL.Path += path
+	request.SetBasicAuth(sc.Config.SauceAPIUser, sc.Config.SauceAPIKey)
+
+	response, responseErr := sc.Client.Do(request)
+	if responseErr != nil {
+		return responseErr
+	}
+	defer response.Body.Close()
+
+	decodeErr := json.NewDecoder(response.Body).Decode(into)
+	if decodeErr != nil {
+		return decodeErr
+	}
+
+	return nil
+}
+
+//GetUserList retrieves all the subaccounts of a parent account
+func (sc *SauceClient) GetUserList() ([]User, error) {
+	var response []User
+	getUserListURL := fmt.Sprintf("users/%v/subaccounts", sc.Config.SauceAPIUser)
+
+	err := sc.do(http.MethodGet, getUserListURL, &response, nil)
+	if err != nil {
+		return []User{}, err
+	}
+
+	return response, nil
+}
+
+//GetUserActivity retrieves the activity of an account or all child accounts
+func (sc *SauceClient) GetUserActivity() (Activity, error) {
+	var response Activity
+	getUserActivityURL := fmt.Sprintf("users/%v/activity", sc.Config.SauceAPIUser)
+
+	err := sc.do(http.MethodGet, getUserActivityURL, &response, nil)
+	if err != nil {
+		return Activity{}, err
+	}
+
+	return response, nil
+}
+
+//GetConcurrency retrieves the concurrency for an account or all child accounts
+func (sc *SauceClient) GetConcurrency() (Data, error) {
+	var response Data
+	getConcurrencyURL := fmt.Sprintf("users/%v/concurrency", sc.Config.SauceAPIUser)
+
+	err := sc.do(http.MethodGet, getConcurrencyURL, &response, nil)
+	if err != nil {
+		return Data{}, err
+	}
+
+	return response, nil
+}
+
+//GetUsage retrieves the usage metric for the passed account
+func (sc *SauceClient) GetUsage() (History, error) {
+	var response History
+	getUsageURL := fmt.Sprintf("users/%v/usage", sc.Config.SauceAPIUser)
+
+	err := sc.do(http.MethodGet, getUsageURL, &response, nil)
+	if err != nil {
+		return History{}, err
+	}
+
+	return response, nil
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -97,26 +189,6 @@ type History struct {
 	Usage    [][]interface{} `json:"usage"`
 }
 
-var client = http.Client{
-	Timeout: time.Second * 20,
-}
-
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
-type MockClient struct {
-	DoFunc func(req *http.Request) (*http.Response, error)
-}
-
-func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
-	if m.DoFunc != nil {
-		return m.DoFunc(req)
-	}
-	// just in case you want default correct return value
-	return &http.Response{}, nil
-}
-
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
 // If the pretty attribute is set to true, the JSON will be indented for easy reading.
 func OutputJSON(data interface{}, pretty bool) error {
@@ -142,10 +214,6 @@ func OutputJSON(data interface{}, pretty bool) error {
 	return nil
 }
 
-func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
-}
-
 // Run - Function that is ran from the main cmd
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
@@ -165,7 +233,18 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 	validateConfig(config)
 
-	var metric = getMetric(log, config, client)
+	sc, scErr := NewSauceClient(config)
+	if scErr != nil {
+		log.WithError(scErr).Error("Error creating saucelabs client")
+		return
+	}
+
+	metric, metricsErr := getMetric(log, config, sc)
+	if metricsErr != nil {
+		log.WithError(metricsErr).Error("Error collecting metrics")
+		return
+	}
+
 	data.Metrics = append(data.Metrics, metric...)
 
 	fatalIfErr(log, OutputJSON(data, prettyPrint))
@@ -177,13 +256,29 @@ func fatalIfErr(log *logrus.Logger, err error) {
 	}
 }
 
-func getMetric(log *logrus.Logger, config SauceConfig, client http.Client) []MetricData {
+func getMetric(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]MetricData, error) {
 	var metricsData []MetricData
 
-	userList := getUserList(client, config)
-	userActivity := getUserActivity(client, config)
-	userConcurrency := getConcurrency(client, config)
-	userHistory := getUsage(client, config)
+	userList, userListErr := sc.GetUserList()
+	if userListErr != nil {
+		log.WithError(userListErr).Error("Error collecting user list metrics")
+		return nil, userListErr
+	}
+	userActivity, userActivityErr := sc.GetUserActivity()
+	if userActivityErr != nil {
+		log.WithError(userActivityErr).Error("Error collecting user activty metrics")
+		return nil, userActivityErr
+	}
+	userConcurrency, userConcurrencyErr := sc.GetConcurrency()
+	if userConcurrencyErr != nil {
+		log.WithError(userConcurrencyErr).Error("Error collecting user concurrency metrics")
+		return nil, userConcurrencyErr
+	}
+	userHistory, userHistoryErr := sc.GetUsage()
+	if userHistoryErr != nil {
+		log.WithError(userHistoryErr).Error("Error collecting user usage metrics")
+		return nil, userHistoryErr
+	}
 
 	// User List Metrics
 	metricsData = append(metricsData, MetricData{
@@ -242,7 +337,7 @@ func getMetric(log *logrus.Logger, config SauceConfig, client http.Client) []Met
 			"saucelabs.userHistory.totalTimeInSecs": getHistoryTotalTime(userHistory, index),
 		})
 	}
-	return metricsData
+	return metricsData, nil
 }
 func getHistoryDate(userHistory History, index int) string {
 	r, _ := regexp.Compile("([0-9]{4})+[-]([0-9]{1,2})+[-]+([0-9]{1,2})")
@@ -277,82 +372,4 @@ func validateConfig(config SauceConfig) {
 	} else if config.SauceAPIKey == "" {
 		log.Fatal("Config Yaml is missing SAUCE_API_KEY value. Please check the config to continue")
 	}
-}
-
-func getUserList(client http.Client, config SauceConfig) []User {
-	var userList []User
-	getUserListURL := url + "users/" + config.SauceAPIUser + "/subaccounts"
-
-	body := httpRequest(client, config, getUserListURL)
-
-	var err = json.Unmarshal(body, &userList)
-	if err != nil {
-		log.Fatal("Error Unmarshalling Body")
-		return userList
-	}
-	return userList
-}
-
-func getUserActivity(client http.Client, config SauceConfig) Activity {
-	var userActivity Activity
-	getUserActivityURL := url + config.SauceAPIUser + "/activity"
-
-	body := httpRequest(client, config, getUserActivityURL)
-
-	var err = json.Unmarshal(body, &userActivity)
-	if err != nil {
-		log.Fatal("Error Unmarshalling Body")
-		return Activity{}
-	}
-	return userActivity
-}
-
-func getConcurrency(client http.Client, config SauceConfig) Data {
-	var concurrencyList Data
-	getConcurrencyURL := url + "users/" + config.SauceAPIUser + "/concurrency"
-
-	body := httpRequest(client, config, getConcurrencyURL)
-
-	var err = json.Unmarshal(body, &concurrencyList)
-	if err != nil {
-		log.Fatal("Error Unmarshalling Body")
-		return Data{}
-	}
-	return concurrencyList
-}
-
-func getUsage(client http.Client, config SauceConfig) History {
-	var usageList History
-	getUsageURL := url + "users/" + config.SauceAPIUser + "/usage"
-
-	body := httpRequest(client, config, getUsageURL)
-
-	var err = json.Unmarshal(body, &usageList)
-	if err != nil {
-		log.Fatal("Error Unmarshalling Body")
-		return History{}
-	}
-	return usageList
-}
-
-func httpRequest(client http.Client, config SauceConfig, url string) []byte {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		log.Fatal("Bad New Request")
-		return nil
-	}
-	//set api key
-	req.SetBasicAuth(config.SauceAPIUser, config.SauceAPIKey)
-	//make request
-	res, errdo := client.Do(req)
-	if errdo != nil {
-		log.Fatal("Bad Client Request")
-		return nil
-	}
-	body, errread := ioutil.ReadAll(res.Body)
-	if errread != nil {
-		log.Fatal("Error Reading Body")
-		return nil
-	}
-	return body
 }
