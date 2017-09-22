@@ -239,7 +239,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		return
 	}
 
-	metric, metricsErr := getMetric(log, config, sc)
+	metric, metricsErr := getMetrics(log, config, sc)
 	if metricsErr != nil {
 		log.WithError(metricsErr).Error("Error collecting metrics")
 		return
@@ -256,7 +256,7 @@ func fatalIfErr(log *logrus.Logger, err error) {
 	}
 }
 
-func getMetric(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]MetricData, error) {
+func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]MetricData, error) {
 	var metricsData []MetricData
 
 	userList, userListErr := sc.GetUserList()
@@ -364,7 +364,7 @@ func getHistoryTotalTime(userHistory History, index int) float64 {
 	return 0
 }
 
-func validateConfig(config SauceConfig) {
+func validateConfig(config SauceConfig) error {
 	if config.SauceAPIUser == "" && config.SauceAPIKey == "" {
 		log.Fatal("Config Yaml is missing SAUCE_API_USER and SAUCE_API_KEY values. Please check the config to continue")
 	} else if config.SauceAPIUser == "" {
@@ -372,4 +372,5 @@ func validateConfig(config SauceConfig) {
 	} else if config.SauceAPIKey == "" {
 		log.Fatal("Config Yaml is missing SAUCE_API_KEY value. Please check the config to continue")
 	}
+	return nil
 }
