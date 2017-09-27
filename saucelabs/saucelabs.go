@@ -76,6 +76,7 @@ func (sc *SauceClient) do(method, path string, into interface{}, args map[string
 //GetUserList retrieves all the subaccounts of a parent account
 func (sc *SauceClient) GetUserList() ([]User, error) {
 	var response []User
+
 	getUserListURL := fmt.Sprintf("users/%v/subaccounts", sc.Config.SauceAPIUser)
 
 	err := sc.do(http.MethodGet, getUserListURL, &response, nil)
@@ -366,11 +367,13 @@ func getHistoryTotalTime(userHistory History, index int) float64 {
 
 func validateConfig(config SauceConfig) error {
 	if config.SauceAPIUser == "" && config.SauceAPIKey == "" {
-		log.Fatal("Config Yaml is missing SAUCE_API_USER and SAUCE_API_KEY values. Please check the config to continue")
-	} else if config.SauceAPIUser == "" {
-		log.Fatal("Config Yaml is missing SAUCE_API_USER value. Please check the config to continue")
-	} else if config.SauceAPIKey == "" {
-		log.Fatal("Config Yaml is missing SAUCE_API_KEY value. Please check the config to continue")
+		return fmt.Errorf("Config Yaml is missing SAUCE_API_USER and SAUCE_API_KEY values. Please check the config to continue")
+	}
+	if config.SauceAPIUser == "" {
+		return fmt.Errorf("Config Yaml is missing SAUCE_API_USER value. Please check the config to continue")
+	}
+	if config.SauceAPIKey == "" {
+		return fmt.Errorf("Config Yaml is missing SAUCE_API_KEY value. Please check the config to continue")
 	}
 	return nil
 }
