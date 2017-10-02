@@ -3,6 +3,7 @@ package saucelabs
 import (
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/Sirupsen/logrus"
@@ -72,22 +73,67 @@ func TestGetMetrics(t *testing.T) {
 func TestGetUserList(t *testing.T) {
 	g := goblin.Goblin(t)
 	sc := fakeSauce()
-	g.Describe("sauce GetUserList()", func() {
-		res, err := sc.GetUserList()
-		g.It("should return userlist data", func() {
-			g.Assert(err).Equal(nil)
-			g.Assert(len(res) > 0).IsTrue()
+	examples := []struct {
+		Expected    []User
+		CausesError bool
+	}{
+		{
+			[]User{
+				{
+					"FIRSTUSER",
+				},
+				{
+					"seconduser",
+				},
+			},
+			false,
+		},
+	}
+	g.Describe("GetUserList", func() {
+		g.It("gets the user list", func() {
+			for _, x := range examples {
+				g.Describe("sauce GetUserList()", func() {
+					res, err := sc.GetUserList()
+					g.It("should return userlist data", func() {
+						g.Assert(err != nil).Equal(x.CausesError)
+						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+					})
+				})
+			}
 		})
 	})
 }
+
 func TestGetUserActivity(t *testing.T) {
 	g := goblin.Goblin(t)
 	sc := fakeSauce()
-	g.Describe("sauce GetUserActivity()", func() {
-		res, err := sc.GetUserActivity()
-		g.It("should return user activity data", func() {
-			g.Assert(err).Equal(nil)
-			g.Assert(res.SubAccounts["steelers"].InProgress).Equal(7)
+	examples := []struct {
+		Expected    Activity
+		CausesError bool
+	}{
+		{
+			Activity{
+				SubAccounts: map[string]SubAccount{
+					"steelers": SubAccount{7, 7, 0},
+					"penguins": SubAccount{1, 1, 0},
+					"pirates":  SubAccount{1, 2, 1},
+				},
+				Totals: SubAccount{9, 10, 1},
+			},
+			false,
+		},
+	}
+	g.Describe("GetUserActivity", func() {
+		g.It("gets the user list", func() {
+			for _, x := range examples {
+				g.Describe("sauce GetUserActivity()", func() {
+					res, err := sc.GetUserActivity()
+					g.It("should return user activity", func() {
+						g.Assert(err != nil).Equal(x.CausesError)
+						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+					})
+				})
+			}
 		})
 	})
 }
@@ -95,11 +141,54 @@ func TestGetUserActivity(t *testing.T) {
 func TestGetConcurrency(t *testing.T) {
 	g := goblin.Goblin(t)
 	sc := fakeSauce()
-	g.Describe("sauce GetConcurrency()", func() {
-		res, err := sc.GetConcurrency()
-		g.It("should return user activity data", func() {
-			g.Assert(err).Equal(nil)
-			g.Assert(res.Concurrency["self"].Current.Overall).Equal(4)
+	examples := []struct {
+		Expected    Data
+		CausesError bool
+	}{
+		{
+			Data{
+				Concurrency: map[string]TeamData{
+					"self": TeamData{
+						Current: Allocation{
+							Overall: 4,
+							Mac:     1,
+							Manual:  0,
+						},
+						Remaining: Allocation{
+							Overall: 0,
+							Mac:     0,
+							Manual:  0,
+						},
+					},
+					"ancestor": TeamData{
+						Current: Allocation{
+							Overall: 4,
+							Mac:     1,
+							Manual:  0,
+						},
+						Remaining: Allocation{
+							Overall: 0,
+							Mac:     0,
+							Manual:  0,
+						},
+					},
+				},
+			},
+			false,
+		},
+	}
+
+	g.Describe("GetConcurrency", func() {
+		g.It("gets the user list", func() {
+			for _, x := range examples {
+				g.Describe("sauce GetConcurrency()", func() {
+					res, err := sc.GetConcurrency()
+					g.It("should return user concurrency", func() {
+						g.Assert(err != nil).Equal(x.CausesError)
+						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+					})
+				})
+			}
 		})
 	})
 }
@@ -107,11 +196,31 @@ func TestGetConcurrency(t *testing.T) {
 func TestGetUsage(t *testing.T) {
 	g := goblin.Goblin(t)
 	sc := fakeSauce()
-	g.Describe("sauce GetUsage()", func() {
-		res, err := sc.GetUsage()
-		g.It("should return user activity data", func() {
-			g.Assert(err).Equal(nil)
-			g.Assert(res.Usage[0][0]).Equal("2017-7-14")
+	examples := []struct {
+		Expected    History
+		CausesError bool
+	}{
+		{
+			History{
+				UserName: "testing",
+				Usage:    {{"2017-7-14", {24, 6509}}, {"2017-7-19", {2, 266}}},
+			},
+			false,
+		},
+	}
+
+	g.Describe("GetUsage", func() {
+		g.It("gets the usage", func() {
+			for _, x := range examples {
+				g.Describe("sauce GetUsage()", func() {
+					res, err := sc.GetUsage()
+					g.It("should return user usage", func() {
+						fmt.Println("this*******%s", res)
+						g.Assert(err != nil).Equal(x.CausesError)
+						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+					})
+				})
+			}
 		})
 	})
 }
@@ -143,7 +252,7 @@ func registerResponders(transport *httpmock.MockTransport) {
 		{"GET", "https://saucelabs.com/rest/v1/users/test-user/activity", 200, `{"subaccounts":{"steelers":{"in progress":7,"all":7,"queued":0},"penguins":{"in progress":1,"all":1,"queued":0},"pirates":{"in progress":1,"all":2,"queued":1}},"totals":{"in progress":9,"all":10,"queued":1}}`},
 		{"GET", "https://saucelabs.com/rest/v1/users/test-user/concurrency", 200, `{"timestamp":8.7712928E8,"concurrency":{"self":{"username":"testing","current":{"manual":0,"mac":1,"overall":4},"allowed":{"manual":43,"mac":43,"overall":43}},"ancestor":{"username":"testing","current":{"manual":0,"mac":1,"overall":4},"allowed":{"manual":43,"mac":43,"overall":43}}}}`},
 		{"GET", "https://saucelabs.com/rest/v1/users/test-user/subaccounts", 200, `[{"username":"FIRSTUSER","vm_lockdown":false,"new_email":null,"last_name":"Doe","parent":"gd_automation","subaccount_limit":null,"children_count":0,"creation_time":1465484232,"user_type":"subaccount","monthly_minutes":{"manual":"infinite","automated":999999},"prevent_emails":[],"is_admin":null,"manual_minutes":"infinite","can_run_manual":true,"concurrency_limit":{"mac":70,"scout":3,"overall":3,"real_device":0},"is_public":false,"id":"FIRSTUSER","access_key":"12345","first_name":"John","require_full_name":true,"verified":false,"name":"John Doe","subscribed":true,"title":null,"terminating_subscription":false,"is_sso":false,"entity_type":null,"tunnel_concurrency_limit":70,"allow_integrations_page":true,"last_login":null,"ancestor_concurrency_limit":{"mac":70,"scout":70,"overall":70,"real_device":0},"ancestor_allows_subaccounts":false,"domain":null,"ancestor":"gd_automation","minutes":980420,"email":"johndoe@gannett.com"},{"username":"seconduser","vm_lockdown":false,"new_email":null,"last_name":null,"parent":"gd_automation","subaccount_limit":null,"last_test":1502724106,"children_count":0,"creation_time":1502719650,"user_type":"subaccount","monthly_minutes":{"manual":"infinite","automated":999999},"prevent_emails":[],"is_admin":null,"manual_minutes":"infinite","can_run_manual":true,"concurrency_limit":{"mac":70,"scout":3,"overall":3,"real_device":0},"is_public":false,"id":"seconduser","access_key":"123743","first_name":null,"require_full_name":true,"verified":true,"name":"Jane Doe","subscribed":true,"title":null,"terminating_subscription":false,"is_sso":false,"entity_type":null,"tunnel_concurrency_limit":70,"allow_integrations_page":true,"last_login":1502722851,"ancestor_concurrency_limit":{"mac":70,"scout":70,"overall":70,"real_device":0},"ancestor_allows_subaccounts":false,"domain":null,"ancestor":"gd_automation","minutes":980420,"email":"janedoe@gannett.com"}]`},
-		{"GET", "https://saucelabs.com/rest/v1/users/test-user/usage", 200, `{"usage":[["2017-7-14",[24,6509]],["2017-7-19",[2,266]],["2017-7-20",[6,591]],["2017-7-25",[2,145]],["2017-7-26",[20,7406]],["2017-8-4",[16,2076]],["2017-8-8",[8,702]],["2017-8-9",[24,8315]],["2017-8-10",[5,761]],["2017-8-11",[43,4116]],["2017-8-14",[529,19511]],["2017-8-15",[130,4423]],["2017-8-24",[21,528]],["2017-9-6",[86,5388]]],"username":"testing"}`},
+		{"GET", "https://saucelabs.com/rest/v1/users/test-user/usage", 200, `{"usage":[["2017-7-14",[24,6509]],["2017-7-19",[2,266]]],"username":"testing"}`},
 	}
 
 	for r := range responses {
