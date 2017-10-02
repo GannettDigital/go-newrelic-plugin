@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -186,8 +187,20 @@ type Allocation struct {
 
 // History holds the username and total number of jobs and VM time used, in seconds grouped by day.
 type History struct {
-	UserName string          `json:"username"`
-	Usage    [][]interface{} `json:"usage"`
+	UserName string    `json:"username"`
+	Usage    UsageList `json:"usage"`
+}
+
+// UsageList holds the Date and a testInfo list for a particular usage object
+type UsageList struct {
+	Date         time.Time
+	testInfoList []TestInfo
+}
+
+// TestInfo holds the Time exectued and the duration executed
+type TestInfo struct {
+	Executed int
+	Time     int
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
