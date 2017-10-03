@@ -1,0 +1,13 @@
+name: com.gannettdigital.saucelabs
+description: Reports Sauce Labs metrics
+protocol_version: 1
+os: linux
+
+source:
+  - command:
+     - ./bin/saucelabs
+    prefix: gannett
+    interval: 15
+    env:
+      SAUCE_API_USER: null
+      SAUCE_API_KEY: null
