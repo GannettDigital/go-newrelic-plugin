@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -84,7 +85,6 @@ func (sc *SauceClient) GetUserList() ([]User, error) {
 	if err != nil {
 		return []User{}, err
 	}
-
 	return response, nil
 }
 
@@ -97,7 +97,6 @@ func (sc *SauceClient) GetUserActivity() (Activity, error) {
 	if err != nil {
 		return Activity{}, err
 	}
-
 	return response, nil
 }
 
@@ -110,21 +109,32 @@ func (sc *SauceClient) GetConcurrency() (Data, error) {
 	if err != nil {
 		return Data{}, err
 	}
-
 	return response, nil
 }
 
 //GetUsage retrieves the usage metric for the passed account
-func (sc *SauceClient) GetUsage() (History, error) {
+func (sc *SauceClient) GetUsage() (HistoryFormated, error) {
 	var response History
 	getUsageURL := fmt.Sprintf("users/%v/usage", sc.Config.SauceAPIUser)
 
 	err := sc.do(http.MethodGet, getUsageURL, &response, nil)
 	if err != nil {
-		return History{}, err
+		return HistoryFormated{}, err
 	}
 
-	return response, nil
+	var formatedResponse HistoryFormated
+	formatedResponse.UserName = response.UserName
+	for index := range response.Usage {
+		var testInfo TestInfo
+		testInfo.Executed = getHistoryTotalJobs(response, index)
+		testInfo.Time = getHistoryTotalTime(response, index)
+
+		var usageList UsageList
+		usageList.Date = getHistoryDate(response, index)
+		usageList.testInfoList = testInfo
+		formatedResponse.Usage = append(formatedResponse.Usage, usageList)
+	}
+	return formatedResponse, nil
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -187,20 +197,26 @@ type Allocation struct {
 
 // History holds the username and total number of jobs and VM time used, in seconds grouped by day.
 type History struct {
-	UserName string    `json:"username"`
-	Usage    UsageList `json:"usage"`
+	UserName string          `json:"username"`
+	Usage    [][]interface{} `json:"usage"`
 }
 
-// UsageList holds the Date and a testInfo list for a particular usage object
+//HistoryFormated holds the username and total number of jobs and VM time used, in seconds grouped by day formated for testing.
+type HistoryFormated struct {
+	UserName string      `json:"username"`
+	Usage    []UsageList `json:"usage"`
+}
+
+//UsageList holds the Date and a testInfo list for a particular usage object
 type UsageList struct {
 	Date         time.Time
-	testInfoList []TestInfo
+	testInfoList TestInfo
 }
 
 // TestInfo holds the Time executed and the duration executed
 type TestInfo struct {
-	Executed int
-	Time     int
+	Executed float64
+	Time     float64
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -280,7 +296,7 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 	}
 	userActivity, userActivityErr := sc.GetUserActivity()
 	if userActivityErr != nil {
-		log.WithError(userActivityErr).Error("Error collecting user activty metrics")
+		log.WithError(userActivityErr).Error("Error collecting user activity metrics")
 		return nil, userActivityErr
 	}
 	userConcurrency, userConcurrencyErr := sc.GetConcurrency()
@@ -293,7 +309,6 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 		log.WithError(userHistoryErr).Error("Error collecting user usage metrics")
 		return nil, userHistoryErr
 	}
-
 	// User List Metrics
 	metricsData = append(metricsData, MetricData{
 		"entity_name":                     "SauceUserList",
@@ -346,20 +361,61 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 			"event_type":                            "SauceUserHistory",
 			"provider":                              "saucelabs",
 			"saucelabs.userHistory.username":        userHistory.UserName,
-			"saucelabs.userHistory.date":            getHistoryDate(userHistory, index),
-			"saucelabs.userHistory.totalJobs":       getHistoryTotalJobs(userHistory, index),
-			"saucelabs.userHistory.totalTimeInSecs": getHistoryTotalTime(userHistory, index),
+			"saucelabs.userHistory.date":            userHistory.Usage[index].Date,
+			"saucelabs.userHistory.totalJobs":       userHistory.Usage[index].testInfoList.Executed,
+			"saucelabs.userHistory.totalTimeInSecs": userHistory.Usage[index].testInfoList.Time,
 		})
 	}
 	return metricsData, nil
 }
-func getHistoryDate(userHistory History, index int) string {
-	r, _ := regexp.Compile("([0-9]{4})+[-]([0-9]{1,2})+[-]+([0-9]{1,2})")
+
+// func getHistoryDate(userHistory History, index int) string {
+// 	r, _ := regexp.Compile("([0-9]{4})+[-]([0-9]{1,2})+[-]+([0-9]{1,2})")
+// 	if r.MatchString(userHistory.Usage[index][0].(string)) {
+// 		return userHistory.Usage[index][0].(string)
+// 	}
+// 	log.Fatal("Error parsing users history date")
+// 	return ""
+// }
+func getHistoryDate(userHistory History, index int) time.Time {
+	var year int
+	var month int
+	var day int
+	var err error
+	r, _ := regexp.Compile("([0-9]{4})+[-]+([0-9]{1,2})+[-]+([0-9]{1,2})")
 	if r.MatchString(userHistory.Usage[index][0].(string)) {
-		return userHistory.Usage[index][0].(string)
+
+		year, err = strconv.Atoi(userHistory.Usage[index][0].(string)[:4])
+		if err != nil {
+			fmt.Println("Year Convert Error")
+		}
+
+		check := userHistory.Usage[index][0].(string)[6:7]
+		if check == "-" {
+			month, err = strconv.Atoi(userHistory.Usage[index][0].(string)[5:6])
+			if err != nil {
+				fmt.Println("Month Convert Error")
+			}
+
+			day, err = strconv.Atoi(userHistory.Usage[index][0].(string)[7:])
+			if err != nil {
+				fmt.Println("Month Convert Error")
+			}
+		} else {
+			month, err = strconv.Atoi(userHistory.Usage[index][0].(string)[5:7])
+			if err != nil {
+				fmt.Println("Month Convert Error")
+			}
+
+			day, err = strconv.Atoi(userHistory.Usage[index][0].(string)[8:])
+			if err != nil {
+				fmt.Println("Month Convert Error")
+			}
+		}
+		return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 	}
 	log.Fatal("Error parsing users history date")
-	return ""
+	return time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC)
 }
 func getHistoryTotalJobs(userHistory History, index int) float64 {
 	totalJobs, check := userHistory.Usage[index][1].([]interface{})[0].(float64)
