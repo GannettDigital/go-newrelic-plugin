@@ -28,10 +28,28 @@ func TestValidateConfig(t *testing.T) {
 			ExpectedIsNil bool
 			SauceConfig   SauceConfig
 		}{
-			"no":           {false, SauceConfig{}},
-			"SauceAPIUser": {false, SauceConfig{SauceAPIUser: "test-user"}},
-			"SauceAPIKey":  {false, SauceConfig{SauceAPIKey: "test-pw"}},
-			"all":          {true, SauceConfig{SauceAPIUser: "test-user", SauceAPIKey: "test-pw"}},
+			"no": {
+				false,
+				SauceConfig{},
+			},
+			"SauceAPIUser": {
+				false,
+				SauceConfig{
+					SauceAPIUser: "test-user",
+				},
+			},
+			"SauceAPIKey": {
+				false,
+				SauceConfig{
+					SauceAPIKey: "test-pw",
+				},
+			},
+			"all": {
+				true,
+				SauceConfig{SauceAPIUser: "test-user",
+					SauceAPIKey: "test-pw",
+				},
+			},
 		}
 		for name, ex := range expected {
 			desc := fmt.Sprintf("should return %v when %v fields are set", ex.ExpectedIsNil, name)
@@ -263,11 +281,30 @@ func registerResponders(transport *httpmock.MockTransport) {
 		Code     int
 		Response string
 	}{
-
-		{"GET", "https://saucelabs.com/rest/v1/users/test-user/activity", 200, `{"subaccounts":{"steelers":{"in progress":7,"all":7,"queued":0},"penguins":{"in progress":1,"all":1,"queued":0},"pirates":{"in progress":1,"all":2,"queued":1}},"totals":{"in progress":9,"all":10,"queued":1}}`},
-		{"GET", "https://saucelabs.com/rest/v1/users/test-user/concurrency", 200, `{"timestamp":8.7712928E8,"concurrency":{"self":{"username":"testing","current":{"manual":0,"mac":1,"overall":4},"allowed":{"manual":43,"mac":43,"overall":43}},"ancestor":{"username":"testing","current":{"manual":0,"mac":1,"overall":4},"allowed":{"manual":43,"mac":43,"overall":43}}}}`},
-		{"GET", "https://saucelabs.com/rest/v1/users/test-user/subaccounts", 200, `[{"username":"FIRSTUSER","vm_lockdown":false,"new_email":null,"last_name":"Doe","parent":"gd_automation","subaccount_limit":null,"children_count":0,"creation_time":1465484232,"user_type":"subaccount","monthly_minutes":{"manual":"infinite","automated":999999},"prevent_emails":[],"is_admin":null,"manual_minutes":"infinite","can_run_manual":true,"concurrency_limit":{"mac":70,"scout":3,"overall":3,"real_device":0},"is_public":false,"id":"FIRSTUSER","access_key":"12345","first_name":"John","require_full_name":true,"verified":false,"name":"John Doe","subscribed":true,"title":null,"terminating_subscription":false,"is_sso":false,"entity_type":null,"tunnel_concurrency_limit":70,"allow_integrations_page":true,"last_login":null,"ancestor_concurrency_limit":{"mac":70,"scout":70,"overall":70,"real_device":0},"ancestor_allows_subaccounts":false,"domain":null,"ancestor":"gd_automation","minutes":980420,"email":"johndoe@gannett.com"},{"username":"seconduser","vm_lockdown":false,"new_email":null,"last_name":null,"parent":"gd_automation","subaccount_limit":null,"last_test":1502724106,"children_count":0,"creation_time":1502719650,"user_type":"subaccount","monthly_minutes":{"manual":"infinite","automated":999999},"prevent_emails":[],"is_admin":null,"manual_minutes":"infinite","can_run_manual":true,"concurrency_limit":{"mac":70,"scout":3,"overall":3,"real_device":0},"is_public":false,"id":"seconduser","access_key":"123743","first_name":null,"require_full_name":true,"verified":true,"name":"Jane Doe","subscribed":true,"title":null,"terminating_subscription":false,"is_sso":false,"entity_type":null,"tunnel_concurrency_limit":70,"allow_integrations_page":true,"last_login":1502722851,"ancestor_concurrency_limit":{"mac":70,"scout":70,"overall":70,"real_device":0},"ancestor_allows_subaccounts":false,"domain":null,"ancestor":"gd_automation","minutes":980420,"email":"janedoe@gannett.com"}]`},
-		{"GET", "https://saucelabs.com/rest/v1/users/test-user/usage", 200, `{"usage":[["2017-7-14",[24,6509]],["2017-7-19",[2,266]]],"username":"testing"}`},
+		{
+			"GET",
+			"https://saucelabs.com/rest/v1/users/test-user/activity",
+			200,
+			`{"subaccounts":{"steelers":{"in progress":7,"all":7,"queued":0},"penguins":{"in progress":1,"all":1,"queued":0},"pirates":{"in progress":1,"all":2,"queued":1}},"totals":{"in progress":9,"all":10,"queued":1}}`,
+		},
+		{
+			"GET",
+			"https://saucelabs.com/rest/v1/users/test-user/concurrency",
+			200,
+			`{"timestamp":8.7712928E8,"concurrency":{"self":{"username":"testing","current":{"manual":0,"mac":1,"overall":4},"allowed":{"manual":43,"mac":43,"overall":43}},"ancestor":{"username":"testing","current":{"manual":0,"mac":1,"overall":4},"allowed":{"manual":43,"mac":43,"overall":43}}}}`,
+		},
+		{
+			"GET",
+			"https://saucelabs.com/rest/v1/users/test-user/subaccounts",
+			200,
+			`[{"username":"FIRSTUSER","vm_lockdown":false,"new_email":null,"last_name":"Doe","parent":"gd_automation","subaccount_limit":null,"children_count":0,"creation_time":1465484232,"user_type":"subaccount","monthly_minutes":{"manual":"infinite","automated":999999},"prevent_emails":[],"is_admin":null,"manual_minutes":"infinite","can_run_manual":true,"concurrency_limit":{"mac":70,"scout":3,"overall":3,"real_device":0},"is_public":false,"id":"FIRSTUSER","access_key":"12345","first_name":"John","require_full_name":true,"verified":false,"name":"John Doe","subscribed":true,"title":null,"terminating_subscription":false,"is_sso":false,"entity_type":null,"tunnel_concurrency_limit":70,"allow_integrations_page":true,"last_login":null,"ancestor_concurrency_limit":{"mac":70,"scout":70,"overall":70,"real_device":0},"ancestor_allows_subaccounts":false,"domain":null,"ancestor":"gd_automation","minutes":980420,"email":"johndoe@gannett.com"},{"username":"seconduser","vm_lockdown":false,"new_email":null,"last_name":null,"parent":"gd_automation","subaccount_limit":null,"last_test":1502724106,"children_count":0,"creation_time":1502719650,"user_type":"subaccount","monthly_minutes":{"manual":"infinite","automated":999999},"prevent_emails":[],"is_admin":null,"manual_minutes":"infinite","can_run_manual":true,"concurrency_limit":{"mac":70,"scout":3,"overall":3,"real_device":0},"is_public":false,"id":"seconduser","access_key":"123743","first_name":null,"require_full_name":true,"verified":true,"name":"Jane Doe","subscribed":true,"title":null,"terminating_subscription":false,"is_sso":false,"entity_type":null,"tunnel_concurrency_limit":70,"allow_integrations_page":true,"last_login":1502722851,"ancestor_concurrency_limit":{"mac":70,"scout":70,"overall":70,"real_device":0},"ancestor_allows_subaccounts":false,"domain":null,"ancestor":"gd_automation","minutes":980420,"email":"janedoe@gannett.com"}]`,
+		},
+		{
+			"GET",
+			"https://saucelabs.com/rest/v1/users/test-user/usage",
+			200,
+			`{"usage":[["2017-7-14",[24,6509]],["2017-7-19",[2,266]]],"username":"testing"}`,
+		},
 	}
 
 	for r := range responses {
