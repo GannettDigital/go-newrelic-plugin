@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
@@ -197,15 +198,30 @@ func TestGetUsage(t *testing.T) {
 	g := goblin.Goblin(t)
 	sc := fakeSauce()
 	examples := []struct {
-		Expected    History
+		Expected    HistoryFormated
 		CausesError bool
 	}{
 		{
-			History{
+			Expected: HistoryFormated{
 				UserName: "testing",
-				Usage:    {{"2017-7-14", {24, 6509}}, {"2017-7-19", {2, 266}}},
+				Usage: []UsageList{
+					{
+						Date: time.Date(2017, 7, 14, 0, 0, 0, 0, time.UTC),
+						testInfoList: TestInfo{
+							Executed: 24,
+							Time:     6509,
+						},
+					},
+					{
+						Date: time.Date(2017, 7, 19, 0, 0, 0, 0, time.UTC),
+						testInfoList: TestInfo{
+							Executed: 2,
+							Time:     266,
+						},
+					},
+				},
 			},
-			false,
+			CausesError: false,
 		},
 	}
 
@@ -236,7 +252,6 @@ func fakeSauce() *SauceClient {
 	sc.Client = &http.Client{
 		Transport: fakeSauceTransport,
 	}
-
 	return sc
 }
 

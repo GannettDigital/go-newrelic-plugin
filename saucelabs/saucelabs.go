@@ -246,7 +246,6 @@ func OutputJSON(data interface{}, pretty bool) error {
 
 // Run - Function that is ran from the main cmd
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
-
 	// Initialize the output structure
 	var data = PluginData{
 		Name:            Name,
@@ -369,14 +368,6 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 	return metricsData, nil
 }
 
-// func getHistoryDate(userHistory History, index int) string {
-// 	r, _ := regexp.Compile("([0-9]{4})+[-]([0-9]{1,2})+[-]+([0-9]{1,2})")
-// 	if r.MatchString(userHistory.Usage[index][0].(string)) {
-// 		return userHistory.Usage[index][0].(string)
-// 	}
-// 	log.Fatal("Error parsing users history date")
-// 	return ""
-// }
 func getHistoryDate(userHistory History, index int) time.Time {
 	var year int
 	var month int
