@@ -91,6 +91,7 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 * [haproxy](haproxy/haproxy.go)
 * [mysql](mysql/mysql.go)
 * [memcached](memcached/memcached.go)
+* [sauce labs](saucelabs/saucelabs.go)
 
 #### Contributing
 
