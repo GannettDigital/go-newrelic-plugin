@@ -2,9 +2,9 @@ FROM paas-docker-artifactory.gannettdigital.com/paas-centos7-base:latest
 
 ARG VERSION=0.17.4-68
 
-# fetching go-newrelic-binary
+# go-new-relic
 WORKDIR /opt/gannett
-RUN curl "https://artifactory.gannettdigital.com/artifactory/paas-api-builds/go-newrelic-plugin/go-newrelic-plugin-${VERSION}.tar.gz" | tar xz
+COPY go-newrelic-plugin /opt/gannet
 
 # newrelic-infra install 
 RUN echo "license_key: $NEWRELIC_LICENSE" | tee -a /etc/newrelic-infra.yml && \
