@@ -27,6 +27,7 @@ Available Commands:
   nginx       execute an nginx collection
   rabbitmq    execute a rabbitmq collection
   redis       execute a redis collection
+  saucelabs   execute a sauce labs collection
   version     Print the version of go-newrelic-plugin
 
 Flags:
