@@ -5,7 +5,7 @@ This file is used to list changes made in each version of go-newrelic-plugin.
 
 # 0.18.0
 
-Tom Barber - add dockerfile capable of running go-newrelic-plugin and update jenkinsfile
+Tom Barber - add dockerfile capable of running go-newrelic-plugin and update Jenkinsfile
 
 # 0.17.4
 
