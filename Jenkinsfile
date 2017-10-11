@@ -22,7 +22,7 @@ node {
       print 'Running docker run'
 
 
-      sh "docker run -e \"GIT_BRANCH=${env.BRANCH_NAME}\" --rm -v /var/run/docker.sock:/var/run/docker.sock paas-docker-artifactory.gannettdigital.com/paas-api-ci:${paasApiCiVersion} build \
+      sh "docker run -e \"GIT_BRANCH=${env.BRANCH_NAME}\" --rm -v ~/.docker/config.json:/root/.docker/config.json -v /var/run/docker.sock:/var/run/docker.sock paas-docker-artifactory.gannettdigital.com/paas-api-ci:${paasApiCiVersion} build \
         --repo=\"${repo}\" \
         --x-api-key=\"${X_API_KEY}\" \
         --x-scalr-access-key=\"${SCALR_KEY}\" \
