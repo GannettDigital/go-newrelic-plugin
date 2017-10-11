@@ -81,7 +81,7 @@ func TestRun(t *testing.T) {
 		g.Describe("Run()", func() {
 			g.It(test.TestDescription, func() {
 				Run(test.InputLog, test.InputClient, test.InputConfig, test.InputPretty, test.InputVersion)
-				g.Assert(true).IsTrue()
+				g.Assert(true).Equal(true)
 			})
 		})
 	}
@@ -109,7 +109,7 @@ func TestInitRedisClient(t *testing.T) {
 		g.Describe("initRedisClient()", func() {
 			g.It(test.TestDescription, func() {
 				InitRedisClient(test.InputConfig)
-				g.Assert(true).IsTrue()
+				g.Assert(true).Equal(true)
 			})
 		})
 	}
@@ -134,7 +134,7 @@ func TestFatalIfErrt(t *testing.T) {
 		g.Describe("fatalIfErr()", func() {
 			g.It(test.TestDescription, func() {
 				fatalIfErr(test.InputLog, test.InputErr)
-				g.Assert(true).IsTrue()
+				g.Assert(true).Equal(true)
 			})
 		})
 	}
