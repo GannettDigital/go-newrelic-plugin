@@ -1,0 +1,37 @@
+[[constraint]]
+  name = "github.com/GannettDigital/goStateModule"
+  source = "git@github.com:GannettDigital/goStateModule.git"
+  version = "2.0.0"
+
+[[constraint]]
+  name = "github.com/GannettDigital/paas-api-utils"
+  source = "git@github.com:GannettDigital/paas-api-utils.git"
+  version = "=2.0.0"
+
+[[constraint]]
+  name = "github.com/Sirupsen/logrus"
+
+[[constraint]]
+  name = "github.com/bndr/gojenkins"
+  revision = "45513d2317d95aa57bd219aa46bb35d5b702675a"
+
+[[constraint]]
+  name = "github.com/franela/goblin"
+
+[[constraint]]
+  name = "github.com/go-sql-driver/mysql"
+
+[[constraint]]
+  name = "github.com/jarcoal/httpmock"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+
+[[constraint]]
+  name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
+
+[[constraint]]
+  name = "gopkg.in/mgo.v2"
+
+[[constraint]]
+  name = "gopkg.in/redis.v5"
