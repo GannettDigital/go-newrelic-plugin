@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 0.18.0
+
+Tom Barber - add dockerfile capable of running go-newrelic-plugin
+
 # 0.17.4
 
 Matt Rose - Added Sauce Labs collector to get real-time metrics
