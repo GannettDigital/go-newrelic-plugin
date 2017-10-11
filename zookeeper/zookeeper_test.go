@@ -120,7 +120,7 @@ func TestFatalIfErrt(t *testing.T) {
 		g.Describe("fatalIfErr()", func() {
 			g.It(test.TestDescription, func() {
 				fatalIfErr(test.InputLog, test.InputErr)
-				g.Assert(true).IsTrue()
+				g.Assert(true).Equal(true)
 			})
 		})
 	}

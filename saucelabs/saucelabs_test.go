@@ -69,21 +69,21 @@ func TestGetMetrics(t *testing.T) {
 		res, err := getMetrics(fakeLog, fakeConfig, sc)
 		g.It("should return metric data", func() {
 			g.Assert(err).Equal(nil)
-			g.Assert(len(res) > 0).IsTrue()
+			g.Assert(len(res) > 0).Equal(true)
 		})
 		g.It("should have 'event_type' keys on everything", func() {
 			for _, metric := range res {
-				g.Assert(metric["event_type"] != nil).IsTrue()
+				g.Assert(metric["event_type"] != nil).Equal(true)
 			}
 		})
 		g.It("should have 'entity_name' keys on everything", func() {
 			for _, metric := range res {
-				g.Assert(metric["entity_name"] != nil).IsTrue()
+				g.Assert(metric["entity_name"] != nil).Equal(true)
 			}
 		})
 		g.It("should have 'provider' keys on everything", func() {
 			for _, metric := range res {
-				g.Assert(metric["provider"] != nil).IsTrue()
+				g.Assert(metric["provider"] != nil).Equal(true)
 			}
 		})
 	})
@@ -115,7 +115,7 @@ func TestGetUserList(t *testing.T) {
 					res, err := sc.GetUserList()
 					g.It("should return userlist data", func() {
 						g.Assert(err != nil).Equal(x.CausesError)
-						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
 					})
 				})
 			}
@@ -149,7 +149,7 @@ func TestGetUserActivity(t *testing.T) {
 					res, err := sc.GetUserActivity()
 					g.It("should return user activity", func() {
 						g.Assert(err != nil).Equal(x.CausesError)
-						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
 					})
 				})
 			}
@@ -204,7 +204,7 @@ func TestGetConcurrency(t *testing.T) {
 					res, err := sc.GetConcurrency()
 					g.It("should return user concurrency", func() {
 						g.Assert(err != nil).Equal(x.CausesError)
-						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
 					})
 				})
 			}
@@ -251,7 +251,7 @@ func TestGetUsage(t *testing.T) {
 					g.It("should return user usage", func() {
 						fmt.Println("this*******%s", res)
 						g.Assert(err != nil).Equal(x.CausesError)
-						g.Assert(reflect.DeepEqual(x.Expected, res)).IsTrue()
+						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
 					})
 				})
 			}

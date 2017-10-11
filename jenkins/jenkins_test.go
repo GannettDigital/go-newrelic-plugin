@@ -74,21 +74,21 @@ func TestGetMetrics(t *testing.T) {
 		res, err := getMetrics(fakeLog, fakeJenkins)
 		g.It("should return metric data", func() {
 			g.Assert(err).Equal(nil)
-			g.Assert(len(res) > 0).IsTrue()
+			g.Assert(len(res) > 0).Equal(true)
 		})
 		g.It("should have 'event_type' keys on everything", func() {
 			for _, metric := range res {
-				g.Assert(metric["event_type"] != nil).IsTrue()
+				g.Assert(metric["event_type"] != nil).Equal(true)
 			}
 		})
 		g.It("should have 'entity_name' keys on everything", func() {
 			for _, metric := range res {
-				g.Assert(metric["entity_name"] != nil).IsTrue()
+				g.Assert(metric["entity_name"] != nil).Equal(true)
 			}
 		})
 		g.It("should have 'provider' keys on everything", func() {
 			for _, metric := range res {
-				g.Assert(metric["provider"] != nil).IsTrue()
+				g.Assert(metric["provider"] != nil).Equal(true)
 			}
 		})
 	})
@@ -134,7 +134,7 @@ func TestGetJobStats(t *testing.T) {
 				job, err := fakeJenkins.GetJob(ex.EntityName)
 				res := getJobStats(*job)
 				g.Assert(err).Equal(nil)
-				g.Assert(reflect.DeepEqual(res, ex)).IsTrue()
+				g.Assert(reflect.DeepEqual(res, ex)).Equal(true)
 			})
 		}
 	})
@@ -189,7 +189,7 @@ func TestGetAllJobStats(t *testing.T) {
 		g.It("should return statistics about many jobs", func() {
 			g.Assert(err).Equal(nil)
 			g.Assert(len(res)).Equal(len(expected))
-			g.Assert(reflect.DeepEqual(res, expected)).IsTrue()
+			g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
 		})
 	})
 }
@@ -223,7 +223,7 @@ func TestGetNodeStats(t *testing.T) {
 				node, err := fakeJenkins.GetNode(ex.EntityName)
 				res := getNodeStats(*node)
 				g.Assert(err).Equal(nil)
-				g.Assert(reflect.DeepEqual(res, ex)).IsTrue()
+				g.Assert(reflect.DeepEqual(res, ex)).Equal(true)
 			})
 		}
 	})
@@ -256,7 +256,7 @@ func TestGetAllNodeStats(t *testing.T) {
 		g.It("should return statistics about many nodes", func() {
 			res, err := getAllNodeStats(fakeLog, fakeJenkins)
 			g.Assert(err).Equal(nil)
-			g.Assert(reflect.DeepEqual(res, expected)).IsTrue()
+			g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
 		})
 	})
 }
@@ -275,7 +275,7 @@ func TestFindChildJobs(t *testing.T) {
 
 			res, err := findChildJobs(fakeJenkins, parent)
 			g.Assert(err).Equal(nil)
-			g.Assert(reflect.DeepEqual(res, expected)).IsTrue()
+			g.Assert(reflect.DeepEqual(res, expected)).Equal(true)
 		})
 	})
 }

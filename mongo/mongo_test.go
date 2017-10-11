@@ -59,7 +59,7 @@ func TestRun(t *testing.T) {
 		g.Describe("Run()", func() {
 			g.It(test.TestDescription, func() {
 				Run(test.InputLog, test.InputSession, test.InputConfig, test.InputPretty, test.InputVersion)
-				g.Assert(true).IsTrue()
+				g.Assert(true).Equal(true)
 			})
 		})
 	}
@@ -126,7 +126,7 @@ func TestReadDBStats(t *testing.T) {
 		g.Describe("readDBStats()", func() {
 			g.It(test.TestDescription, func() {
 				res := readDBStats(test.InputLog, test.InputSession)
-				g.Assert(reflect.DeepEqual(res, test.ExpectedRes)).IsTrue()
+				g.Assert(reflect.DeepEqual(res, test.ExpectedRes)).Equal(true)
 			})
 		})
 	}
@@ -254,7 +254,7 @@ func TestFatalIfErrt(t *testing.T) {
 		g.Describe("fatalIfErr()", func() {
 			g.It(test.TestDescription, func() {
 				fatalIfErr(test.InputLog, test.InputErr)
-				g.Assert(true).IsTrue()
+				g.Assert(true).Equal(true)
 			})
 		})
 	}

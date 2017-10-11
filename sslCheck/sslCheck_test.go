@@ -206,7 +206,7 @@ func TestProcessHosts(t *testing.T) {
 			g.It(fmt.Sprintf("When hosts are: %v, then expectedErrorIsNil should be: %v", test.hosts, test.expectedErrorIsNil), func() {
 				result, valid := ProcessHosts(test.hosts)
 				g.Assert(reflect.DeepEqual(valid, nil)).Equal(test.expectedErrorIsNil)
-				g.Assert(reflect.DeepEqual(len(result), len(test.expectedHosts))).IsTrue()
+				g.Assert(reflect.DeepEqual(len(result), len(test.expectedHosts))).Equal(true)
 			})
 		})
 	}
