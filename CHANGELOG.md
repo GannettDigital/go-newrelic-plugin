@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.0.3
+
+Tom Barber - update dockerfile layout to be closer to desired custom plugin state
+
 # 1.0.2
 
 Tom Barber - update jenkinsfile version to try to correct docker push issues
