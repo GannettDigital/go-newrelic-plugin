@@ -80,8 +80,8 @@ type CouchbaseBucketStats struct {
 			VBPendingOpsCreate          []float32 `json:"vb_pending_ops_create"`          //operations
 			VBPendingQueueFill          []float32 `json:"vb_pending_queue_fill"`          //items
 			VBReplicaCurrItems          []float32 `json:"vb_replica_curr_items"`          //items
-			VBReplicaMetaDataMemory     []int64   `json:"vb_replica_meta_data_memory"`    //bytes
-			VBReplicaResidentItemsRatio []int64   `json:"vb_replica_resident_items_ratio"`
+			VBReplicaMetaDataMemory     []float32 `json:"vb_replica_meta_data_memory"`    //bytes
+			VBReplicaResidentItemsRatio []float32 `json:"vb_replica_resident_items_ratio"`
 			VBReplicaNum                []float32 `json:"vb_replica_num"`        //items
 			VBReplicaQueueSize          []float32 `json:"vb_replica_queue_size"` //items
 			XDCOPS                      []float32 `json:"xdc_ops"`               //operations
@@ -344,11 +344,11 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 		"couchbase.by_bucket.vb_pending_ops_create":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBPendingOpsCreate),
 		"couchbase.by_bucket.vb_pending_queue_fill":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBPendingQueueFill),
 		"couchbase.by_bucket.vb_replica_curr_items":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaCurrItems),
-		"couchbase.by_bucket.vb_replica_meta_data_memory":      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaMetaDataMemory),
+		"couchbase.by_bucket.vb_replica_meta_data_memory":      avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaMetaDataMemory),
 		"couchbase.by_bucket.vb_replica_num":                   avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaNum),
 		"couchbase.by_bucket.vb_replica_queue_size":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaQueueSize),
 		"couchbase.by_bucket.xdc_ops":                          avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.XDCOPS),
-		"couchbase.by_bucket.vb_replica_resident_items_ration": avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaResidentItemsRatio),
+		"couchbase.by_bucket.vb_replica_resident_items_ration": avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaResidentItemsRatio),
 	}
 }
 
