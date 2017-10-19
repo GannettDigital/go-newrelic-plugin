@@ -3,7 +3,7 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
-# 1.0.5
+# 1.1.0
 
 Tom Barber - add nginx.hostname value in order to be able to read container hostnames when running in docker
 
