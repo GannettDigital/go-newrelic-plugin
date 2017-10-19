@@ -2,6 +2,7 @@ package nginx
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -60,7 +61,7 @@ func TestScrapeStatus(t *testing.T) {
 	result := map[string]interface{}{
 		"event_type":            "LoadBalancerSample",
 		"provider":              "nginx",
-		"nginx.hostname":        "",
+		"nginx.hostname":        os.Getenv("HOSTNAME"),
 		"nginx.net.connections": 2,
 		"nginx.net.accepts":     29,
 		"nginx.net.handled":     29,
