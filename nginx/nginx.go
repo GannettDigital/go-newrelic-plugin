@@ -178,6 +178,7 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 	return map[string]interface{}{
 		"event_type":            "LoadBalancerSample",
 		"provider":              PROVIDER,
+		"nginx.hostname":        os.Getenv("HOSTNAME"),
 		"nginx.net.connections": toInt(log, active),
 		"nginx.net.accepts":     toInt(log, accepts),
 		"nginx.net.handled":     toInt(log, handled),
