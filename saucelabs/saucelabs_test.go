@@ -61,7 +61,7 @@ func TestValidateConfig(t *testing.T) {
 	})
 }
 
-//TestGetMetrics tests that the get metrics function works in saucelabs.go
+// TestGetMetrics tests that the get metrics function works in saucelabs.go
 func TestGetMetrics(t *testing.T) {
 	g := goblin.Goblin(t)
 	sc := fakeSauce()
@@ -249,7 +249,60 @@ func TestGetUsage(t *testing.T) {
 				g.Describe("sauce GetUsage()", func() {
 					res, err := sc.GetUsage()
 					g.It("should return user usage", func() {
-						fmt.Println("this*******%s", res)
+						g.Assert(err != nil).Equal(x.CausesError)
+						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
+					})
+				})
+			}
+		})
+	})
+}
+
+func TestGetErrors(t *testing.T) {
+	g := goblin.Goblin(t)
+	sc := fakeSauce()
+	examples := []struct {
+		Expected    Errors
+		CausesError bool
+	}{
+		{
+			Expected: Errors{
+				Buckets: []BucketsList{
+					{
+						Name:  "Test did not see a new command for 90 seconds. Timing out.",
+						Count: 1,
+						Items: []ItemsList{
+							{
+								ID:           "k23j45bnkj236kj24klo34n67",
+								Owner:        "johndoe",
+								Name:         "Snickerdoodle",
+								Build:        "0.5.0",
+								CreationTime: "2017-10-23T06:28:37Z",
+								StartTime:    "2017-10-23T06:28:37Z",
+								EndTime:      "2017-10-23T07:05:37Z",
+								Duration:     2220,
+								Status:       "errored",
+								Error:        "Test did not see a new command for 90 seconds. Timing out.",
+								OS:           "OS X El Capitan (10.11)",
+								Browser:      "Firefox 45.0",
+								DetailsURL:   "https://saucelabs.com/rest/v1.1/johndoe/jobs/k23j45bnkj236kj24klo34n67",
+							},
+						},
+					},
+				},
+			},
+			CausesError: false,
+		},
+	}
+
+	g.Describe("GetErrors", func() {
+		g.It("gets the errors", func() {
+			for _, x := range examples {
+				g.Describe("sauce GetErrors()", func() {
+					startDateString := "2017-10-22T12:00:00"
+					endDateString := "2017-10-23T12:00:00"
+					res, err := sc.GetErrors(startDateString, endDateString)
+					g.It("should return user errors", func() {
 						g.Assert(err != nil).Equal(x.CausesError)
 						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
 					})
@@ -304,6 +357,12 @@ func registerResponders(transport *httpmock.MockTransport) {
 			"https://saucelabs.com/rest/v1/users/test-user/usage",
 			200,
 			`{"usage":[["2017-7-14",[24,6509]],["2017-7-19",[2,266]]],"username":"testing"}`,
+		},
+		{
+			"GET",
+			"https://saucelabs.com/rest/v1/analytics/trends/errors?end=2017-10-23T12%3A00%3A00Z&scope=organization&start=2017-10-22T12%3A00%3A00Z",
+			200,
+			`{"meta":{"status":200},"buckets":[{"name":"Test did not see a new command for 90 seconds. Timing out.","count":1,"items":[{"id":"k23j45bnkj236kj24klo34n67","owner":"johndoe","ancestor":"testing","name":"Snickerdoodle","build":"0.5.0","creation_time":"2017-10-23T06:28:37Z","start_time":"2017-10-23T06:28:37Z","end_time":"2017-10-23T07:05:37Z","duration":2220,"status":"errored","error":"Test did not see a new command for 90 seconds. Timing out.","os":"OS X El Capitan (10.11)","browser":"Firefox 45.0","details_url":"https://saucelabs.com/rest/v1.1/johndoe/jobs/k23j45bnkj236kj24klo34n67"}],"has_more":false}],"all_items_count":1}`,
 		},
 	}
 

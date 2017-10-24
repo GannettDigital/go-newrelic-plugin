@@ -27,6 +27,7 @@ Available Commands:
   nginx       execute an nginx collection
   rabbitmq    execute a rabbitmq collection
   redis       execute a redis collection
+  saucelabs   execute a saucelabs collection
   version     Print the version of go-newrelic-plugin
 
 Flags:
@@ -91,6 +92,7 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 * [haproxy](haproxy/haproxy.go)
 * [mysql](mysql/mysql.go)
 * [memcached](memcached/memcached.go)
+* [saucelabs](saucelabs/saucelabs.go)
 
 #### Contributing
 

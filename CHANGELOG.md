@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.0.4
+
+Matt Rose - Added additional suacelabs metrics for saucelabs
+
 # 1.0.3
 
 Tom Barber - update dockerfile layout to be closer to desired custom plugin state
