@@ -49,7 +49,7 @@ func NewSauceClient(config SauceConfig) (*SauceClient, error) {
 	}, nil
 }
 
-func (sc *SauceClient) do(method, path string, into interface{}, args map[string]string) error {
+func (sc *SauceClient) do(method string, path Path, into interface{}, args map[string]string) error {
 	baseURL := sc.URL
 	request := &http.Request{
 		Method: method,
@@ -58,13 +58,24 @@ func (sc *SauceClient) do(method, path string, into interface{}, args map[string
 			"Accept": {"application/json"},
 		},
 	}
-	request.URL.Path += path
+
+	request.URL.Path += path.Path
+	if path.Parameter != nil {
+		parameters := url.Values{}
+		for index := range path.Parameter {
+			parameters.Add(path.Parameter[index].key, path.Parameter[index].value)
+			request.URL.RawQuery = parameters.Encode()
+		}
+		request.URL.RawQuery = parameters.Encode()
+	}
+
 	request.SetBasicAuth(sc.Config.SauceAPIUser, sc.Config.SauceAPIKey)
 
 	response, responseErr := sc.Client.Do(request)
 	if responseErr != nil {
 		return responseErr
 	}
+
 	defer response.Body.Close()
 
 	decodeErr := json.NewDecoder(response.Body).Decode(into)
@@ -80,8 +91,9 @@ func (sc *SauceClient) GetUserList() ([]User, error) {
 	var response []User
 
 	getUserListURL := fmt.Sprintf("users/%v/subaccounts", sc.Config.SauceAPIUser)
+	pathURL := Path{Path: getUserListURL}
 
-	err := sc.do(http.MethodGet, getUserListURL, &response, nil)
+	err := sc.do(http.MethodGet, pathURL, &response, nil)
 	if err != nil {
 		return []User{}, err
 	}
@@ -92,8 +104,9 @@ func (sc *SauceClient) GetUserList() ([]User, error) {
 func (sc *SauceClient) GetUserActivity() (Activity, error) {
 	var response Activity
 	getUserActivityURL := fmt.Sprintf("users/%v/activity", sc.Config.SauceAPIUser)
+	pathURL := Path{Path: getUserActivityURL}
 
-	err := sc.do(http.MethodGet, getUserActivityURL, &response, nil)
+	err := sc.do(http.MethodGet, pathURL, &response, nil)
 	if err != nil {
 		return Activity{}, err
 	}
@@ -104,8 +117,9 @@ func (sc *SauceClient) GetUserActivity() (Activity, error) {
 func (sc *SauceClient) GetConcurrency() (Data, error) {
 	var response Data
 	getConcurrencyURL := fmt.Sprintf("users/%v/concurrency", sc.Config.SauceAPIUser)
+	pathURL := Path{Path: getConcurrencyURL}
 
-	err := sc.do(http.MethodGet, getConcurrencyURL, &response, nil)
+	err := sc.do(http.MethodGet, pathURL, &response, nil)
 	if err != nil {
 		return Data{}, err
 	}
@@ -116,8 +130,9 @@ func (sc *SauceClient) GetConcurrency() (Data, error) {
 func (sc *SauceClient) GetUsage() (HistoryFormated, error) {
 	var response History
 	getUsageURL := fmt.Sprintf("users/%v/usage", sc.Config.SauceAPIUser)
+	pathURL := Path{Path: getUsageURL}
 
-	err := sc.do(http.MethodGet, getUsageURL, &response, nil)
+	err := sc.do(http.MethodGet, pathURL, &response, nil)
 	if err != nil {
 		return HistoryFormated{}, err
 	}
@@ -135,6 +150,36 @@ func (sc *SauceClient) GetUsage() (HistoryFormated, error) {
 		formatedResponse.Usage = append(formatedResponse.Usage, usageList)
 	}
 	return formatedResponse, nil
+}
+
+// GetErrors retrieves the error metrics for the passed account
+func (sc *SauceClient) GetErrors(startDateString string, endDateString string) (Errors, error) {
+	var response Errors
+
+	pathURL := Path{
+		Path: "analytics/trends/errors",
+		Parameter: []Parameter{
+			Parameter{
+				key:   "start",
+				value: startDateString + "Z",
+			},
+			Parameter{
+				key:   "end",
+				value: endDateString + "Z",
+			},
+			Parameter{
+				key:   "scope",
+				value: "organization",
+			},
+		},
+	}
+
+	err := sc.do(http.MethodGet, pathURL, &response, nil)
+	if err != nil {
+		return Errors{}, err
+	}
+
+	return response, nil
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -157,6 +202,18 @@ type PluginData struct {
 	Inventory       map[string]InventoryData `json:"inventory"`
 	Events          []EventData              `json:"events"`
 	Status          string                   `json:"status"`
+}
+
+// Path - Holds the path for url
+type Path struct {
+	Path      string
+	Parameter []Parameter
+}
+
+// Parameter - Holds the Parameters information for URL
+type Parameter struct {
+	key   string
+	value string
 }
 
 // User Metric holds the usernames for getUserList
@@ -201,13 +258,13 @@ type History struct {
 	Usage    [][]interface{} `json:"usage"`
 }
 
-//HistoryFormated holds the username and total number of jobs and VM time used, in seconds grouped by day formated for testing.
+// HistoryFormated holds the username and total number of jobs and VM time used, in seconds grouped by day formated for testing.
 type HistoryFormated struct {
 	UserName string      `json:"username"`
 	Usage    []UsageList `json:"usage"`
 }
 
-//UsageList holds the Date and a testInfo list for a particular usage object
+// UsageList holds the Date and a testInfo list for a particular usage object
 type UsageList struct {
 	Date         time.Time
 	testInfoList TestInfo
@@ -217,6 +274,35 @@ type UsageList struct {
 type TestInfo struct {
 	Executed float64
 	Time     float64
+}
+
+// Errors - holds the buckets of errors
+type Errors struct {
+	Buckets []BucketsList `json:"buckets"`
+}
+
+// BucketsList - used in errors struct
+type BucketsList struct {
+	Name  string      `json:"name"`
+	Count int         `json:"count"`
+	Items []ItemsList `json:"items"`
+}
+
+// ItemsList - used in bucketslist and errors struct
+type ItemsList struct {
+	ID           string `json:"id"`
+	Owner        string `json:"owner"`
+	Name         string `json:"name"`
+	Build        string `json:"build"`
+	CreationTime string `json:"creation_time"`
+	StartTime    string `json:"start_time"`
+	EndTime      string `json:"end_time"`
+	Duration     int    `json:"duration"`
+	Status       string `json:"status"`
+	Error        string `json:"error"`
+	OS           string `json:"os"`
+	Browser      string `json:"browser"`
+	DetailsURL   string `json:"details_url"`
 }
 
 // OutputJSON takes an object and prints it as a JSON string to the stdout.
@@ -308,6 +394,17 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 		log.WithError(userHistoryErr).Error("Error collecting user usage metrics")
 		return nil, userHistoryErr
 	}
+
+	endDate := time.Now()
+	endDateString := endDate.Format(time.RFC3339)[:19]
+	startDateSecs := endDate.Unix() - 2505600
+	startDateString := time.Unix(startDateSecs, 0).Format(time.RFC3339)[:19]
+	errorHistory, errorHistoryErr := sc.GetErrors(startDateString, endDateString)
+	if errorHistoryErr != nil {
+		log.WithError(errorHistoryErr).Error("Error collecting error metrics")
+		return nil, userHistoryErr
+	}
+
 	// User List Metrics
 	metricsData = append(metricsData, MetricData{
 		"entity_name":                     "SauceUserList",
@@ -364,6 +461,31 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 			"saucelabs.userHistory.totalJobs":       userHistory.Usage[index].testInfoList.Executed,
 			"saucelabs.userHistory.totalTimeInSecs": userHistory.Usage[index].testInfoList.Time,
 		})
+	}
+
+	// Error History
+	for i := range errorHistory.Buckets {
+		for j := range errorHistory.Buckets[i].Items {
+			metricsData = append(metricsData, MetricData{
+				"entity_name":                       "SauceErrorHistory",
+				"event_type":                        "SauceErrorHistory",
+				"provider":                          "saucelabs",
+				"saucelabs.userError.name":          errorHistory.Buckets[i].Name,
+				"saucelabs.userError.count":         errorHistory.Buckets[i].Count,
+				"saucelabs.userError.id":            errorHistory.Buckets[i].Items[j].ID,
+				"saucelabs.userError.owner":         errorHistory.Buckets[i].Items[j].Owner,
+				"saucelabs.userError.build":         errorHistory.Buckets[i].Items[j].Build,
+				"saucelabs.userError.creation_time": errorHistory.Buckets[i].Items[j].CreationTime,
+				"saucelabs.userError.start_time":    errorHistory.Buckets[i].Items[j].StartTime,
+				"saucelabs.userError.end_time":      errorHistory.Buckets[i].Items[j].EndTime,
+				"saucelabs.userError.duration":      errorHistory.Buckets[i].Items[j].Duration,
+				"saucelabs.userError.status":        errorHistory.Buckets[i].Items[j].Status,
+				"saucelabs.userError.error":         errorHistory.Buckets[i].Items[j].Error,
+				"saucelabs.userError.os":            errorHistory.Buckets[i].Items[j].OS,
+				"saucelabs.userError.browser":       errorHistory.Buckets[i].Items[j].Browser,
+				"saucelabs.userError.details_url":   errorHistory.Buckets[i].Items[j].DetailsURL,
+			})
+		}
 	}
 	return metricsData, nil
 }
