@@ -406,12 +406,14 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 	}
 
 	// User List Metrics
-	metricsData = append(metricsData, MetricData{
-		"entity_name":                     "SauceUserList",
-		"event_type":                      "SauceUserList",
-		"provider":                        "saucelabs",
-		"saucelabs.userActivity.username": userList,
-	})
+	for index := range userList {
+		metricsData = append(metricsData, MetricData{
+			"entity_name":                     "SauceUserList",
+			"event_type":                      "SauceUserList",
+			"provider":                        "saucelabs",
+			"saucelabs.userActivity.username": userList[index].UserName,
+		})
+	}
 
 	// User Activity Metrics
 	for key, value := range userActivity.SubAccounts {
