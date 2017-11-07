@@ -91,7 +91,7 @@ type CouchbaseBucketStats struct {
 			EPDcpFtsItemsRemaining      []int64   `json:"ep_dcp_fts_items_remaining"`      //items
 			EPDcpOtherItemsRemaining    []int64   `json:"ep_dcp_other_items_remaining"`    //items
 			EPDcpReplicaItemsRemaining  []int64   `json:"ep_dcp_replica_items_remaining"`  //items
-			EPDcpReplicaItemsSent       []int64   `json:"ep_dcp_replica_items_sent"`       //items
+			EPDcpReplicaItemsSent       []float32 `json:"ep_dcp_replica_items_sent"`       //items
 			EPDcpReplicaTotalBytes      []int64   `json:"ep_dcp_replica_total_bytes"`      //bytes
 			EPDcpViewItemsRemaining     []int64   `json:"ep_dcp_views_items_remaining"`    //items
 			EPDcpXDCRItemsRemaining     []int64   `json:"ep_dcp_xdcr_items_remaining"`     //items
@@ -391,7 +391,7 @@ func formatBucketInfoEPStatsStructToMap(completeBucketInfo CompleteBucketInfo) (
 		"couchbase.by_bucket.ep_kv_size":                      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPKVSize),
 		"couchbase.by_bucket.ep_mem_low_wat":                  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMemLowWater),
 		"couchbase.by_bucket.ep_dcp_replica_items_remaining":  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaItemsRemaining),
-		"couchbase.by_bucket.ep_dcp_replica_items_sent":       avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaItemsSent),
+		"couchbase.by_bucket.ep_dcp_replica_items_sent":       avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaItemsSent),
 		"couchbase.by_bucket.ep_dcp_replica_total_bytes":      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaTotalBytes),
 		"couchbase.by_bucket.ep_dcp_xdcr_items_remaining":     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRItemsRemaining),
 		"couchbase.by_bucket.ep_dcp_xdcr_items_sent":          avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRItemsSent),
