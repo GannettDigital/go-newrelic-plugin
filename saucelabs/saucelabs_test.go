@@ -312,7 +312,6 @@ func TestGetErrors(t *testing.T) {
 	})
 }
 
-// TODO: finish build trends
 func TestBuildTrends(t *testing.T) {
 	g := goblin.Goblin(t)
 	sc := fakeSauce()
@@ -365,14 +364,8 @@ func TestBuildTrends(t *testing.T) {
 					startDateString := "2017-10-22T12:00:00"
 					endDateString := "2017-10-23T12:00:00"
 					res, err := sc.GetBuildTrends(startDateString, endDateString)
-
-					fmt.Printf("RES: %+v \n\n\n", res)
-
 					g.It("should return user build trends", func() {
 						g.Assert(err != nil).Equal(x.CausesError)
-
-						fmt.Printf("X: %+v \n\n\n", x.Expected)
-
 						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
 					})
 				})

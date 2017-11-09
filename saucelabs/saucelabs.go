@@ -167,14 +167,17 @@ func (sc *SauceClient) GetErrors(startDateString string, endDateString string) (
 	return response, nil
 }
 
+// Trends holds data for GetBuildTrends
 type Trends struct {
 	Builds BuildItems `json:"builds"`
 }
 
+// BuildItems holds data for GetBuildTrends
 type BuildItems struct {
 	BuildItems []Items `json:"items"`
 }
 
+// Items holds data for GetBuildTrends
 type Items struct {
 	BuildName        string      `json:"name"`
 	OwnerName        string      `json:"owner"`
@@ -187,7 +190,6 @@ type Items struct {
 	ItemsList        []ItemsList `json:"tests"`
 }
 
-// TODO:
 func (sc *SauceClient) GetBuildTrends(startDateString string, endDateString string) (Trends, error) {
 	var response Trends
 	path := "analytics/trends/builds_tests"
