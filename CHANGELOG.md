@@ -13,7 +13,7 @@ Greg Lane - added more couchbase metrics for XDCR and Replica monitoring
 
 # 1.2.1
 
-Matt Rose - Fixed formating error in saucelabs userlist metrics and added trends metrics
+Matt Rose - Fixed formating error in saucelabs userlist metrics
 
 # 1.2.0
 
