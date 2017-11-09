@@ -156,27 +156,46 @@ func (sc *SauceClient) GetUsage() (HistoryFormated, error) {
 func (sc *SauceClient) GetErrors(startDateString string, endDateString string) (Errors, error) {
 	var response Errors
 
-	pathURL := Path{
-		Path: "analytics/trends/errors",
-		Parameter: []Parameter{
-			Parameter{
-				key:   "start",
-				value: startDateString + "Z",
-			},
-			Parameter{
-				key:   "end",
-				value: endDateString + "Z",
-			},
-			Parameter{
-				key:   "scope",
-				value: "organization",
-			},
-		},
-	}
+	path := "analytics/trends/errors"
+	pathURL := getPathURL(startDateString, endDateString, path)
 
 	err := sc.do(http.MethodGet, pathURL, &response, nil)
 	if err != nil {
 		return Errors{}, err
+	}
+
+	return response, nil
+}
+
+type Trends struct {
+	Builds BuildItems `json:"builds"`
+}
+
+type BuildItems struct {
+	BuildItems []Items `json:"items"`
+}
+
+type Items struct {
+	BuildName        string      `json:"name"`
+	OwnerName        string      `json:"owner"`
+	TestsCount       int         `json:"tests_count"`
+	Duration         int         `json:"duration"`
+	DurationAbsolute int         `json:"duration_absolute"`
+	DurationTestMax  int         `json:"duration_test_max"`
+	StartTime        string      `json:"start_time"`
+	EndTime          string      `json:"end_time"`
+	ItemsList        []ItemsList `json:"tests"`
+}
+
+// TODO:
+func (sc *SauceClient) GetBuildTrends(startDateString string, endDateString string) (Trends, error) {
+	var response Trends
+	path := "analytics/trends/builds_tests"
+	pathURL := getPathURL(startDateString, endDateString, path)
+
+	err := sc.do(http.MethodGet, pathURL, &response, nil)
+	if err != nil {
+		return Trends{}, err
 	}
 
 	return response, nil
@@ -404,32 +423,37 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 		log.WithError(errorHistoryErr).Error("Error collecting error metrics")
 		return nil, userHistoryErr
 	}
+	trendsHistory, errorTrendsHistory := sc.GetBuildTrends(startDateString, endDateString)
+	if errorTrendsHistory != nil {
+		log.WithError(errorTrendsHistory).Error("Error collecting build trends metrics")
+		return nil, errorTrendsHistory
+	}
 
 	// User List Metrics
 	for index := range userList {
 		metricsData = append(metricsData, MetricData{
-			"entity_name":                     "SauceUserList",
-			"event_type":                      "SauceUserList",
-			"provider":                        "saucelabs",
-			"saucelabs.userActivity.username": userList[index].UserName,
+			"entity_name":        "SauceLabs",
+			"event_type":         "SauceLabs",
+			"provider":           "saucelabs",
+			"saucelabs.username": userList[index].UserName,
 		})
 	}
 
 	// User Activity Metrics
 	for key, value := range userActivity.SubAccounts {
 		metricsData = append(metricsData, MetricData{
-			"entity_name":                       "SauceUserActivity",
-			"event_type":                        "SauceUserActivity",
+			"entity_name":                       "SauceLabs",
+			"event_type":                        "SauceLabs",
 			"provider":                          "saucelabs",
-			"saucelabs.userActivity.username":   key,
+			"saucelabs.username":                key,
 			"saucelabs.userActivity.inProgress": value.InProgress,
 			"saucelabs.userActivity.all":        value.All,
 			"saucelabs.userActivity.queued":     value.Queued,
 		})
 	}
 	metricsData = append(metricsData, MetricData{
-		"entity_name": "SauceUserActivityTotal",
-		"event_type":  "SauceUserActivityTotal",
+		"entity_name": "SauceLabs",
+		"event_type":  "SauceLabs",
 		"provider":    "saucelabs",
 		"saucelabs.userActivity.total.inProgress": userActivity.Totals.InProgress,
 		"saucelabs.userActivity.total.all":        userActivity.Totals.All,
@@ -439,10 +463,10 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 	// User Concurency Metrics
 	for key, value := range userConcurrency.Concurrency {
 		metricsData = append(metricsData, MetricData{
-			"entity_name":                                "SauceUserConcurrency",
-			"event_type":                                 "SauceUserConcurrency",
+			"entity_name":                                "SauceLabs",
+			"event_type":                                 "SauceLabs",
 			"provider":                                   "saucelabs",
-			"saucelabs.userConcurrency.username":         key,
+			"saucelabs.username":                         key,
 			"saucelabs.userConcurrency.current.overall":  value.Current.Overall,
 			"saucelabs.userConcurrency.current.mac":      value.Current.Mac,
 			"saucelabs.userConcurrency.current.manual":   value.Current.Manual,
@@ -455,10 +479,10 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 	// User Usage
 	for index := range userHistory.Usage {
 		metricsData = append(metricsData, MetricData{
-			"entity_name":                           "SauceUserHistory",
-			"event_type":                            "SauceUserHistory",
+			"entity_name":                           "SauceLabs",
+			"event_type":                            "SauceLabs",
 			"provider":                              "saucelabs",
-			"saucelabs.userHistory.username":        userHistory.UserName,
+			"saucelabs.username":                    userHistory.UserName,
 			"saucelabs.userHistory.date":            userHistory.Usage[index].Date,
 			"saucelabs.userHistory.totalJobs":       userHistory.Usage[index].testInfoList.Executed,
 			"saucelabs.userHistory.totalTimeInSecs": userHistory.Usage[index].testInfoList.Time,
@@ -469,13 +493,13 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 	for i := range errorHistory.Buckets {
 		for j := range errorHistory.Buckets[i].Items {
 			metricsData = append(metricsData, MetricData{
-				"entity_name":                       "SauceErrorHistory",
-				"event_type":                        "SauceErrorHistory",
+				"entity_name":                       "SauceLabs",
+				"event_type":                        "SauceLabs",
 				"provider":                          "saucelabs",
-				"saucelabs.userError.name":          errorHistory.Buckets[i].Name,
+				"saucelabs.name":                    errorHistory.Buckets[i].Name,
 				"saucelabs.userError.count":         errorHistory.Buckets[i].Count,
 				"saucelabs.userError.id":            errorHistory.Buckets[i].Items[j].ID,
-				"saucelabs.userError.owner":         errorHistory.Buckets[i].Items[j].Owner,
+				"saucelabs.username":                errorHistory.Buckets[i].Items[j].Owner,
 				"saucelabs.userError.build":         errorHistory.Buckets[i].Items[j].Build,
 				"saucelabs.userError.creation_time": errorHistory.Buckets[i].Items[j].CreationTime,
 				"saucelabs.userError.start_time":    errorHistory.Buckets[i].Items[j].StartTime,
@@ -486,6 +510,38 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 				"saucelabs.userError.os":            errorHistory.Buckets[i].Items[j].OS,
 				"saucelabs.userError.browser":       errorHistory.Buckets[i].Items[j].Browser,
 				"saucelabs.userError.details_url":   errorHistory.Buckets[i].Items[j].DetailsURL,
+			})
+		}
+	}
+
+	// Build Trends
+	for i := range trendsHistory.Builds.BuildItems {
+		for j := range trendsHistory.Builds.BuildItems[i].ItemsList {
+			metricsData = append(metricsData, MetricData{
+				"entity_name":                                   "SauceLabs",
+				"event_type":                                    "SauceLabs",
+				"provider":                                      "saucelabs",
+				"saucelabs.name":                                trendsHistory.Builds.BuildItems[i].OwnerName,
+				"saucelabs.trendsHistory.buildName":             trendsHistory.Builds.BuildItems[i].BuildName,
+				"saucelabs.trendsHistory.buildTestsCount":       trendsHistory.Builds.BuildItems[i].TestsCount,
+				"saucelabs.trendsHistory.buildDuration":         trendsHistory.Builds.BuildItems[i].Duration,
+				"saucelabs.trendsHistory.buildDurationAbsolute": trendsHistory.Builds.BuildItems[i].DurationAbsolute,
+				"saucelabs.trendsHistory.buildDurationTestMax":  trendsHistory.Builds.BuildItems[i].DurationTestMax,
+				"saucelabs.trendsHistory.buildStartTime":        trendsHistory.Builds.BuildItems[i].StartTime,
+				"saucelabs.trendsHistory.buildEndTime":          trendsHistory.Builds.BuildItems[i].EndTime,
+				"saucelabs.trendsHistory.testID":                trendsHistory.Builds.BuildItems[i].ItemsList[j].ID,
+				"saucelabs.trendsHistory.testOwner":             trendsHistory.Builds.BuildItems[i].ItemsList[j].Owner,
+				"saucelabs.trendsHistory.testName":              trendsHistory.Builds.BuildItems[i].ItemsList[j].Name,
+				"saucelabs.trendsHistory.testBuild":             trendsHistory.Builds.BuildItems[i].ItemsList[j].Build,
+				"saucelabs.trendsHistory.testCreationTime":      trendsHistory.Builds.BuildItems[i].ItemsList[j].CreationTime,
+				"saucelabs.trendsHistory.testStartTime":         trendsHistory.Builds.BuildItems[i].ItemsList[j].StartTime,
+				"saucelabs.trendsHistory.testEndTime":           trendsHistory.Builds.BuildItems[i].ItemsList[j].EndTime,
+				"saucelabs.trendsHistory.testDuration":          trendsHistory.Builds.BuildItems[i].ItemsList[j].Duration,
+				"saucelabs.trendsHistory.testStatus":            trendsHistory.Builds.BuildItems[i].ItemsList[j].Status,
+				"saucelabs.trendsHistory.testError":             trendsHistory.Builds.BuildItems[i].ItemsList[j].Error,
+				"saucelabs.trendsHistory.testOS":                trendsHistory.Builds.BuildItems[i].ItemsList[j].OS,
+				"saucelabs.trendsHistory.testBrowser":           trendsHistory.Builds.BuildItems[i].ItemsList[j].Browser,
+				"saucelabs.trendsHistory.testDetailsURL":        trendsHistory.Builds.BuildItems[i].ItemsList[j].DetailsURL,
 			})
 		}
 	}
@@ -547,6 +603,27 @@ func getHistoryTotalTime(userHistory History, index int) float64 {
 	}
 	log.Fatal("Error parsing users total time")
 	return 0
+}
+
+func getPathURL(startDateString string, endDateString string, path string) Path {
+	pathURL := Path{
+		Path: path,
+		Parameter: []Parameter{
+			Parameter{
+				key:   "start",
+				value: startDateString + "Z",
+			},
+			Parameter{
+				key:   "end",
+				value: endDateString + "Z",
+			},
+			Parameter{
+				key:   "scope",
+				value: "organization",
+			},
+		},
+	}
+	return pathURL
 }
 
 func validateConfig(config SauceConfig) error {

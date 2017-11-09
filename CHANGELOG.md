@@ -5,7 +5,7 @@ This file is used to list changes made in each version of go-newrelic-plugin.
 
 # 1.2.1
 
-Matt Rose - Fixed formating error in saucelabs userlist metrics
+Matt Rose - Fixed formating error in saucelabs userlist metrics and added trends metrics
 
 # 1.2.0
 
