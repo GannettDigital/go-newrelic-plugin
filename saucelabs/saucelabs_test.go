@@ -312,6 +312,68 @@ func TestGetErrors(t *testing.T) {
 	})
 }
 
+func TestBuildTrends(t *testing.T) {
+	g := goblin.Goblin(t)
+	sc := fakeSauce()
+	examples := []struct {
+		Expected    Trends
+		CausesError bool
+	}{
+		{
+			Expected: Trends{
+				Builds: BuildItems{
+					[]Items{
+						{
+							BuildName:        "Snickerdoodle",
+							OwnerName:        "testing",
+							TestsCount:       49,
+							Duration:         386,
+							DurationAbsolute: 2948,
+							DurationTestMax:  195,
+							StartTime:        "2017-10-27T20:02:51Z",
+							EndTime:          "2017-10-27T20:09:17Z",
+							ItemsList: []ItemsList{
+								{
+									ID:           "asdf98hgfj78fh6gsbasf",
+									Owner:        "testing",
+									Name:         "testing snickerdoodle mock",
+									Build:        "testing",
+									CreationTime: "2017-10-27T20:02:51Z",
+									StartTime:    "2017-10-27T20:02:51Z",
+									EndTime:      "2017-10-27T20:04:01Z",
+									Duration:     70,
+									Status:       "passed",
+									Error:        "",
+									OS:           "Windows 10",
+									Browser:      "Firefox 47.0",
+									DetailsURL:   "https://saucelabs.com/rest/v1.1/testing/jobs/asdf98hgfj78fh6gsbasf",
+								},
+							},
+						},
+					},
+				},
+			},
+			CausesError: false,
+		},
+	}
+
+	g.Describe("GetBuildTrends", func() {
+		g.It("gets the build trends", func() {
+			for _, x := range examples {
+				g.Describe("sauce GetBuildTrends()", func() {
+					startDateString := "2017-10-22T12:00:00"
+					endDateString := "2017-10-23T12:00:00"
+					res, err := sc.GetBuildTrends(startDateString, endDateString)
+					g.It("should return user build trends", func() {
+						g.Assert(err != nil).Equal(x.CausesError)
+						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
+					})
+				})
+			}
+		})
+	})
+}
+
 func fakeSauce() *SauceClient {
 	sc, scErr := NewSauceClient(fakeConfig)
 	if scErr != nil {
@@ -363,6 +425,12 @@ func registerResponders(transport *httpmock.MockTransport) {
 			"https://saucelabs.com/rest/v1/analytics/trends/errors?end=2017-10-23T12%3A00%3A00Z&scope=organization&start=2017-10-22T12%3A00%3A00Z",
 			200,
 			`{"meta":{"status":200},"buckets":[{"name":"Test did not see a new command for 90 seconds. Timing out.","count":1,"items":[{"id":"k23j45bnkj236kj24klo34n67","owner":"johndoe","ancestor":"testing","name":"Snickerdoodle","build":"0.5.0","creation_time":"2017-10-23T06:28:37Z","start_time":"2017-10-23T06:28:37Z","end_time":"2017-10-23T07:05:37Z","duration":2220,"status":"errored","error":"Test did not see a new command for 90 seconds. Timing out.","os":"OS X El Capitan (10.11)","browser":"Firefox 45.0","details_url":"https://saucelabs.com/rest/v1.1/johndoe/jobs/k23j45bnkj236kj24klo34n67"}],"has_more":false}],"all_items_count":1}`,
+		},
+		{
+			"GET",
+			"https://saucelabs.com/rest/v1/analytics/trends/builds_tests?end=2017-10-23T12%3A00%3A00Z&scope=organization&start=2017-10-22T12%3A00%3A00Z",
+			200,
+			`{ "builds": { "items": [ { "name": "Snickerdoodle", "owner": "testing", "tests_count": 49, "duration": 386, "duration_absolute": 2948, "duration_test_max": 195, "start_time": "2017-10-27T20:02:51Z", "end_time": "2017-10-27T20:09:17Z", "tests": [ { "id": "asdf98hgfj78fh6gsbasf", "owner": "testing", "ancestor": "testing", "name": "testing snickerdoodle mock", "build": "testing", "creation_time": "2017-10-27T20:02:51Z", "start_time": "2017-10-27T20:02:51Z", "end_time": "2017-10-27T20:04:01Z", "duration": 70, "status": "passed", "error": "", "os": "Windows 10", "browser": "Firefox 47.0", "details_url": "https://saucelabs.com/rest/v1.1/testing/jobs/asdf98hgfj78fh6gsbasf" } ] } ] } }`,
 		},
 	}
 
