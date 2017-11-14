@@ -3,6 +3,14 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.2.4
+
+Greg Lane - change data types for new couchbase metrics to float from int
+
+# 1.2.3
+
+Matt Rose - Fixed formating error in saucelabs userlist metrics and added trends metrics
+
 # 1.2.2
 
 Greg Lane - added more couchbase metrics for XDCR and Replica monitoring
