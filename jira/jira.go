@@ -13,6 +13,8 @@ import (
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
 	"github.com/Netflix-Skunkworks/go-jira/jiradata"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
+	"github.com/newrelic/infra-integrations-sdk/metric"
+	"github.com/newrelic/infra-integrations-sdk/sdk"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,19 +26,14 @@ const (
 	integrationName    = "com.gannettdigital.jira"
 	integrationVersion = "0.1.0"
 	jiraURL            = "https://jira.gannett.com"
+	metricSet          = "JiraMetrics"
 )
 
 var args argumentList
 
 type Jira struct {
-	Token      string
-	Logger     *logrus.Logger
-	MetricsSet map[string]JiraMetrics
-}
-
-type JiraMetrics struct {
-	value      interface{}
-	metricType int
+	Token  string
+	Logger *logrus.Logger
 }
 
 type Config struct {
@@ -50,122 +47,114 @@ type jiraRequest struct {
 }
 
 func NewJira(conf Config) (*Jira, error) {
+	if err := validateConfig(conf); err != nil {
+		return nil, err
+	}
+
 	return &Jira{
 		Token:  conf.authToken,
 		Logger: logrus.New(),
 	}, nil
 }
 
-func ValidateConfig(config Config) error {
+func validateConfig(config Config) error {
 	if config.authToken == "" {
 		return errors.New("JIRA_AUTH_TOKEN must be set")
 	}
 	return nil
 }
 
-func (j *Jira) GetCurrentSprint() []int {
-	resultSet := jiradata.SearchResults{}
-	jreq := jiraRequest{
-		method: "GET",
-		uri:    "/rest/api/2/search",
-		queryParams: map[string]string{
-			"jql":    `sprint in openSprints() and PROJECT = "Platform as a Service (PAAS)"`,
-			"fields": "customfield_10400",
-		},
-	}
-	runner := &utilsHTTP.HTTPRunnerImpl{}
-	_, b, err := j.executeJiraRequest(runner, jreq)
-	if err != nil {
-		j.Logger.Error(err)
+func processIssue(issue *jiradata.Issue, ms *metric.MetricSet) error {
+	fmt.Printf("%+v", issue)
+	if _, ok := issue.Fields["components"].([]interface{}); ok {
+		components := issue.Fields["components"].([]interface{})[0].(map[string]interface{})["name"].(string)
+		ms.SetMetric("components", components, metric.ATTRIBUTE)
 	}
 
-	if err = json.Unmarshal(b, &resultSet); err != nil {
-		j.Logger.Error(err)
+	if assignee, ok := issue.Fields["assignee"].(map[string]interface{}); ok {
+		assignee := assignee["key"].(string)
+		ms.SetMetric("assignee", assignee, metric.ATTRIBUTE)
 	}
 
-	for _, i := range resultSet.Issues {
-		if _, ok := i.Fields["customfield_10400"].([]interface{}); ok {
-			d := i.Fields["customfield_10400"].([]interface{})[0].(string)
-			r, _ := regexp.Compile(`id=(\d*)`)
-			s := r.FindString(d)
-			s = strings.Split(s, "=")[1]
-			j.Logger.Infof("%+v", s)
+	if points, ok := issue.Fields["customfield_10105"].(float64); ok {
+		ms.SetMetric("storypoints", int(points), metric.GAUGE)
+	}
+
+	if _, ok := issue.Fields["customfield_10400"].([]interface{}); ok {
+		d := issue.Fields["customfield_10400"].([]interface{})[0].(string)
+		r, err := regexp.Compile(`id=(\d*)`)
+		if err != nil {
+			return err
 		}
+		var id string
+		s := strings.Split(r.FindString(d), "=")
+		if len(s) >= 1 {
+			id = s[1]
+		}
+		ms.SetMetric("sprintID", id, metric.ATTRIBUTE)
 	}
-	return []int{1}
+
+	ms.SetMetric("storyID", issue.Key, metric.ATTRIBUTE)
+	return nil
 }
 
-func (j *Jira) GetOpenIssues(runner utilsHTTP.HTTPRunner) (jiradata.Issues, error) {
+func (j *Jira) getOpenIssues(runner utilsHTTP.HTTPRunner) (jiradata.SearchResults, error) {
 	resultSet := jiradata.SearchResults{}
 	jreq := jiraRequest{
 		method: "GET",
 		uri:    "/rest/api/2/search",
 		queryParams: map[string]string{
-			"jql": fmt.Sprintf(`sprint in openSprints() and PROJECT = "PAAS"`),
-			// customfield_10105 = storypoint,
+			"jql": fmt.Sprintf(`sprint in openSprints() and PROJECT = "Platform as a Service (PAAS)"`),
+			// customfield_10105 = storypoints,
 			// customfield_11500 = epic
-			"fields": "components, assignee, customfield_10105, customfield_11500",
+			// customfield_10400 = sprint number
+			"maxResults": "200",
+			"fields":     "components, assignee, customfield_10105, customfield_11500, customfield_10400",
 		},
 	}
 
-	_, b, err := j.executeJiraRequest(runner, jreq)
+	b, err := j.executeJiraRequest(runner, jreq)
 	if err != nil {
-		return resultSet.Issues, err
+		return resultSet, err
 	}
 
 	if err = json.Unmarshal(b, &resultSet); err != nil {
-		return resultSet.Issues, err
+		return resultSet, err
 	}
-	// j.Logger.Printf("%v", resultSet)
 
-	// for _, i := range resultSet.Issues {
-	// 	if _, ok := i.Fields["components"].([]interface{}); ok {
-	// 		components := i.Fields["components"].([]interface{})[0].(map[string]interface{})["name"].(string)
-	// 		j.Logger.Info(components)
-	// 	}
-	// 	if _, ok := i.Fields["assignee"].(map[string]interface{}); ok {
-	// 		assignee := i.Fields["assignee"].(map[string]interface{})["key"].(string)
-	// 		j.Logger.Info("asginee:" + assignee)
-	// 	}
-	// 	if points, ok := i.Fields["customfield_10105"].(float64); ok {
-	// 		j.Logger.Infof("points %d", int(points))
-	// 	}
-	// 	j.Logger.Infof("time spent %d", j.getWorkLogTotalTimeLogged(i.Key))
-	// 	// j.Logger.Info
-	// }
-	// return len(resultSet.Issues), nil
-	return resultSet.Issues, nil
+	return resultSet, nil
 }
 
-func (j *Jira) getWorkLogTotalTimeLogged(id string) int {
+func (j *Jira) getWorkLogTotalTimeLogged(runner utilsHTTP.HTTPRunner, storyID string) (int, error) {
 	resultSet := jiradata.WorklogWithPagination{}
 
 	jreq := jiraRequest{
 		method: "GET",
-		uri:    fmt.Sprintf("/rest/api/2/issue/%s/worklog", id),
+		uri:    fmt.Sprintf("/rest/api/2/issue/%s/worklog", storyID),
 	}
 
-	runner := &utilsHTTP.HTTPRunnerImpl{}
-	_, data, _ := j.executeJiraRequest(runner, jreq)
-
-	err := json.Unmarshal(data, &resultSet)
+	b, err := j.executeJiraRequest(runner, jreq)
 	if err != nil {
-		fmt.Println(err)
+		return 0, err
 	}
 
-	sumSeconds := 0
-	for _, v := range resultSet.Worklogs {
-		sumSeconds += v.TimeSpentSeconds
+	if err = json.Unmarshal(b, &resultSet); err != nil {
+		return 0, err
 	}
-	return sumSeconds
+
+	seconds := 0
+	for _, v := range resultSet.Worklogs {
+		seconds += v.TimeSpentSeconds
+	}
+	return seconds, nil
 
 }
 
-func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest) (int, []byte, error) {
+func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest) ([]byte, error) {
 	jiraurl := fmt.Sprintf("%s%s", jiraURL, jreq.uri)
 	req, err := http.NewRequest(jreq.method, jiraurl, nil)
 	if err != nil {
-		return 0, []byte{}, err
+		return []byte{}, err
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Basic %s", j.Token))
@@ -176,23 +165,61 @@ func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest)
 	}
 	req.URL.RawQuery = params.Encode()
 
-	return runner.CallAPI(j.Logger, nil, req, &http.Client{})
+	code, b, err := runner.CallAPI(j.Logger, nil, req, &http.Client{})
+	if code != 200 || err != nil {
+		return []byte{}, errors.New("unable to grab jira data")
+	}
+
+	return b, nil
 }
 
-func Run(log *logrus.Logger, prettyPrint bool, version string) {
-	j, err := NewJira(Config{authToken: os.Getenv("JIRA_TOKEN")})
-	if err != nil {
-		log.Print(err)
+func Run(log *logrus.Logger) {
+	conf := Config{
+		authToken: os.Getenv("JIRA_TOKEN"),
 	}
-	runner := &utilsHTTP.HTTPRunnerImpl{}
-	// j.GetCurrentSprint()
-	issues, err := j.GetOpenIssues(runner)
-	if err != nil {
-		log.Print(err)
-	}
-	log.Printf("%+v", issues)
 
-	// // i, err := j.Progress(runner, 3760, "IN PROGRESS")
-	// log.Print(i)
+	runner := &utilsHTTP.HTTPRunnerImpl{}
+	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
+	if err != nil {
+		log.Fatalf("unable to initialize new relic infrastracture, error: %s", err)
+	}
+
+	if err := emitMetrics(conf, runner, integration); err != nil {
+		log.Fatalf("unable to emit metrics error: %s", err)
+	}
+}
+
+type MetricEmmiter interface {
+	NewMetricSet(string) *metric.MetricSet
+	Publish() error
+}
+
+func emitMetrics(conf Config, runner utilsHTTP.HTTPRunner, integration MetricEmmiter) error {
+	j, err := NewJira(conf)
+	if err != nil {
+		return err
+	}
+
+	searchResp, err := j.getOpenIssues(runner)
+	if err != nil {
+		return err
+	}
+
+	for _, i := range searchResp.Issues {
+		ms := integration.NewMetricSet(metricSet)
+		if err := processIssue(i, ms); err != nil {
+			return err
+		}
+
+		tempo, err := j.getWorkLogTotalTimeLogged(runner, i.Key)
+		if err != nil {
+			return err
+		}
+		ms.SetMetric("tempo.seconds", tempo, metric.GAUGE)
+		if err := integration.Publish(); err != nil {
+			return err
+		}
+	}
+	return nil
 
 }
