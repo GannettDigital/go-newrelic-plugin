@@ -5,6 +5,7 @@ import (
 
 	"github.com/franela/goblin"
 	"github.com/sirupsen/logrus"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 func init() {

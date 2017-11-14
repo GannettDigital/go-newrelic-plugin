@@ -120,7 +120,7 @@ func TestGetCouchBucketsStats(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("TestGetCouchBucketsStats()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchBucketStatsError).Equal(nil)
 				g.Assert(len(couchBucketResponses)).Equal(2)
@@ -167,7 +167,7 @@ func TestGetCouchClusterStats(t *testing.T) {
 
 		g.Describe("TestGetCouchBucketsStats()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				couchBucketResponses, getCouchBucketStatsError := getCouchClusterStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchBucketStatsError).Equal(nil)
 				g.Assert(couchBucketResponses[3]["couchbase.scalr.clustername"]).Equal(test.ExpectedScalrName)
@@ -216,7 +216,7 @@ func TestGetCouchReplicationStats(t *testing.T) {
 
 		g.Describe("TestGetCouchReplicationStats()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				couchReplicationResponses, getCouchReplicationStatsError := getCouchReplicationStats(logrus.New(), couchbaseFakeConfig)
 				g.Assert(getCouchReplicationStatsError).Equal(nil)
 				g.Assert(couchReplicationResponses[0]["couchbase.replication.hostname"]).Equal("172.17.0.2:8091")
@@ -280,7 +280,7 @@ func TestGetAllBucketsInfo(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("getAllBucketsInfo()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				result, err := getAllBucketsInfo(logrus.New(), couchbaseFakeConfig)
 				g.Assert(err == nil).Equal(test.TestResults.ErrorShouldBeNil)
 				g.Assert(reflect.DeepEqual(len(result), test.TestResults.ClusterInfoShouldHave)).Equal(true)

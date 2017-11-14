@@ -54,7 +54,7 @@ func TestinitStats(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("initStats()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				result, err := initStats(logrus.New(), fakeConfig)
 				g.Assert(reflect.DeepEqual(err, nil)).Equal(true)
 				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.ResultsList[0].Data))).Equal(true)
