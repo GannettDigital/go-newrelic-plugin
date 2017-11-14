@@ -3,6 +3,11 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.3.0
+
+Dennis Nguyen - Add Jira collector
+
+
 # 1.2.4
 
 Greg Lane - change data types for new couchbase metrics to float from int
