@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
-	"github.com/Sirupsen/logrus"
 	"github.com/bndr/gojenkins"
+	"github.com/sirupsen/logrus"
 )
 
 // CollectorName - the name of this thing

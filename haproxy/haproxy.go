@@ -12,7 +12,7 @@ import (
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var runner utilsHTTP.HTTPRunner
@@ -52,7 +52,7 @@ type PluginData struct {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 // Run is the entry point for the collector

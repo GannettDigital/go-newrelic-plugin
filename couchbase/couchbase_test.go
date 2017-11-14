@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/sirupsen/logrus"
 )
 
 var couchbaseFakeConfig CouchbaseConfig

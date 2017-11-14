@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var runner utilsHTTP.HTTPRunner
@@ -88,7 +88,7 @@ type QueueInfo struct {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func executeAndDecode(log *logrus.Logger, httpReq http.Request, record interface{}) error {

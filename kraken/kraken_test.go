@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/sirupsen/logrus"
 )
 
 var fakeConfig Config
@@ -57,23 +57,23 @@ func TestScrapeStatus(t *testing.T) {
 	g := goblin.Goblin(t)
 
 	result := map[string]interface{}{
-	  "event_type":            				"GKrakenSample",
-	  "provider":              				"kraken",
-	  "kraken.version":						    "2.2.0",
-	  "kraken.customer":			   	    "None",
-	  "kraken.project":						    "None",
-	  "kraken.state":				   		    "Complete",
-	  "kraken.kpi.avg_resp_time":     "0.106",
-	  "kraken.kpi.avg_latency":       "0.106",
-	  "kraken.kpi.avg_conn_time":     "0.000",
-	  "kraken.kpi.percentiles.50":    "0.120",
-	  "kraken.kpi.percentiles.90":    "0.125",
-	  "kraken.kpi.percentiles.95":    "0.126",
-	  "kraken.kpi.percentiles.99":    "0.167",
-	  "kraken.kpi.percentiles.100":   "0.281",
-	  "kraken.sample_count":          "178",
-	  "kraken.sample_failure":        "100.00",
-	  "kraken.duration":              "0:00:25",
+		"event_type":                 "GKrakenSample",
+		"provider":                   "kraken",
+		"kraken.version":             "2.2.0",
+		"kraken.customer":            "None",
+		"kraken.project":             "None",
+		"kraken.state":               "Complete",
+		"kraken.kpi.avg_resp_time":   "0.106",
+		"kraken.kpi.avg_latency":     "0.106",
+		"kraken.kpi.avg_conn_time":   "0.000",
+		"kraken.kpi.percentiles.50":  "0.120",
+		"kraken.kpi.percentiles.90":  "0.125",
+		"kraken.kpi.percentiles.95":  "0.126",
+		"kraken.kpi.percentiles.99":  "0.167",
+		"kraken.kpi.percentiles.100": "0.281",
+		"kraken.sample_count":        "178",
+		"kraken.sample_failure":      "100.00",
+		"kraken.duration":            "0:00:25",
 	}
 
 	var tests = []struct {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var runner utilsHTTP.HTTPRunner
@@ -92,7 +92,7 @@ type FastlyStats struct {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {

@@ -3,9 +3,8 @@ package mysql
 import (
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"github.com/sirupsen/logrus"
 )
 
 func init() {

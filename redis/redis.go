@@ -8,7 +8,7 @@ import (
 
 	redis "gopkg.in/redis.v5"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // NAME - name of plugin

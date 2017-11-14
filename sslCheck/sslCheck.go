@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 //Config is the keeper of the config

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
 	"github.com/jarcoal/httpmock"
+	"github.com/sirupsen/logrus"
 )
 
 var (

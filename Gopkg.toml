@@ -1,15 +1,15 @@
 [[constraint]]
   name = "github.com/GannettDigital/goStateModule"
   source = "git@github.com:GannettDigital/goStateModule.git"
-  version = "2.0.0"
+  version = "3.0.1"
 
 [[constraint]]
   name = "github.com/GannettDigital/paas-api-utils"
   source = "git@github.com:GannettDigital/paas-api-utils.git"
-  version = "=2.0.0"
+  version = "6.0.2"
 
 [[constraint]]
-  name = "github.com/Sirupsen/logrus"
+  name = "github.com/sirupsen/logrus"
 
 [[constraint]]
   name = "github.com/bndr/gojenkins"

@@ -3,11 +3,12 @@ package memcached
 import (
 	"bufio"
 	"fmt"
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
-	"github.com/Sirupsen/logrus"
 	"net"
 	"os"
 	"strings"
+
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
+	"github.com/sirupsen/logrus"
 )
 
 const NAME string = "memcached"
