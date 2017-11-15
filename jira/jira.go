@@ -56,11 +56,10 @@ type jiraRequest struct {
 
 // NewJira returns a new Jira
 func NewJira(conf Config) *Jira {
-	httpClient := &http.Client{}
 	return &Jira{
 		Token:      conf.authToken,
 		URL:        conf.jiraURL,
-		HTTPClient: httpClient,
+		HTTPClient: &http.Client{},
 		Logger:     logrus.New(),
 	}
 }
