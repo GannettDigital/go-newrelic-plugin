@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
+	"github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
 	"github.com/franela/goblin"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 )

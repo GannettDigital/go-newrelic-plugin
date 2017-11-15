@@ -163,7 +163,6 @@ func (j *Jira) getWorkLogTotalTimeLogged(runner utilsHTTP.HTTPRunner, storyID st
 		seconds += v.TimeSpentSeconds
 	}
 	return seconds, nil
-
 }
 
 func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest) ([]byte, error) {
@@ -235,5 +234,4 @@ func emitMetrics(conf Config, runner utilsHTTP.HTTPRunner, integration MetricEmm
 		}
 	}
 	return nil
-
 }
