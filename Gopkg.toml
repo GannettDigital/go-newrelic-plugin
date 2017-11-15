@@ -1,3 +1,6 @@
+
+ignored = ["github.com/newrelic/infra-integrations-sdk/log"]
+
 [[constraint]]
   name = "github.com/GannettDigital/goStateModule"
   source = "git@github.com:GannettDigital/goStateModule.git"
@@ -35,3 +38,4 @@
 
 [[constraint]]
   name = "gopkg.in/redis.v5"
+
