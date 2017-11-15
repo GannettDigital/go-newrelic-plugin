@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/bndr/gojenkins"
 	"github.com/franela/goblin"
 	"github.com/jarcoal/httpmock"
+	"github.com/Sirupsen/logrus"
 )
 
 var (

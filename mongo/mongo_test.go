@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/Sirupsen/logrus"
 )
 
 var fakeLog = logrus.New()

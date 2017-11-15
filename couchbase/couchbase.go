@@ -92,11 +92,11 @@ type CouchbaseBucketStats struct {
 			EPDcpOtherItemsRemaining    []int64   `json:"ep_dcp_other_items_remaining"`    //items
 			EPDcpReplicaItemsRemaining  []int64   `json:"ep_dcp_replica_items_remaining"`  //items
 			EPDcpReplicaItemsSent       []float32 `json:"ep_dcp_replica_items_sent"`       //items
-			EPDcpReplicaTotalBytes      []int64   `json:"ep_dcp_replica_total_bytes"`      //bytes
+			EPDcpReplicaTotalBytes      []float32 `json:"ep_dcp_replica_total_bytes"`      //bytes
 			EPDcpViewItemsRemaining     []int64   `json:"ep_dcp_views_items_remaining"`    //items
 			EPDcpXDCRItemsRemaining     []int64   `json:"ep_dcp_xdcr_items_remaining"`     //items
-			EPDcpXDCRItemsSent          []int64   `json:"ep_dcp_xdcr_items_sent"`          //items
-			EPDcpXDCRTotalBytes         []int64   `json:"ep_dcp_xdcr_total_bytes"`         //bytes
+			EPDcpXDCRItemsSent          []float32 `json:"ep_dcp_xdcr_items_sent"`          //items
+			EPDcpXDCRTotalBytes         []float32 `json:"ep_dcp_xdcr_total_bytes"`         //bytes
 			EPDiskQueueItems            []float32 `json:"ep_diskqueue_items"`              //items
 			EPDiskQueueDrain            []float32 `json:"ep_diskqueue_drain"`              //items
 			EPDiskQueueFill             []float32 `json:"ep_diskqueue_fill"`               //items
@@ -231,7 +231,7 @@ func executeAndDecode(log *logrus.Logger, httpReq http.Request, record interface
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
@@ -392,10 +392,10 @@ func formatBucketInfoEPStatsStructToMap(completeBucketInfo CompleteBucketInfo) (
 		"couchbase.by_bucket.ep_mem_low_wat":                  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMemLowWater),
 		"couchbase.by_bucket.ep_dcp_replica_items_remaining":  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaItemsRemaining),
 		"couchbase.by_bucket.ep_dcp_replica_items_sent":       avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaItemsSent),
-		"couchbase.by_bucket.ep_dcp_replica_total_bytes":      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaTotalBytes),
+		"couchbase.by_bucket.ep_dcp_replica_total_bytes":      avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpReplicaTotalBytes),
 		"couchbase.by_bucket.ep_dcp_xdcr_items_remaining":     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRItemsRemaining),
-		"couchbase.by_bucket.ep_dcp_xdcr_items_sent":          avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRItemsSent),
-		"couchbase.by_bucket.ep_dcp_xdcr_total_bytes":         avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRTotalBytes),
+		"couchbase.by_bucket.ep_dcp_xdcr_items_sent":          avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRItemsSent),
+		"couchbase.by_bucket.ep_dcp_xdcr_total_bytes":         avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpXDCRTotalBytes),
 		"couchbase.by_bucket.ep_dcp_views_items_remaining":    avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpViewItemsRemaining),
 		"couchbase.by_bucket.ep_dcp_2i_items_remaining":       avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcp2iItemsRemaining),
 		"couchbase.by_bucket.ep_dcp_fts_items_remaining":      avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPDcpFtsItemsRemaining),

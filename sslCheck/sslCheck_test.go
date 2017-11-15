@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/Sirupsen/logrus"
 )
 
 func TestRun(t *testing.T) {

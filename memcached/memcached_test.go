@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/Sirupsen/logrus"
 )
 
 var fakeConfig MemcachedConfig

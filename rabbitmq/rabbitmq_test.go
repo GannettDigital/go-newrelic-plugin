@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/Sirupsen/logrus"
 )
 
 var rabbitMqFakeConfig RabbitmqConfig
@@ -61,7 +61,7 @@ func TestListQueues(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("listQueues()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				result, err := listQueues(logrus.New(), rabbitMqFakeConfig)
 				g.Assert(reflect.DeepEqual(err, nil)).Equal(true)
 				g.Assert(reflect.DeepEqual(result, resultSlice)).Equal(true)
@@ -122,7 +122,7 @@ func TestListNodes(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("listNodes()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				result, err := listNodes(logrus.New(), rabbitMqFakeConfig)
 				g.Assert(reflect.DeepEqual(err, nil)).Equal(true)
 				g.Assert(reflect.DeepEqual(result, resultSlice)).Equal(true)
@@ -162,7 +162,7 @@ func TestGetRabbitmqStatus(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("listNodes()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				result, err := getRabbitmqStatus(logrus.New(), rabbitMqFakeConfig)
 				g.Assert(reflect.DeepEqual(err, nil)).Equal(true)
 				g.Assert(len(result) == 3).Equal(true)

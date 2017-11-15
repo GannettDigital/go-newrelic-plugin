@@ -7,8 +7,8 @@ import (
 	redis "gopkg.in/redis.v5"
 
 	"github.com/GannettDigital/go-newrelic-plugin/redis/fake"
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/Sirupsen/logrus"
 )
 
 func TestOutputJSON(t *testing.T) {

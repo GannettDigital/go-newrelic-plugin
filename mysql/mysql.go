@@ -2,12 +2,14 @@ package mysql
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"fmt"
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
-	"github.com/Sirupsen/logrus"
 	"os"
 	"strings"
+
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
+
+	"github.com/Sirupsen/logrus"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const NAME string = "mysql"

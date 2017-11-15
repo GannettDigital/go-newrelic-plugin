@@ -80,7 +80,7 @@ func OutputJSON(data interface{}, pretty bool) error {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {

@@ -3,10 +3,17 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.3.1
+
+Matt Rose - Added test trends metrics for saucelabs metrics collector
+
+# 1.3.0
+
+Dennis Nguyen - Add Jira collector
 
 # 1.2.4
 
-Matt Rose - Added test trends metrics for saucelabs metrics collector
+Greg Lane - change data types for new couchbase metrics to float from int
 
 # 1.2.3
 
