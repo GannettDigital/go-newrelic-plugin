@@ -105,6 +105,7 @@ func TestEmitMetrics(t *testing.T) {
 		ExpectedErr          error
 		ExpectedMetricName   string
 		ExpectedPublishCount int
+		ExpectedNumberMetric int
 	}{
 		{
 			TestDescription: "should successfully emit metrics",
@@ -127,6 +128,7 @@ func TestEmitMetrics(t *testing.T) {
 			InputEmitter:         fakeEmitter{},
 			ExpectedMetricName:   "JiraMetrics",
 			ExpectedPublishCount: 1,
+			ExpectedNumberMetric: 6,
 		},
 		{
 			TestDescription: "should error if unable to get jira issues",
@@ -167,6 +169,7 @@ func TestEmitMetrics(t *testing.T) {
 			},
 			ExpectedMetricName:   "JiraMetrics",
 			ExpectedPublishCount: 1,
+			ExpectedNumberMetric: 6,
 		},
 		{
 			TestDescription: "should error if unable to get tempo issue",
@@ -186,8 +189,9 @@ func TestEmitMetrics(t *testing.T) {
 					},
 				},
 			},
-			ExpectedErr:        errors.New("unable to grab jira data"),
-			ExpectedMetricName: "JiraMetrics",
+			ExpectedErr:          errors.New("unable to grab jira data"),
+			ExpectedMetricName:   "JiraMetrics",
+			ExpectedNumberMetric: 5,
 		},
 	}
 	for _, test := range tests {
@@ -197,6 +201,9 @@ func TestEmitMetrics(t *testing.T) {
 				g.Assert(err).Equal(test.ExpectedErr)
 				g.Assert(test.InputEmitter.NewMetricSetNameCalled).Equal(test.ExpectedMetricName)
 				g.Assert(test.InputEmitter.PublishCount).Equal(test.ExpectedPublishCount)
+				if test.InputEmitter.MetricSet != nil {
+					g.Assert(len(*test.InputEmitter.MetricSet)).Equal(test.ExpectedNumberMetric)
+				}
 			})
 		})
 	}
@@ -207,6 +214,7 @@ type fakeEmitter struct {
 	PublishCount int
 
 	NewMetricSetNameCalled string
+	MetricSet              *metric.MetricSet
 }
 
 func (f *fakeEmitter) Publish() error {
@@ -216,7 +224,10 @@ func (f *fakeEmitter) Publish() error {
 
 func (f *fakeEmitter) NewMetricSet(name string) *metric.MetricSet {
 	f.NewMetricSetNameCalled = name
-	return &metric.MetricSet{}
+	metric := &metric.MetricSet{}
+	f.MetricSet = metric
+
+	return metric
 }
 
 func issuesData() []byte {
