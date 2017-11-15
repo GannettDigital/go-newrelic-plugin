@@ -19,6 +19,13 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/sdk"
 )
 
+const (
+	projectName      = "Platform as a Service (PAAS)"
+	storyPointsField = "customfield_10105"
+	epicField        = "customfield_11500"
+	sprintIDField    = "customfield_10400"
+)
+
 type argumentList struct {
 	sdkArgs.DefaultArgumentList
 }
@@ -26,11 +33,13 @@ type argumentList struct {
 var args argumentList
 
 type Jira struct {
-	Token  string
-	URL    string
-	Logger *logrus.Logger
+	Token      string
+	URL        string
+	Logger     *logrus.Logger
+	HTTPClient *http.Client
 }
 
+// Config holds Jira and NewRelic Configs
 type Config struct {
 	authToken          string
 	integrationName    string
@@ -45,43 +54,45 @@ type jiraRequest struct {
 	queryParams map[string]string
 }
 
+// NewJira returns a new Jira
 func NewJira(conf Config) *Jira {
+	httpClient := &http.Client{}
 	return &Jira{
-		Token:  conf.authToken,
-		URL:    conf.jiraURL,
-		Logger: logrus.New(),
+		Token:      conf.authToken,
+		URL:        conf.jiraURL,
+		HTTPClient: httpClient,
+		Logger:     logrus.New(),
 	}
 }
 
-func validateConfig() (Config, error) {
+func validateConfig(config Config) error {
 	missingFields := make([]string, 0)
-	requiredKeys := []string{
-		"JIRA_AUTH_TOKEN",
-		"INTEGRATION_NAME",
-		"INTEGRATION_VERSION",
-		"JIRA_URL",
-		"METRICSET_NAME",
+
+	if config.authToken == "" {
+		missingFields = append(missingFields, "JIRA_AUTH_TOKEN")
+	}
+	if config.integrationName == "" {
+		missingFields = append(missingFields, "NR_INTEGRATION_NAME")
+	}
+	if config.integrationVersion == "" {
+		missingFields = append(missingFields, "NR_INTEGRATION_VERSION")
+	}
+	if config.jiraURL == "" {
+		missingFields = append(missingFields, "JIRA_URL")
+	}
+	if config.metricSet == "" {
+		missingFields = append(missingFields, "NR_METRICSET_NAME")
 	}
 
-	for _, k := range requiredKeys {
-		if env := os.Getenv(k); env == "" {
-			missingFields = append(missingFields, k)
-		}
-	}
 	if len(missingFields) > 0 {
-		return Config{}, fmt.Errorf("missing required config: %s", missingFields)
+		return fmt.Errorf("missing required config: %v", missingFields)
 	}
 
-	return Config{
-		authToken:          os.Getenv("JIRA_TOKEN"),
-		integrationName:    os.Getenv("INTEGRATION_NAME"),
-		integrationVersion: os.Getenv("INTEGRATION_VERSION"),
-		jiraURL:            os.Getenv("JIRA_URL"),
-		metricSet:          os.Getenv("METRICSET_NAME"),
-	}, nil
+	return nil
 }
 
-func processIssue(issue *jiradata.Issue, ms *metric.MetricSet) error {
+// extractIssueStats grabs data from a Jira issue and adds to a MetricSet
+func extractIssueStats(issue *jiradata.Issue, ms *metric.MetricSet) error {
 	if _, ok := issue.Fields["components"].([]interface{}); ok {
 		components := issue.Fields["components"].([]interface{})[0].(map[string]interface{})["name"].(string)
 		ms.SetMetric("components", components, metric.ATTRIBUTE)
@@ -92,12 +103,12 @@ func processIssue(issue *jiradata.Issue, ms *metric.MetricSet) error {
 		ms.SetMetric("assignee", assignee, metric.ATTRIBUTE)
 	}
 
-	if points, ok := issue.Fields["customfield_10105"].(float64); ok {
+	if points, ok := issue.Fields[storyPointsField].(float64); ok {
 		ms.SetMetric("storypoints", int(points), metric.GAUGE)
 	}
 
-	if _, ok := issue.Fields["customfield_10400"].([]interface{}); ok {
-		d := issue.Fields["customfield_10400"].([]interface{})[0].(string)
+	if _, ok := issue.Fields[sprintIDField].([]interface{}); ok {
+		d := issue.Fields[sprintIDField].([]interface{})[0].(string)
 		r, err := regexp.Compile(`id=(\d*)`)
 		if err != nil {
 			return err
@@ -120,12 +131,9 @@ func (j *Jira) getOpenIssues(runner utilsHTTP.HTTPRunner) (jiradata.SearchResult
 		method: "GET",
 		uri:    "/rest/api/2/search",
 		queryParams: map[string]string{
-			"jql": fmt.Sprintf(`sprint in openSprints() and PROJECT = "Platform as a Service (PAAS)"`),
-			// customfield_10105 = storypoints,
-			// customfield_11500 = epic
-			// customfield_10400 = sprint number
+			"jql":        fmt.Sprintf(`sprint in openSprints() and PROJECT = %q`, projectName),
 			"maxResults": "200",
-			"fields":     "components, assignee, customfield_10105, customfield_11500, customfield_10400",
+			"fields":     fmt.Sprintf("components, assignee, %s, %s, %s", storyPointsField, epicField, sprintIDField),
 		},
 	}
 
@@ -180,7 +188,7 @@ func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest)
 	}
 	req.URL.RawQuery = params.Encode()
 
-	code, b, err := runner.CallAPI(j.Logger, nil, req, &http.Client{})
+	code, b, err := runner.CallAPI(j.Logger, nil, req, j.HTTPClient)
 	if code != 200 || err != nil {
 		return []byte{}, errors.New("unable to grab jira data")
 	}
@@ -189,7 +197,14 @@ func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest)
 }
 
 func Run(log *logrus.Logger) {
-	conf, err := validateConfig()
+	conf := Config{
+		authToken:          os.Getenv("JIRA_AUTH_TOKEN"),
+		integrationName:    os.Getenv("NR_INTEGRATION_NAME"),
+		integrationVersion: os.Getenv("NR_INTEGRATION_VERSION"),
+		jiraURL:            os.Getenv("JIRA_URL"),
+		metricSet:          os.Getenv("NR_METRICSET_NAME"),
+	}
+	err := validateConfig(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -205,12 +220,13 @@ func Run(log *logrus.Logger) {
 	}
 }
 
-type MetricEmmiter interface {
+// MetricEmiter registers metrics and flushes metrics to standard out
+type MetricEmiter interface {
 	NewMetricSet(string) *metric.MetricSet
 	Publish() error
 }
 
-func emitMetrics(conf Config, runner utilsHTTP.HTTPRunner, integration MetricEmmiter) error {
+func emitMetrics(conf Config, runner utilsHTTP.HTTPRunner, integration MetricEmiter) error {
 	j := NewJira(conf)
 
 	searchResp, err := j.getOpenIssues(runner)
@@ -220,7 +236,7 @@ func emitMetrics(conf Config, runner utilsHTTP.HTTPRunner, integration MetricEmm
 
 	for _, i := range searchResp.Issues {
 		ms := integration.NewMetricSet(conf.metricSet)
-		if err := processIssue(i, ms); err != nil {
+		if err := extractIssueStats(i, ms); err != nil {
 			return err
 		}
 

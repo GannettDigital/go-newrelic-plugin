@@ -2,7 +2,6 @@ package jira
 
 import (
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
@@ -98,24 +97,24 @@ func TestGetWorkLogTotalTimeLogged(t *testing.T) {
 func TestValidateConfigs(t *testing.T) {
 	g := goblin.Goblin(t)
 	tests := []struct {
-		SetConfig       func()
+		InputConfig     Config
 		ExpectedErr     error
 		TestDescription string
 	}{
 		{
-			SetConfig: func() {
-				os.Setenv("JIRA_AUTH_TOKEN", "faketoken")
+			InputConfig: Config{
+				authToken: "something",
 			},
-			ExpectedErr:     errors.New("missing required config: [INTEGRATION_NAME INTEGRATION_VERSION JIRA_URL METRICSET_NAME]"),
+			ExpectedErr:     errors.New("missing required config: [NR_INTEGRATION_NAME NR_INTEGRATION_VERSION JIRA_URL NR_METRICSET_NAME]"),
 			TestDescription: "should return error with missing fields",
 		},
 		{
-			SetConfig: func() {
-				os.Setenv("JIRA_AUTH_TOKEN", "faketoken")
-				os.Setenv("INTEGRATION_NAME", "fakename")
-				os.Setenv("INTEGRATION_VERSION", "fakeversion")
-				os.Setenv("JIRA_URL", "fakeurl")
-				os.Setenv("METRICSET_NAME", "fakemetricset")
+			InputConfig: Config{
+				authToken:          "something",
+				integrationName:    "something",
+				integrationVersion: "something",
+				jiraURL:            "something",
+				metricSet:          "something",
 			},
 			TestDescription: "should not error all required fields are set",
 		},
@@ -124,8 +123,7 @@ func TestValidateConfigs(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("validate configs", func() {
 			g.It(test.TestDescription, func() {
-				test.SetConfig()
-				_, err := validateConfig()
+				err := validateConfig(test.InputConfig)
 				g.Assert(err).Equal(test.ExpectedErr)
 			})
 		})
