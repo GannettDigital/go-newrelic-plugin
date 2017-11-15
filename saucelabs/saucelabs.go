@@ -190,6 +190,7 @@ type Items struct {
 	ItemsList        []ItemsList `json:"tests"`
 }
 
+//GetBuildTrends returns analytics builds_tests metrics
 func (sc *SauceClient) GetBuildTrends(startDateString string, endDateString string) (Trends, error) {
 	var response Trends
 	path := "analytics/trends/builds_tests"
@@ -198,6 +199,71 @@ func (sc *SauceClient) GetBuildTrends(startDateString string, endDateString stri
 	err := sc.do(http.MethodGet, pathURL, &response, nil)
 	if err != nil {
 		return Trends{}, err
+	}
+
+	return response, nil
+}
+
+// TestTrends holds metrics for TestTrends
+type TestTrends struct {
+	Builds  []TestTrendsBuckets `json:"buckets"`
+	Metrics TestTrendsMetrics   `json:"metrics"`
+}
+
+// TestTrendsBuckets holds metrics for TestTrends
+type TestTrendsBuckets struct {
+	Timestamp int    `json:"timestamp"`
+	Datetime  string `json:"datetime"`
+	Count     int    `json:"count"`
+	Aggs      Aggs   `json:"aggs"`
+}
+
+// Aggs holds metrics for TestTrends
+type Aggs struct {
+	Browser []TestTrendsStub `json:"browser"`
+	OS      []TestTrendsStub `json:"os"`
+	Owner   []TestTrendsStub `json:"owner"`
+	Status  []TestTrendsStub `json:"status"`
+}
+
+// TestTrendsStub holds metrics for TestTrends
+type TestTrendsStub struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// TestTrendsMetrics holds metrics for TestTrends
+type TestTrendsMetrics struct {
+	//browser
+	Browser map[string]int `json:"browser"`
+	OS      map[string]int `json:"os"`
+	Owner   map[string]int `json:"owner"`
+	Status  Status         `json:"status"`
+}
+
+// Status holds metrics for TestTrends
+type Status struct {
+	Complete int `json:"complete"`
+	Errored  int `json:"errored"`
+	Failed   int `json:"failed"`
+	Passed   int `json:"passed"`
+}
+
+//GetTestTrends returns test trend metrics
+func (sc *SauceClient) GetTestTrends(startDateString string, endDateString string) (TestTrends, error) {
+	var response TestTrends
+	path := "analytics/trends/tests"
+	pathURL := getPathURL(startDateString, endDateString, path)
+
+	interval := Parameter{
+		key:   "interval",
+		value: "1h",
+	}
+	pathURL.Parameter = append(pathURL.Parameter, interval)
+
+	err := sc.do(http.MethodGet, pathURL, &response, nil)
+	if err != nil {
+		return TestTrends{}, err
 	}
 
 	return response, nil
@@ -430,6 +496,11 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 		log.WithError(errorTrendsHistory).Error("Error collecting build trends metrics")
 		return nil, errorTrendsHistory
 	}
+	testTrendsHistory, errorTestTrendsHistory := sc.GetTestTrends(startDateString, endDateString)
+	if errorTestTrendsHistory != nil {
+		log.WithError(errorTestTrendsHistory).Error("Error collecting build test trends metrics")
+		return nil, errorTestTrendsHistory
+	}
 
 	// User List Metrics
 	for index := range userList {
@@ -547,6 +618,39 @@ func getMetrics(log *logrus.Logger, config SauceConfig, sc *SauceClient) ([]Metr
 			})
 		}
 	}
+
+	// Test Trends
+	for i := range testTrendsHistory.Builds {
+		for j := range testTrendsHistory.Builds[i].Aggs.Status {
+			metricsData = append(metricsData, MetricData{
+				"entity_name":                               "SauceLabs",
+				"event_type":                                "SauceLabs",
+				"provider":                                  "saucelabs",
+				"saucelabs.name":                            testTrendsHistory.Builds[i].Aggs.Owner[0].Name,
+				"saucelabs.testTrendsHistory.timestamp":     testTrendsHistory.Builds[i].Timestamp,
+				"saucelabs.testTrendsHistory.datetime":      testTrendsHistory.Builds[i].Datetime,
+				"saucelabs.testTrendsHistory.Count":         testTrendsHistory.Builds[i].Count,
+				"saucelabs.testTrendsHistory.browser.name":  testTrendsHistory.Builds[i].Aggs.Browser[0].Name,
+				"saucelabs.testTrendsHistory.browser.Count": testTrendsHistory.Builds[i].Aggs.Browser[0].Count,
+				"saucelabs.testTrendsHistory.OS.name":       testTrendsHistory.Builds[i].Aggs.OS[0].Name,
+				"saucelabs.testTrendsHistory.OS.count":      testTrendsHistory.Builds[i].Aggs.OS[0].Count,
+				"saucelabs.testTrendsHistory.status.name":   testTrendsHistory.Builds[i].Aggs.Status[j].Name,
+				"saucelabs.testTrendsHistory.status.count":  testTrendsHistory.Builds[i].Aggs.Status[j].Count,
+			})
+		}
+	}
+	metricsData = append(metricsData, MetricData{
+		"entity_name": "SauceLabs",
+		"event_type":  "SauceLabs",
+		"provider":    "saucelabs",
+		"saucelabs.testTrendsHistory.metrics.browser":  testTrendsHistory.Metrics.Browser,
+		"saucelabs.testTrendsHistory.metrics.OS":       testTrendsHistory.Metrics.OS,
+		"saucelabs.testTrendsHistory.metrics.owner":    testTrendsHistory.Metrics.Owner,
+		"saucelabs.testTrendsHistory.metrics.complete": testTrendsHistory.Metrics.Status.Complete,
+		"saucelabs.testTrendsHistory.metrics.errored":  testTrendsHistory.Metrics.Status.Errored,
+		"saucelabs.testTrendsHistory.metrics.failed":   testTrendsHistory.Metrics.Status.Failed,
+		"saucelabs.testTrendsHistory.metrics.passed":   testTrendsHistory.Metrics.Status.Passed,
+	})
 	return metricsData, nil
 }
 

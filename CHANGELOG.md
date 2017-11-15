@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+
+# 1.2.3
+
+Matt Rose - Added test trends metrics for saucelabs metrics collector 
 # 1.2.3
 
 Matt Rose - Fixed formating error in saucelabs userlist metrics and added trends metrics
