@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
-	"github.com/Sirupsen/logrus"
-	_ "github.com/go-sql-driver/mysql"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
+
+	"github.com/Sirupsen/logrus"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const NAME string = "mysql"
@@ -82,7 +84,7 @@ func Run(logger *logrus.Logger, prettyPrint bool, version string) {
 	db, err := sql.Open("mysql", generateDSN())
 	if err != nil {
 		log.WithError(err).Error(fmt.Sprintf("getMetric: Cannot connect to mysql %s:%s", config.host, config.port))
-		return 
+		return
 	}
 	defer db.Close()
 

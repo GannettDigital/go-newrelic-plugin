@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/Sirupsen/logrus"
 )
 
 var fakeConfig Config
@@ -1067,7 +1067,7 @@ func TestGetFastlyStats(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("getFastlyStats()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				result := getFastlyStats(logrus.New(), fakeConfig)
 				g.Assert(result.Data[0].Aggregated.Hits).Equal(1195)
 			})

@@ -231,7 +231,7 @@ func executeAndDecode(log *logrus.Logger, httpReq http.Request, record interface
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {

@@ -7,9 +7,9 @@ import (
 	//	"strconv"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"github.com/Sirupsen/logrus"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 func init() {

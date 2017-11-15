@@ -52,7 +52,7 @@ type PluginData struct {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 // Run is the entry point for the collector

@@ -1,14 +1,15 @@
 package zookeeper
 
 import (
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
-	"github.com/Sirupsen/logrus"
 	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
+	"github.com/Sirupsen/logrus"
 )
 
 // NAME - name of plugin

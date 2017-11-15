@@ -88,7 +88,7 @@ type QueueInfo struct {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func executeAndDecode(log *logrus.Logger, httpReq http.Request, record interface{}) error {

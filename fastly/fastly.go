@@ -92,7 +92,7 @@ type FastlyStats struct {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {

@@ -53,7 +53,7 @@ type PluginData struct {
 }
 
 func init() {
-	runner = utilsHTTP.HTTPRunnerImpl{}
+	runner = &utilsHTTP.HTTPRunnerImpl{}
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
@@ -81,7 +81,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 }
 
 func validateConfig(log *logrus.Logger, krakenConf Config) {
-	if krakenConf.KrakenHost == "" || krakenConf.KrakenListenPort == ""{
+	if krakenConf.KrakenHost == "" || krakenConf.KrakenListenPort == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
 	}
 }
@@ -130,7 +130,7 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 	percentiles_99 := ""
 	percentiles_100 := ""
 
-  if krakenState=="Complete" {
+	if krakenState == "Complete" {
 		re_samples := regexp.MustCompile(`Samples count: (\d+), (\d+(\.\d+)?). failures`)
 		multi := re_samples.FindString(status)
 		sample_count = re_samples.FindStringSubmatch(multi)[1]
@@ -153,39 +153,39 @@ func scrapeStatus(log *logrus.Logger, status string) map[string]interface{} {
 
 	log.WithFields(logrus.Fields{
 		"kraken_version":  krakenVersion,
-		"kraken_customer":  krakenCustomer,
+		"kraken_customer": krakenCustomer,
 		"kraken_project":  krakenProject,
-		"kraken_state":  krakenState,
-		"avg_resp_time":  avg_resp_time,
-		"avg_latency":  avg_latency,
-		"avg_conn_time":  avg_conn_time,
+		"kraken_state":    krakenState,
+		"avg_resp_time":   avg_resp_time,
+		"avg_latency":     avg_latency,
+		"avg_conn_time":   avg_conn_time,
 		"percentiles_50":  percentiles_50,
 		"percentiles_90":  percentiles_90,
 		"percentiles_95":  percentiles_95,
 		"percentiles_99":  percentiles_99,
-		"percentiles_100":  percentiles_100,
-		"sample_count": sample_count,
-		"sample_failure": sample_failure,
-		"duration":  duration,
+		"percentiles_100": percentiles_100,
+		"sample_count":    sample_count,
+		"sample_failure":  sample_failure,
+		"duration":        duration,
 	}).Debugf("Scraped KRAKEN values")
 	return map[string]interface{}{
-		"event_type":               	 "GKrakenSample",
-		"provider":                 	 PROVIDER,
-		"kraken.version":							 krakenVersion,
-		"kraken.customer":			   	   krakenCustomer,
-		"kraken.project":							 krakenProject,
-		"kraken.state":				   			 krakenState,
-		"kraken.kpi.avg_resp_time": 	 avg_resp_time,
-		"kraken.kpi.avg_latency":   	 avg_latency,
-		"kraken.kpi.avg_conn_time": 	 avg_conn_time,
-		"kraken.kpi.percentiles.50":   percentiles_50,
-		"kraken.kpi.percentiles.90":   percentiles_90,
-		"kraken.kpi.percentiles.95":   percentiles_95,
-		"kraken.kpi.percentiles.99":   percentiles_99,
-		"kraken.kpi.percentiles.100":  percentiles_100,
-		"kraken.sample_count":      	 sample_count,
-		"kraken.sample_failure":   		 sample_failure,
-		"kraken.duration":          	 duration,
+		"event_type":                 "GKrakenSample",
+		"provider":                   PROVIDER,
+		"kraken.version":             krakenVersion,
+		"kraken.customer":            krakenCustomer,
+		"kraken.project":             krakenProject,
+		"kraken.state":               krakenState,
+		"kraken.kpi.avg_resp_time":   avg_resp_time,
+		"kraken.kpi.avg_latency":     avg_latency,
+		"kraken.kpi.avg_conn_time":   avg_conn_time,
+		"kraken.kpi.percentiles.50":  percentiles_50,
+		"kraken.kpi.percentiles.90":  percentiles_90,
+		"kraken.kpi.percentiles.95":  percentiles_95,
+		"kraken.kpi.percentiles.99":  percentiles_99,
+		"kraken.kpi.percentiles.100": percentiles_100,
+		"kraken.sample_count":        sample_count,
+		"kraken.sample_failure":      sample_failure,
+		"kraken.duration":            duration,
 	}
 }
 

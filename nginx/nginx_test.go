@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/Sirupsen/logrus"
 	"github.com/franela/goblin"
+	"github.com/Sirupsen/logrus"
 )
 
 var fakeConfig Config
@@ -27,6 +27,7 @@ func TestGetNginxStatus(t *testing.T) {
 	var tests = []struct {
 		HTTPRunner      fake.HTTPResult
 		TestDescription string
+		ExpectedData    string
 	}{
 		{
 			HTTPRunner: fake.HTTPResult{
@@ -41,15 +42,17 @@ func TestGetNginxStatus(t *testing.T) {
 				},
 			},
 			TestDescription: "Successfully GET Nginx status page",
+			ExpectedData:    "Active connections: 2 \nserver accepts handled requests\n 29 29 31 \nReading: 0 Writing: 1 Waiting: 1 ",
 		},
 	}
 
 	for _, test := range tests {
 		g.Describe("getNginxStatus()", func() {
 			g.It(test.TestDescription, func() {
-				runner = test.HTTPRunner
+				runner = &test.HTTPRunner
 				result := getNginxStatus(logrus.New(), fakeConfig)
-				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.ResultsList[0].Data))).Equal(true)
+				g.Assert(result).Equal(test.ExpectedData)
+				// g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.ResultsList[0].Data))).Equal(true)
 			})
 		})
 	}
