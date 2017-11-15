@@ -374,6 +374,88 @@ func TestBuildTrends(t *testing.T) {
 	})
 }
 
+func TestTestTrends(t *testing.T) {
+	g := goblin.Goblin(t)
+	sc := fakeSauce()
+	examples := []struct {
+		Expected    TestTrends
+		CausesError bool
+	}{
+		{
+			Expected: TestTrends{
+				Builds: []TestTrendsBuckets{
+					{
+						Timestamp: 1508133600000,
+						Datetime:  "2017-10-16T06:00:00.000Z",
+						Count:     1,
+						Aggs: Aggs{
+							Browser: []TestTrendsStub{
+								{
+									Name:  "Firefox 45.0",
+									Count: 1,
+								},
+							},
+							OS: []TestTrendsStub{
+								{
+									Name:  "OS X El Capitan (10.11)",
+									Count: 1,
+								},
+							},
+							Owner: []TestTrendsStub{
+								{
+									Name:  "testing",
+									Count: 1,
+								},
+							},
+							Status: []TestTrendsStub{
+								{
+									Name:  "errored",
+									Count: 1,
+								},
+							},
+						},
+					},
+				},
+				Metrics: TestTrendsMetrics{
+					Browser: map[string]int{
+						"Firefox 45.0": 1,
+					},
+					OS: map[string]int{
+						"OS X El Capitan (10.11)": 1,
+					},
+					Owner: map[string]int{
+						"testing": 1,
+					},
+					Status: Status{
+						Complete: 0,
+						Errored:  1,
+						Failed:   0,
+						Passed:   0,
+					},
+				},
+			},
+			CausesError: false,
+		},
+	}
+
+	g.Describe("GetTestTrends", func() {
+		g.It("gets the test trends", func() {
+			for _, x := range examples {
+				g.Describe("sauce GetTestTrends()", func() {
+					startDateString := "2017-10-22T12:00:00"
+					endDateString := "2017-10-23T12:00:00"
+					res, err := sc.GetTestTrends(startDateString, endDateString)
+
+					g.It("should return user test trends", func() {
+						g.Assert(err != nil).Equal(x.CausesError)
+						g.Assert(reflect.DeepEqual(x.Expected, res)).Equal(true)
+					})
+				})
+			}
+		})
+	})
+}
+
 func fakeSauce() *SauceClient {
 	sc, scErr := NewSauceClient(fakeConfig)
 	if scErr != nil {
@@ -431,6 +513,12 @@ func registerResponders(transport *httpmock.MockTransport) {
 			"https://saucelabs.com/rest/v1/analytics/trends/builds_tests?end=2017-10-23T12%3A00%3A00Z&scope=organization&start=2017-10-22T12%3A00%3A00Z",
 			200,
 			`{ "builds": { "items": [ { "name": "Snickerdoodle", "owner": "testing", "tests_count": 49, "duration": 386, "duration_absolute": 2948, "duration_test_max": 195, "start_time": "2017-10-27T20:02:51Z", "end_time": "2017-10-27T20:09:17Z", "tests": [ { "id": "asdf98hgfj78fh6gsbasf", "owner": "testing", "ancestor": "testing", "name": "testing snickerdoodle mock", "build": "testing", "creation_time": "2017-10-27T20:02:51Z", "start_time": "2017-10-27T20:02:51Z", "end_time": "2017-10-27T20:04:01Z", "duration": 70, "status": "passed", "error": "", "os": "Windows 10", "browser": "Firefox 47.0", "details_url": "https://saucelabs.com/rest/v1.1/testing/jobs/asdf98hgfj78fh6gsbasf" } ] } ] } }`,
+		},
+		{
+			"GET",
+			"https://saucelabs.com/rest/v1/analytics/trends/tests?end=2017-10-23T12%3A00%3A00Z&interval=1h&scope=organization&start=2017-10-22T12%3A00%3A00Z",
+			200,
+			`{"meta":{"status":200},"buckets":[{"timestamp":1508133600000,"datetime":"2017-10-16T06:00:00.000Z","count":1,"aggs":{"browser":[{"name":"Firefox 45.0","count":1}],"os":[{"name":"OS X El Capitan (10.11)","count":1}],"owner":[{"name":"testing","count":1}],"status":[{"name":"errored","count":1}]}}],"metrics":{"browser":{"Firefox 45.0":1},"os":{"OS X El Capitan (10.11)":1},"owner":{"testing":1},"status":{"complete":0,"errored":1,"failed":0,"passed":0}}}`,
 		},
 	}
 
