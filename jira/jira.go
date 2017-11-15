@@ -23,22 +23,20 @@ type argumentList struct {
 	sdkArgs.DefaultArgumentList
 }
 
-const (
-	integrationName    = "com.gannettdigital.jira"
-	integrationVersion = "0.1.0"
-	jiraURL            = "https://jira.gannett.com"
-	metricSet          = "JiraMetrics"
-)
-
 var args argumentList
 
 type Jira struct {
 	Token  string
+	URL    string
 	Logger *logrus.Logger
 }
 
 type Config struct {
-	authToken string
+	authToken          string
+	integrationName    string
+	integrationVersion string
+	jiraURL            string
+	metricSet          string
 }
 
 type jiraRequest struct {
@@ -47,22 +45,40 @@ type jiraRequest struct {
 	queryParams map[string]string
 }
 
-func NewJira(conf Config) (*Jira, error) {
-	if err := validateConfig(conf); err != nil {
-		return nil, err
-	}
-
+func NewJira(conf Config) *Jira {
 	return &Jira{
 		Token:  conf.authToken,
+		URL:    conf.jiraURL,
 		Logger: logrus.New(),
-	}, nil
+	}
 }
 
-func validateConfig(config Config) error {
-	if config.authToken == "" {
-		return errors.New("JIRA_AUTH_TOKEN must be set")
+func validateConfig() (Config, error) {
+	missingFields := make([]string, 0)
+	requiredKeys := []string{
+		"JIRA_AUTH_TOKEN",
+		"INTEGRATION_NAME",
+		"INTEGRATION_VERSION",
+		"JIRA_URL",
+		"METRICSET_NAME",
 	}
-	return nil
+
+	for _, k := range requiredKeys {
+		if env := os.Getenv(k); env == "" {
+			missingFields = append(missingFields, k)
+		}
+	}
+	if len(missingFields) > 0 {
+		return Config{}, fmt.Errorf("missing required config: %s", missingFields)
+	}
+
+	return Config{
+		authToken:          os.Getenv("JIRA_TOKEN"),
+		integrationName:    os.Getenv("INTEGRATION_NAME"),
+		integrationVersion: os.Getenv("INTEGRATION_VERSION"),
+		jiraURL:            os.Getenv("JIRA_URL"),
+		metricSet:          os.Getenv("METRICSET_NAME"),
+	}, nil
 }
 
 func processIssue(issue *jiradata.Issue, ms *metric.MetricSet) error {
@@ -151,8 +167,8 @@ func (j *Jira) getWorkLogTotalTimeLogged(runner utilsHTTP.HTTPRunner, storyID st
 }
 
 func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest) ([]byte, error) {
-	jiraurl := fmt.Sprintf("%s%s", jiraURL, jreq.uri)
-	req, err := http.NewRequest(jreq.method, jiraurl, nil)
+	jiraURL := fmt.Sprintf("%s%s", j.URL, jreq.uri)
+	req, err := http.NewRequest(jreq.method, jiraURL, nil)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -174,12 +190,13 @@ func (j *Jira) executeJiraRequest(runner utilsHTTP.HTTPRunner, jreq jiraRequest)
 }
 
 func Run(log *logrus.Logger) {
-	conf := Config{
-		authToken: os.Getenv("JIRA_TOKEN"),
+	conf, err := validateConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	runner := &utilsHTTP.HTTPRunnerImpl{}
-	integration, err := sdk.NewIntegration(integrationName, integrationVersion, &args)
+	integration, err := sdk.NewIntegration(conf.integrationName, conf.integrationVersion, &args)
 	if err != nil {
 		log.Fatalf("unable to initialize new relic infrastracture, error: %s", err)
 	}
@@ -195,10 +212,7 @@ type MetricEmmiter interface {
 }
 
 func emitMetrics(conf Config, runner utilsHTTP.HTTPRunner, integration MetricEmmiter) error {
-	j, err := NewJira(conf)
-	if err != nil {
-		return err
-	}
+	j := NewJira(conf)
 
 	searchResp, err := j.getOpenIssues(runner)
 	if err != nil {
@@ -206,7 +220,7 @@ func emitMetrics(conf Config, runner utilsHTTP.HTTPRunner, integration MetricEmm
 	}
 
 	for _, i := range searchResp.Issues {
-		ms := integration.NewMetricSet(metricSet)
+		ms := integration.NewMetricSet(conf.metricSet)
 		if err := processIssue(i, ms); err != nil {
 			return err
 		}

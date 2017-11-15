@@ -2,6 +2,7 @@ package jira
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
@@ -11,7 +12,7 @@ import (
 
 func TestGetIssues(t *testing.T) {
 	g := goblin.Goblin(t)
-	j, _ := NewJira(Config{authToken: "somefakeauth"})
+	j := NewJira(Config{authToken: "somefakeauth"})
 
 	var tests = []struct {
 		HTTPRunner      fake.HTTPResult
@@ -48,7 +49,7 @@ func TestGetIssues(t *testing.T) {
 
 func TestGetWorkLogTotalTimeLogged(t *testing.T) {
 	g := goblin.Goblin(t)
-	j, _ := NewJira(Config{authToken: "somefakeauth"})
+	j := NewJira(Config{authToken: "somefakeauth"})
 	var tests = []struct {
 		HTTPRunner      fake.HTTPResult
 		TestDescription string
@@ -92,12 +93,49 @@ func TestGetWorkLogTotalTimeLogged(t *testing.T) {
 		g.Assert(result).Equal(test.ExpectedOutput)
 		g.Assert(err).Equal(test.ExpectedErr)
 	}
+}
+
+func TestValidateConfigs(t *testing.T) {
+	g := goblin.Goblin(t)
+	tests := []struct {
+		SetConfig       func()
+		ExpectedErr     error
+		TestDescription string
+	}{
+		{
+			SetConfig: func() {
+				os.Setenv("JIRA_AUTH_TOKEN", "faketoken")
+			},
+			ExpectedErr:     errors.New("missing required config: [INTEGRATION_NAME INTEGRATION_VERSION JIRA_URL METRICSET_NAME]"),
+			TestDescription: "should return error with missing fields",
+		},
+		{
+			SetConfig: func() {
+				os.Setenv("JIRA_AUTH_TOKEN", "faketoken")
+				os.Setenv("INTEGRATION_NAME", "fakename")
+				os.Setenv("INTEGRATION_VERSION", "fakeversion")
+				os.Setenv("JIRA_URL", "fakeurl")
+				os.Setenv("METRICSET_NAME", "fakemetricset")
+			},
+			TestDescription: "should not error all required fields are set",
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("validate configs", func() {
+			g.It(test.TestDescription, func() {
+				test.SetConfig()
+				_, err := validateConfig()
+				g.Assert(err).Equal(test.ExpectedErr)
+			})
+		})
+	}
 
 }
 
 func TestEmitMetrics(t *testing.T) {
 	g := goblin.Goblin(t)
-	conf := Config{authToken: "something"}
+	conf := Config{authToken: "something", metricSet: "JiraMetrics"}
 	tests := []struct {
 		HTTPRunner           fake.HTTPResult
 		TestDescription      string
@@ -255,14 +293,14 @@ func issuesData() []byte {
 					 ],
 					 "assignee":{
 						"self":"fakeself",
-						"name":"paas-success@gannett.com",
+						"name":"fake",
 						"key":"paas-success",
-						"emailAddress":"paas-success@gannett.com",
-						"displayName":"PaaS Success",
+						"emailAddress":"fake",
+						"displayName":"display",
 						"active":true,
 						"timeZone":"America/New_York"
 					 },
-					 "customfield_11500":"PAAS-9561",
+					 "customfield_11500":"display",
 					 "customfield_10400":[  
 						"com.atlassian.greenhopper.service.sprint.Sprint@3a896427[id=3772,rapidViewId=1779,state=ACTIVE,name=KoЯn,startDate=2017-11-08T14:00:42.550-06:00,endDate=2017-11-22T14:00:00.000-06:00,completeDate=<null>,sequence=3772]"
 					 ]
