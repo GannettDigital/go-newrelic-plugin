@@ -203,8 +203,7 @@ func Run(log *logrus.Logger) {
 		jiraURL:            os.Getenv("JIRA_URL"),
 		metricSet:          os.Getenv("NR_METRICSET_NAME"),
 	}
-	err := validateConfig(conf)
-	if err != nil {
+	if err := validateConfig(conf); err != nil {
 		log.Fatal(err)
 	}
 
