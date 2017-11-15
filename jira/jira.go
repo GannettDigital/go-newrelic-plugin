@@ -11,11 +11,12 @@ import (
 	"strings"
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
+
 	"github.com/Netflix-Skunkworks/go-jira/jiradata"
+	"github.com/Sirupsen/logrus"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/metric"
 	"github.com/newrelic/infra-integrations-sdk/sdk"
-	"github.com/Sirupsen/logrus"
 )
 
 type argumentList struct {
@@ -65,7 +66,6 @@ func validateConfig(config Config) error {
 }
 
 func processIssue(issue *jiradata.Issue, ms *metric.MetricSet) error {
-	fmt.Printf("%+v", issue)
 	if _, ok := issue.Fields["components"].([]interface{}); ok {
 		components := issue.Fields["components"].([]interface{})[0].(map[string]interface{})["name"].(string)
 		ms.SetMetric("components", components, metric.ATTRIBUTE)
