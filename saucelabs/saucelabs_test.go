@@ -9,7 +9,7 @@ import (
 
 	"github.com/franela/goblin"
 	"github.com/jarcoal/httpmock"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 var (

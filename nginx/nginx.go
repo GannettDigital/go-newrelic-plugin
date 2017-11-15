@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/GannettDigital/paas-api-utils/utilsHTTP"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 var runner utilsHTTP.HTTPRunner

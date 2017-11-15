@@ -6,7 +6,7 @@ import (
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
 	"github.com/franela/goblin"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 var rabbitMqFakeConfig RabbitmqConfig

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 const NAME string = "mongo"

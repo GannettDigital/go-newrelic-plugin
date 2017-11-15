@@ -8,7 +8,7 @@ import (
 
 	"github.com/GannettDigital/go-newrelic-plugin/redis/fake"
 	"github.com/franela/goblin"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 func TestOutputJSON(t *testing.T) {

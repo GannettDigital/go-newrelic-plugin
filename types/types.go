@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 // Opts - options passed to main binary

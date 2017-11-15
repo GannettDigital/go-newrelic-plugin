@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/franela/goblin"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 

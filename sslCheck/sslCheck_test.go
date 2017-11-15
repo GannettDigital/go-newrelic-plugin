@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/franela/goblin"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 func TestRun(t *testing.T) {

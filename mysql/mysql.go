@@ -8,7 +8,7 @@ import (
 
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 const NAME string = "mysql"

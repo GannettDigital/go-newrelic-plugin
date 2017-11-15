@@ -1,18 +1,15 @@
-
-ignored = ["github.com/newrelic/infra-integrations-sdk/log"]
-
 [[constraint]]
   name = "github.com/GannettDigital/goStateModule"
   source = "git@github.com:GannettDigital/goStateModule.git"
-  version = "3.0.1"
+  version = "2.0.0"
 
 [[constraint]]
   name = "github.com/GannettDigital/paas-api-utils"
   source = "git@github.com:GannettDigital/paas-api-utils.git"
-  version = "6.0.2"
+  version = "=2.0.0"
 
 [[constraint]]
-  name = "github.com/sirupsen/logrus"
+  name = "github.com/Sirupsen/logrus"
 
 [[constraint]]
   name = "github.com/bndr/gojenkins"
