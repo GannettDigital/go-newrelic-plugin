@@ -71,6 +71,8 @@ type CouchbaseBucketStats struct {
 			MemActuallUsed              []int64   `json:"mem_actual_used"`                 //bytes
 			Misses                      []float32 `json:"misses"`                          //misses
 			Ops                         []float32 `json:"ops"`                             //operations
+			VBActiveItmMemory           []float32 `json:"vb_active_itm_memory"`            //bytes
+			VBActiveMetaDataMemory      []float32 `json:"vb_active_meta_data_memory"`      //bytes
 			VBActiveNums                []float32 `json:"vb_active_num"`                   //items
 			VBActiveQueueDrain          []float32 `json:"vb_active_queue_drain"`           //items
 			VBActiveQueueSize           []float32 `json:"vb_active_queue_size"`            //items
@@ -80,6 +82,7 @@ type CouchbaseBucketStats struct {
 			VBPendingOpsCreate          []float32 `json:"vb_pending_ops_create"`           //operations
 			VBPendingQueueFill          []float32 `json:"vb_pending_queue_fill"`           //items
 			VBReplicaCurrItems          []float32 `json:"vb_replica_curr_items"`           //items
+			VBReplicaItmMemory          []float32 `json:"vb_replica_itm_memory"`           //bytes
 			VBReplicaMetaDataMemory     []float32 `json:"vb_replica_meta_data_memory"`     //bytes
 			VBReplicaResidentItemsRatio []float32 `json:"vb_replica_resident_items_ratio"` //itmes
 			VBReplicaNum                []float32 `json:"vb_replica_num"`                  //items
@@ -106,6 +109,7 @@ type CouchbaseBucketStats struct {
 			EPMaxSize                   []int64   `json:"ep_max_size"`                     //bytes
 			EPMemHighWater              []int64   `json:"ep_mem_high_wat"`                 //bytes
 			EPMemLowWater               []int64   `json:"ep_mem_low_wat"`                  //bytes
+			EPMetaDataMemory            []float32 `json:"ep_meta_data_memory"`             //bytes
 			EPNumNonResident            []float32 `json:"ep_num_non_resident"`             //Items
 			EPNumOpsGetMeta             []float32 `json:"ep_num_ops_get_meta"`             //operations
 			EPNumOpsSetMeta             []float32 `json:"ep_num_ops_set_meta"`             //operations
@@ -340,7 +344,8 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 		"couchbase.by_bucket.mem_used":                         avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemUsed),
 		"couchbase.by_bucket.mem_actual_used":                  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemActuallUsed),
 		"couchbase.by_bucket.misses":                           avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.Misses),
-		"couchbase.by_bucket.ops":                              avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.Ops),
+		"couchbase.by_bucket.vb_active_itm_memory":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveItmMemory),
+		"couchbase.by_bucket.vb_active_meta_data_memory":       avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveMetaDataMemory),
 		"couchbase.by_bucket.vb_active_num":                    avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveNums),
 		"couchbase.by_bucket.vb_active_queue_drain":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveQueueDrain),
 		"couchbase.by_bucket.vb_active_queue_size":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveQueueSize),
@@ -350,6 +355,7 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 		"couchbase.by_bucket.vb_pending_ops_create":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBPendingOpsCreate),
 		"couchbase.by_bucket.vb_pending_queue_fill":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBPendingQueueFill),
 		"couchbase.by_bucket.vb_replica_curr_items":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaCurrItems),
+		"couchbase.by_bucket.vb_replica_itm_memory":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaItmMemory),
 		"couchbase.by_bucket.vb_replica_meta_data_memory":      avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaMetaDataMemory),
 		"couchbase.by_bucket.vb_replica_num":                   avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaNum),
 		"couchbase.by_bucket.vb_replica_queue_size":            avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBReplicaQueueSize),
@@ -374,6 +380,7 @@ func formatBucketInfoEPStatsStructToMap(completeBucketInfo CompleteBucketInfo) (
 		"couchbase.by_bucket.ep_max_size":                     avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMaxSize),
 		"couchbase.by_bucket.ep_mem_high_wat":                 avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.EPMemHighWater),
 		"couchbase.by_bucket.ep_num_non_resident":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPNumNonResident),
+		"couchbase.by_bucket.ep_meta_data_memory":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPMetaDataMemory),
 		"couchbase.by_bucket.ep_num_value_ejects":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPNumValueEjects),
 		"couchbase.by_bucket.ep_num_ops_get_meta":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPNumOpsGetMeta),
 		"couchbase.by_bucket.ep_num_ops_set_meta":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.EPNumOpsSetMeta),
