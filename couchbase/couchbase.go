@@ -344,6 +344,7 @@ func formatBucketInfoStatsStructToMap(completeBucketInfo CompleteBucketInfo) (bu
 		"couchbase.by_bucket.mem_used":                         avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemUsed),
 		"couchbase.by_bucket.mem_actual_used":                  avgInt64Sample(completeBucketInfo.bucketStats.OP.Samples.MemActuallUsed),
 		"couchbase.by_bucket.misses":                           avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.Misses),
+		"couchbase.by_bucket.ops":                              avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.Ops),
 		"couchbase.by_bucket.vb_active_itm_memory":             avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveItmMemory),
 		"couchbase.by_bucket.vb_active_meta_data_memory":       avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveMetaDataMemory),
 		"couchbase.by_bucket.vb_active_num":                    avgFloat32Sample(completeBucketInfo.bucketStats.OP.Samples.VBActiveNums),
