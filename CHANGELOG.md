@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.3.2
+
+Greg Lane - added couchbase monitors for kv and metadata cached in active/replica memory
+
 # 1.3.1
 
 Matt Rose - Added test trends metrics for saucelabs metrics collector
