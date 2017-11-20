@@ -15,6 +15,7 @@ import (
 )
 
 var runner utilsHTTP.HTTPRunner
+var bucketList, remoteUUIDList, remoteStatEndpoints []string
 
 const EVENT_TYPE string = "DatastoreSample"
 const NAME string = "couchbase"
@@ -176,6 +177,15 @@ type CompleteBucketInfo struct {
 	bucketStats CouchbaseBucketStats
 }
 
+type CouchbaseRemoteReplicationStats struct {
+	SamplesCount int                `json:"samplesCount"`
+	IsPersistent bool               `json:"isPersistent"`
+	LastTStamp   int64              `json:"lastTStamp"`
+	Internal     int                `json:"interval"`
+	Timestamp    []int64            `json:"timestamp"`
+	NodeStats    map[string][]int64 `json:"nodeStats"`
+}
+
 // InventoryData is the data type for inventory data produced by a plugin data
 // source and emitted to the agent's inventory data store
 type InventoryData map[string]interface{}
@@ -236,6 +246,18 @@ func executeAndDecode(log *logrus.Logger, httpReq http.Request, record interface
 
 func init() {
 	runner = &utilsHTTP.HTTPRunnerImpl{}
+	bucketList = []string{}
+	remoteUUIDList = []string{}
+	remoteStatEndpoints = []string{
+		"changes_left",
+		"rate_replicated",
+		"docs_written",
+		"docs_checked",
+		"docs_rep_queue",
+		"num_checkpoints",
+		"num_failedckpts",
+		"bandwidth_usage",
+	}
 }
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
@@ -262,7 +284,8 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	couchClusterResponses, getCouchClusterStatsError := getCouchClusterStats(log, config)
 	couchBucketResponses, getCouchBucketStatsError := getCouchBucketsStats(log, config)
 	couchReplicationResponses, getCouchReplicationStatsError := getCouchReplicationStats(log, config)
-	for _, currentError := range []interface{}{getCouchClusterStatsError, getCouchBucketStatsError, getCouchReplicationStatsError} {
+	couchRemoteReplicationResponses, getCouchRemoteReplicationStatsError := getCouchRemoteReplicationStats(log, config)
+	for _, currentError := range []interface{}{getCouchClusterStatsError, getCouchBucketStatsError, getCouchReplicationStatsError, getCouchRemoteReplicationStatsError} {
 		if getCouchClusterStatsError != nil {
 			log.WithFields(logrus.Fields{
 				"err": currentError,
@@ -273,6 +296,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	data.Metrics = append(data.Metrics, couchClusterResponses...)
 	data.Metrics = append(data.Metrics, couchBucketResponses...)
 	data.Metrics = append(data.Metrics, couchReplicationResponses...)
+	data.Metrics = append(data.Metrics, couchRemoteReplicationResponses...)
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
@@ -437,6 +461,7 @@ func getCouchBucketsStats(log *logrus.Logger, couchConfig CouchbaseConfig) (allB
 	wg.Wait()
 	close(bucketStatsResponses)
 	for response := range bucketStatsResponses {
+		bucketList = append(bucketList, response.bucketInfo.Name)
 		allBucketStats = append(allBucketStats, formatBucketInfoStatsStructToMap(response))
 		allBucketStats = append(allBucketStats, formatBucketInfoEPStatsStructToMap(response))
 	}
@@ -619,6 +644,7 @@ func getCouchReplicationStats(log *logrus.Logger, config CouchbaseConfig) ([]Met
 
 	// add by node cluster metrics
 	for _, replication := range replicationStats {
+		remoteUUIDList = append(remoteUUIDList, replication.UUID)
 		returnMetrics = append(returnMetrics,
 			MetricData{
 				"event_type":                     "CouchbaseReplicationSample",
@@ -634,4 +660,78 @@ func getCouchReplicationStats(log *logrus.Logger, config CouchbaseConfig) ([]Met
 	}
 
 	return returnMetrics, nil
+}
+
+type remoteMeticChanResp struct {
+	Data MetricData
+	Err  error
+}
+
+func getCouchRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricData, error) {
+	returnMetrics := make([]MetricData, 0)
+	statsChan := make(chan remoteMeticChanResp)
+	wg := &sync.WaitGroup{}
+
+	for _, bucket := range bucketList {
+		for _, uuid := range remoteUUIDList {
+			for _, endpoint := range remoteStatEndpoints {
+				wg.Add(1)
+				go processRemoteReplicationStats(log, config, wg, statsChan, bucket, uuid, endpoint)
+			}
+		}
+	}
+
+	go func() {
+		wg.Wait()
+		close(statsChan)
+	}()
+
+	for stat := range statsChan {
+		if stat.Err == nil {
+			returnMetrics = append(returnMetrics, stat.Data)
+		}
+	}
+
+	return returnMetrics, nil
+}
+
+func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, wg *sync.WaitGroup, statsChan chan<- remoteMeticChanResp, bucket string, uuid string, endpoint string) {
+	defer wg.Done()
+	encoded := fmt.Sprintf("%%2F%s%%2F%s%%2F%s%%2f%s", uuid, bucket, bucket, endpoint)
+	uri := fmt.Sprintf("%s:%s/pools/default/buckets/%s/stats/replications%s", config.CouchbaseHost, config.CouchbasePort, bucket, encoded)
+	httpReq, err := http.NewRequest("GET", uri, bytes.NewBuffer([]byte("")))
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"uri":   uri,
+			"error": err,
+		}).Error("Encountered error creating http.NewRequest")
+		statsChan <- remoteMeticChanResp{
+			Data: MetricData{},
+			Err:  err,
+		}
+	}
+	httpReq.SetBasicAuth(config.CouchbaseUser, config.CouchbasePassword)
+
+	stat := CouchbaseRemoteReplicationStats{}
+	err = executeAndDecode(log, *httpReq, &stat)
+	if err != nil {
+		statsChan <- remoteMeticChanResp{
+			Data: MetricData{},
+			Err:  err,
+		}
+	}
+
+	statsChan <- remoteMeticChanResp{
+		Data: MetricData{
+			"event_type": "CouchbaseReplicationSample",
+			"provider":   PROVIDER,
+			fmt.Sprintf("couchbase.replication.%s.samplescount", endpoint): stat.SamplesCount,
+			fmt.Sprintf("couchbase.replication.%s.ispersistent", endpoint): stat.IsPersistent,
+			fmt.Sprintf("couchbase.replication.%s.lasttstamp", endpoint):   stat.LastTStamp,
+			fmt.Sprintf("couchbase.replication.%s.interval", endpoint):     stat.Internal,
+			fmt.Sprintf("couchbase.replication.%s.timestamp", endpoint):    stat.Timestamp,
+			fmt.Sprintf("couchbase.replication.%s.nodestats", endpoint):    stat.NodeStats,
+		},
+		Err: err,
+	}
 }

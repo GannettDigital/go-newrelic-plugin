@@ -4,11 +4,12 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"sync"
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/franela/goblin"
 	"github.com/Sirupsen/logrus"
+	"github.com/franela/goblin"
 )
 
 var couchbaseFakeConfig CouchbaseConfig
@@ -416,6 +417,200 @@ func TestFormatBucketInfoEPStatsStructToMap(t *testing.T) {
 				result := formatBucketInfoEPStatsStructToMap(test.TestData)
 				g.Assert(result["couchbase.by_bucket.name"] == test.ExpectedResult["couchbase.by_bucket.name"]).Equal(true)
 				g.Assert(result["couchbase.by_bucket.get_hits"] == test.ExpectedResult["couchbase.by_bucket.get_hits"]).Equal(true)
+			})
+		})
+	}
+}
+
+func TestGetCouchRemoteReplicationStats(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		TestDescription string
+		HTTPRunner      fake.HTTPResult
+		InputLog        *logrus.Logger
+		InputConfig     CouchbaseConfig
+		InputBuckets    []string
+		InputUUIDs      []string
+		InputEndpoints  []string
+		ExpectedData    []MetricData
+		ExpectedErr     error
+	}{
+		{
+			TestDescription: "Should successfully process a remote stats request",
+			HTTPRunner: fake.HTTPResult{
+				ResultsList: []fake.Result{
+					{
+						Method: "GET",
+						URI:    "/pools/default/buckets/deployments/stats/replications%2Fsomeuuid%2Fdeployments%2Fdeployments%2fsome_stats",
+						Code:   200,
+						Err:    nil,
+						Data:   []byte(`{"samplesCount": 60,"isPersistent": true,"lastTStamp": 1510956143435,"interval": 1000,"timestamp": [1510956085435],"nodeStats": {"10.84.87.226:8091": [0]}}`),
+					},
+					{
+						Method: "GET",
+						URI:    "/pools/default/buckets/stuff/stats/replications%2Fsomeuuid%2Fstuff%2Fstuff%2fsome_stats",
+						Code:   200,
+						Err:    nil,
+						Data:   []byte(`{"samplesCount": 60,"isPersistent": true,"lastTStamp": 1510956143435,"interval": 1000,"timestamp": [1510956085435],"nodeStats": {"10.84.87.226:8091": [0]}}`),
+					},
+				},
+			},
+			InputLog: logrus.New(),
+			InputConfig: CouchbaseConfig{
+				CouchbaseHost:     "http://derp.com",
+				CouchbasePort:     "8091",
+				CouchbaseUser:     "derp",
+				CouchbasePassword: "derp",
+			},
+			InputBuckets: []string{
+				"deployments",
+				"stuff",
+			},
+			InputUUIDs:     []string{"someuuid"},
+			InputEndpoints: []string{"some_stats"},
+			ExpectedData: []MetricData{
+				{
+					"event_type": "CouchbaseReplicationSample",
+					"provider":   "couchbase",
+					"couchbase.replication.some_stats.samplescount": 60,
+					"couchbase.replication.some_stats.ispersistent": true,
+					"couchbase.replication.some_stats.lasttstamp":   1510956143435,
+					"couchbase.replication.some_stats.interval":     1000,
+					"couchbase.replication.some_stats.timestamp":    []int64{1510956085435},
+					"couchbase.replication.some_stats.nodestats": map[string][]int64{
+						"10.84.87.226:8091": []int64{0},
+					},
+				},
+				{
+					"event_type": "CouchbaseReplicationSample",
+					"provider":   "couchbase",
+					"couchbase.replication.some_stats.samplescount": 60,
+					"couchbase.replication.some_stats.ispersistent": true,
+					"couchbase.replication.some_stats.lasttstamp":   1510956143435,
+					"couchbase.replication.some_stats.interval":     1000,
+					"couchbase.replication.some_stats.timestamp":    []int64{1510956085435},
+					"couchbase.replication.some_stats.nodestats": map[string][]int64{
+						"10.84.87.226:8091": []int64{0},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("getCouchRemoteReplicationStats()", func() {
+			g.It(test.TestDescription, func() {
+				runner = test.HTTPRunner
+				bucketList = test.InputBuckets
+				remoteUUIDList = test.InputUUIDs
+				remoteStatEndpoints = test.InputEndpoints
+				data, err := getCouchRemoteReplicationStats(test.InputLog, test.InputConfig)
+				g.Assert(len(data)).Equal(len(test.ExpectedData))
+				g.Assert(err).Equal(test.ExpectedErr)
+			})
+		})
+	}
+}
+
+func TestProcessRemoteReplicationStats(t *testing.T) {
+	g := goblin.Goblin(t)
+
+	var tests = []struct {
+		TestDescription string
+		HTTPRunner      fake.HTTPResult
+		InputLog        *logrus.Logger
+		InputConfig     CouchbaseConfig
+		InputBucket     string
+		InputUUID       string
+		InputEndpoint   string
+		ExpectedResults remoteMeticChanResp
+	}{
+		{
+			TestDescription: "Should successfully process a remote stats request",
+			HTTPRunner: fake.HTTPResult{
+				ResultsList: []fake.Result{
+					{
+						Method: "GET",
+						URI:    "/pools/default/buckets/deployments/stats/replications%2Fsomeuuid%2Fdeployments%2Fdeployments%2fsome_stats",
+						Code:   200,
+						Err:    nil,
+						Data:   []byte(`{"samplesCount": 60,"isPersistent": true,"lastTStamp": 1510956143435,"interval": 1000,"timestamp": [1510956085435],"nodeStats": {"10.84.87.226:8091": [0]}}`),
+					},
+				},
+			},
+			InputLog: logrus.New(),
+			InputConfig: CouchbaseConfig{
+				CouchbaseHost:     "http://derp.com",
+				CouchbasePort:     "8091",
+				CouchbaseUser:     "derp",
+				CouchbasePassword: "derp",
+			},
+			InputBucket:   "deployments",
+			InputUUID:     "someuuid",
+			InputEndpoint: "some_stats",
+			ExpectedResults: remoteMeticChanResp{
+				Data: MetricData{
+					"event_type": "CouchbaseReplicationSample",
+					"provider":   "couchbase",
+					"couchbase.replication.some_stats.samplescount": 60,
+					"couchbase.replication.some_stats.ispersistent": true,
+					"couchbase.replication.some_stats.lasttstamp":   1510956143435,
+					"couchbase.replication.some_stats.interval":     1000,
+					"couchbase.replication.some_stats.timestamp":    []int64{1510956085435},
+					"couchbase.replication.some_stats.nodestats": map[string][]int64{
+						"10.84.87.226:8091": []int64{0},
+					},
+				},
+				Err: nil,
+			},
+		},
+		{
+			TestDescription: "Should return an error when one is encountered calling the endpoint",
+			HTTPRunner: fake.HTTPResult{
+				ResultsList: []fake.Result{
+					{
+						Method: "GET",
+						URI:    "/pools/default/buckets/deployments/stats/replications%2Fsomeuuid%2Fdeployments%2Fdeployments%2fsome_stats",
+						Code:   500,
+						Err:    errors.New("some error"),
+						Data:   []byte(``),
+					},
+				},
+			},
+			InputLog: logrus.New(),
+			InputConfig: CouchbaseConfig{
+				CouchbaseHost:     "http://derp.com",
+				CouchbasePort:     "8091",
+				CouchbaseUser:     "derp",
+				CouchbasePassword: "derp",
+			},
+			InputBucket:   "deployments",
+			InputUUID:     "someuuid",
+			InputEndpoint: "some_stats",
+			ExpectedResults: remoteMeticChanResp{
+				Data: MetricData{},
+				Err:  errors.New("some error"),
+			},
+		},
+	}
+
+	for _, test := range tests {
+		g.Describe("processRemoteReplicationStats()", func() {
+			runner = test.HTTPRunner
+			g.It(test.TestDescription, func() {
+				wg := &sync.WaitGroup{}
+				inputChan := make(chan remoteMeticChanResp)
+				wg.Add(1)
+				go processRemoteReplicationStats(test.InputLog, test.InputConfig, wg, inputChan, test.InputBucket, test.InputUUID, test.InputEndpoint)
+				go func() {
+					wg.Wait()
+					close(inputChan)
+				}()
+
+				for data := range inputChan {
+					g.Assert(data.Err).Equal(test.ExpectedResults.Err)
+				}
 			})
 		})
 	}
