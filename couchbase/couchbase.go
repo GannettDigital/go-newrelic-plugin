@@ -15,9 +15,7 @@ import (
 )
 
 var runner utilsHTTP.HTTPRunner
-var bucketList []string
-var remoteUUIDList []string
-var remoteStatEndpoints []string
+var bucketList, remoteUUIDList, remoteStatEndpoints []string
 
 const EVENT_TYPE string = "DatastoreSample"
 const NAME string = "couchbase"
@@ -697,7 +695,7 @@ func getCouchRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig) 
 	return returnMetrics, nil
 }
 
-func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, wg *sync.WaitGroup, statsChan chan remoteMeticChanResp, bucket string, uuid string, endpoint string) {
+func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, wg *sync.WaitGroup, statsChan chan<- remoteMeticChanResp, bucket string, uuid string, endpoint string) {
 	defer wg.Done()
 	encoded := fmt.Sprintf("%%2F%s%%2F%s%%2F%s%%2f%s", uuid, bucket, bucket, endpoint)
 	uri := fmt.Sprintf("%s:%s/pools/default/buckets/%s/stats/replications%s", config.CouchbaseHost, config.CouchbasePort, bucket, encoded)
