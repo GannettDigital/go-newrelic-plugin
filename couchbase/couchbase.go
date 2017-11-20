@@ -183,7 +183,7 @@ type CouchbaseRemoteReplicationStats struct {
 	LastTStamp   int64              `json:"lastTStamp"`
 	Internal     int                `json:"interval"`
 	Timestamp    []int64            `json:"timestamp"`
-	NodStats     map[string][]int64 `json:"nodeStats"`
+	NodeStats    map[string][]int64 `json:"nodeStats"`
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -731,7 +731,7 @@ func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, w
 			fmt.Sprintf("couchbase.replication.%s.lasttstamp", endpoint):   stat.LastTStamp,
 			fmt.Sprintf("couchbase.replication.%s.interval", endpoint):     stat.Internal,
 			fmt.Sprintf("couchbase.replication.%s.timestamp", endpoint):    stat.Timestamp,
-			fmt.Sprintf("couchbase.replication.%s.nodestats", endpoint):    stat.NodStats,
+			fmt.Sprintf("couchbase.replication.%s.nodestats", endpoint):    stat.NodeStats,
 		},
 		Err: err,
 	}
