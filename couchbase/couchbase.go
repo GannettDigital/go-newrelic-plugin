@@ -715,7 +715,6 @@ func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, w
 	stat := CouchbaseRemoteReplicationStats{}
 	err = executeAndDecode(log, *httpReq, &stat)
 	if err != nil {
-		fmt.Println("would error")
 		statsChan <- remoteMeticChanResp{
 			Data: MetricData{},
 			Err:  err,
