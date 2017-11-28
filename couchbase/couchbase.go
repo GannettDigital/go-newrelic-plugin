@@ -582,7 +582,7 @@ func getCouchClusterStats(log *logrus.Logger, config CouchbaseConfig) ([]MetricD
 		for _, node := range couchbaseIndexes {
 			returnMetrics = append(returnMetrics,
 				MetricData{
-					"event_type":                  "CouchbaseIndexSample",
+					"event_type":                  EVENT_TYPE,
 					"provider":                    PROVIDER,
 					"couchbase.scalr.clustername": os.Getenv("CB_CLUSTER_NAME"),
 					"couchbase.index.id":          node.ID,
@@ -647,7 +647,7 @@ func getCouchReplicationStats(log *logrus.Logger, config CouchbaseConfig) ([]Met
 		remoteUUIDList = append(remoteUUIDList, replication.UUID)
 		returnMetrics = append(returnMetrics,
 			MetricData{
-				"event_type":                     "CouchbaseReplicationSample",
+				"event_type":                     EVENT_TYPE,
 				"provider":                       PROVIDER,
 				"couchbase.replication.hostname": replication.Hostname,
 				"couchbase.replication.name":     replication.Name,
@@ -723,7 +723,7 @@ func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, w
 
 	statsChan <- remoteMeticChanResp{
 		Data: MetricData{
-			"event_type": "CouchbaseReplicationSample",
+			"event_type": EVENT_TYPE,
 			"provider":   PROVIDER,
 			fmt.Sprintf("couchbase.replication.%s.samplescount", endpoint): stat.SamplesCount,
 			fmt.Sprintf("couchbase.replication.%s.ispersistent", endpoint): stat.IsPersistent,

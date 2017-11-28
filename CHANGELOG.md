@@ -3,6 +3,10 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.5.0
+
+Greg Lane - move all metrics to the same EVENT_TYPE
+
 # 1.4.0
 
 Tom Barber - add additional replication stats endpoints to couchbase collector
