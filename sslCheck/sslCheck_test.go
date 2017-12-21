@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/franela/goblin"
 	"github.com/Sirupsen/logrus"
+	"github.com/franela/goblin"
 )
 
 func TestRun(t *testing.T) {
@@ -42,8 +42,6 @@ func TestRun(t *testing.T) {
 }
 
 func TestCheckHost(t *testing.T) {
-	g := goblin.Goblin(t)
-
 	var tests = []struct {
 		description         string
 		validForDays        int
@@ -53,112 +51,121 @@ func TestCheckHost(t *testing.T) {
 		shouldReturnCertErr bool
 		expectedCertErr     certError
 	}{
-	// test do not pass consistantly on jenkins
-	/*{
-		description:         "When cert is valid for 5",
-		validForDays:        5,
-		listenPort:          ":9443",
-		host:                "127.0.0.1:9443",
-		hostHasError:        false,
-		shouldReturnCertErr: true,
-		expectedCertErr: certError{
-			ExpiresInFiveDaysOrLess:    true,
-			ExpiresInFifteenDaysOrLess: true,
-			ExpiresInThirtyDaysOrLess:  true,
-			ExpiresInSixtyDaysOrLess:   true,
+		{
+			description:         "When cert is valid for 5",
+			validForDays:        5,
+			listenPort:          ":9443",
+			host:                "127.0.0.1:9443",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    true,
+				ExpiresInFifteenDaysOrLess: true,
+				ExpiresInThirtyDaysOrLess:  true,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
 		},
-	},
-	{
-		description:         "When cert is valid for 15",
-		validForDays:        15,
-		listenPort:          ":9444",
-		host:                "127.0.0.1:9444",
-		hostHasError:        false,
-		shouldReturnCertErr: true,
-		expectedCertErr: certError{
-			ExpiresInFiveDaysOrLess:    false,
-			ExpiresInFifteenDaysOrLess: true,
-			ExpiresInThirtyDaysOrLess:  true,
-			ExpiresInSixtyDaysOrLess:   true,
+		{
+			description:         "When cert is valid for 15",
+			validForDays:        15,
+			listenPort:          ":9444",
+			host:                "127.0.0.1:9444",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    false,
+				ExpiresInFifteenDaysOrLess: true,
+				ExpiresInThirtyDaysOrLess:  true,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
 		},
-	},
-	{
-		description:         "When cert is valid for 30",
-		validForDays:        30,
-		listenPort:          ":9445",
-		host:                "127.0.0.1:9445",
-		hostHasError:        false,
-		shouldReturnCertErr: true,
-		expectedCertErr: certError{
-			ExpiresInFiveDaysOrLess:    false,
-			ExpiresInFifteenDaysOrLess: false,
-			ExpiresInThirtyDaysOrLess:  true,
-			ExpiresInSixtyDaysOrLess:   true,
+		{
+			description:         "When cert is valid for 30",
+			validForDays:        30,
+			listenPort:          ":9445",
+			host:                "127.0.0.1:9445",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    false,
+				ExpiresInFifteenDaysOrLess: false,
+				ExpiresInThirtyDaysOrLess:  true,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
 		},
-	},
-	{
-		description:         "When cert is valid for 60",
-		validForDays:        60,
-		listenPort:          ":9446",
-		host:                "127.0.0.1:9446",
-		hostHasError:        false,
-		shouldReturnCertErr: true,
-		expectedCertErr: certError{
-			ExpiresInFiveDaysOrLess:    false,
-			ExpiresInFifteenDaysOrLess: false,
-			ExpiresInThirtyDaysOrLess:  false,
-			ExpiresInSixtyDaysOrLess:   true,
+		{
+			description:         "When cert is valid for 60",
+			validForDays:        60,
+			listenPort:          ":9446",
+			host:                "127.0.0.1:9446",
+			hostHasError:        false,
+			shouldReturnCertErr: true,
+			expectedCertErr: certError{
+				ExpiresInFiveDaysOrLess:    false,
+				ExpiresInFifteenDaysOrLess: false,
+				ExpiresInThirtyDaysOrLess:  false,
+				ExpiresInSixtyDaysOrLess:   true,
+			},
 		},
-	},
-	{
-		description:         "When cert is valid for 120",
-		validForDays:        120,
-		listenPort:          ":9447",
-		host:                "127.0.0.1:9447",
-		hostHasError:        false,
-		shouldReturnCertErr: false,
-	},
-	{
-		description:         "When cert is not valid",
-		validForDays:        0,
-		listenPort:          ":9448",
-		host:                "127.0.0.1:9448",
-		hostHasError:        true,
-		shouldReturnCertErr: false,
-	},*/
+		{
+			description:         "When cert is valid for 120",
+			validForDays:        120,
+			listenPort:          ":9447",
+			host:                "127.0.0.1:9447",
+			hostHasError:        false,
+			shouldReturnCertErr: false,
+		},
+		{
+			description:         "When cert is not valid",
+			validForDays:        0,
+			listenPort:          ":9448",
+			host:                "127.0.0.1:9448",
+			hostHasError:        true,
+			shouldReturnCertErr: false,
+		},
 	}
 
 	for _, test := range tests {
-		g.Describe("ProcessHosts()", func() {
-			serverCrt, CAPem := GenerateCertBundle(test.validForDays)
-			g.Before(func() {
-				go func() {
-					config := &tls.Config{Certificates: []tls.Certificate{serverCrt}}
-					ln, err := tls.Listen("tcp", test.listenPort, config)
-					if err != nil {
-						fmt.Printf("Error listening on port  %v err: %v", test.listenPort, err)
-					}
-					conn, err := ln.Accept()
-					if err != nil {
-						fmt.Printf("Error Accepting Conn %v", err)
-					}
-					conn.Write([]byte("test\n"))
-					conn.Close()
-					ln.Close()
-				}()
-			})
-			g.It(test.description, func() {
-				result := checkHost(test.host, CAPem)
-				fmt.Printf("result %s", result)
-				g.Assert(result.Err != nil).Equal(test.hostHasError)
-				if test.shouldReturnCertErr {
-					g.Assert(result.CertErrors[0].ExpiresInFifteenDaysOrLess).Equal(test.expectedCertErr.ExpiresInFifteenDaysOrLess)
-					g.Assert(result.CertErrors[0].ExpiresInFiveDaysOrLess).Equal(test.expectedCertErr.ExpiresInFiveDaysOrLess)
-					g.Assert(result.CertErrors[0].ExpiresInSixtyDaysOrLess).Equal(test.expectedCertErr.ExpiresInSixtyDaysOrLess)
-					g.Assert(result.CertErrors[0].ExpiresInThirtyDaysOrLess).Equal(test.expectedCertErr.ExpiresInThirtyDaysOrLess)
-				}
-			})
-		})
+		serverCrt, CAPem := GenerateCertBundle(test.validForDays)
+
+		nearlyReady := make(chan bool,1 )
+		go func(ready chan<- bool) {
+			config := &tls.Config{Certificates: []tls.Certificate{serverCrt}}
+			ln, err := tls.Listen("tcp", test.listenPort, config)
+			if err != nil {
+				fmt.Printf("Error listening on port  %v err: %v", test.listenPort, err)
+			}
+			ready <- true
+			conn, err := ln.Accept()
+			if err != nil {
+				fmt.Printf("Error Accepting Conn %v", err)
+			}
+			conn.Write([]byte("test\n"))
+			conn.Close()
+			ln.Close()
+		}(nearlyReady)
+
+		<- nearlyReady
+		time.Sleep(10*time.Millisecond) // a brief wait for listening to start accepting
+		result := checkHost(test.host, CAPem)
+
+		if (result.Err != nil) != test.hostHasError {
+			t.Errorf("Test %q - got error %v, hostHasError = %t", test.description, result.Err, test.hostHasError)
+		}
+		if test.shouldReturnCertErr {
+			certErr := result.CertErrors[0]
+			want := test.expectedCertErr
+			switch {
+			case certErr.ExpiresInFifteenDaysOrLess != want.ExpiresInFifteenDaysOrLess:
+				t.Errorf("Test %q - got ExpiresInFifteenDaysOrLess %t, want %t", test.description, certErr.ExpiresInFifteenDaysOrLess, want.ExpiresInFifteenDaysOrLess)
+			case certErr.ExpiresInFiveDaysOrLess != want.ExpiresInFiveDaysOrLess:
+				t.Errorf("Test %q - got ExpiresInFiveDaysOrLess %t, want %t", test.description, certErr.ExpiresInFiveDaysOrLess, want.ExpiresInFiveDaysOrLess)
+			case certErr.ExpiresInSixtyDaysOrLess != want.ExpiresInSixtyDaysOrLess:
+				t.Errorf("Test %q - got ExpiresInSixtyDaysOrLess %t, want %t", test.description, certErr.ExpiresInSixtyDaysOrLess, want.ExpiresInSixtyDaysOrLess)
+			case certErr.ExpiresInThirtyDaysOrLess != want.ExpiresInThirtyDaysOrLess:
+				t.Errorf("Test %q - got ExpiresInThirtyDaysOrLess %t, want %t", test.description, certErr.ExpiresInThirtyDaysOrLess, want.ExpiresInThirtyDaysOrLess)
+			}
+		}
 	}
 }
 
