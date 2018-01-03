@@ -3,6 +3,9 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.5.3
+Bridget Lane - Add badges to README
+
 # 1.5.2
 Tim Kuhlman - Fix ssl check unit tests so that they run reliably on different speed machines.
 

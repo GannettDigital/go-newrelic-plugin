@@ -1,5 +1,7 @@
 # go-newrelic-plugin
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/GannettDigital/go-newrelic-plugin)](https://goreportcard.com/report/github.com/GannettDigital/go-newrelic-plugin) [![codecov](https://codecov.io/gh/GannettDigital/go-newrelic-plugin/branch/master/graph/badge.svg)](https://codecov.io/gh/GannettDigital/go-newrelic-plugin)
+
 This repository holds the go-newrelic-plugin which combines collectors into one binary and makes them available to the newrelic-infra agent.
 
 ## How it Works
