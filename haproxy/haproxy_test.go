@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/franela/goblin"
 	"github.com/Sirupsen/logrus"
+	"github.com/franela/goblin"
 )
 
 var fakeConfig Config
@@ -19,8 +19,9 @@ func init() {
 	}
 }
 
-func TestinitStats(t *testing.T) {
+func TestGetHaproxyStatus(t *testing.T) {
 	g := goblin.Goblin(t)
+	myLog := logrus.New()
 
 	var tests = []struct {
 		HTTPRunner      fake.HTTPResult
@@ -41,8 +42,8 @@ func TestinitStats(t *testing.T) {
 						unsecure,member:6:10.84.77.169,0,0,0,21,15000,196034,199530547,1227329342,,0,,0,0,0,0,UP,1,1,0,0,0,49093,0,,1,4,1,,196034,,2,4,,18,L7OK,200,5,0,38535,146150,10858,491,0,0,,,,1,0,,,,,0,OK,,0,2,137,816,
 						unsecure,member:1:10.84.76.79,0,0,1,49,15000,196034,199553986,1227228046,,0,,0,0,0,0,UP,1,1,0,0,0,49093,0,,1,4,2,,196034,,2,4,,18,L7OK,200,4,0,38420,146278,10885,450,0,0,,,,2,0,,,,,0,OK,,0,2,161,796,
 						unsecure,member:2:10.84.77.84,0,0,0,33,15000,196033,200057431,1232542076,,0,,0,1,0,0,UP,1,1,0,0,0,49093,0,,1,4,3,,196033,,2,3,,18,L7OK,200,43,0,38918,146002,10625,485,0,0,,,,2,0,,,,,0,OK,,0,2,158,643,
-						unsecure,member:7:10.84.79.195,0,0,0,20,15000,196033,199664306,1233955111,,0,,0,0,0,0,UP,1,1,0,0,0,49093,0,,1,4,4,,196033,,2,4,,18,L7OK,200,4,0,38931,145677,10964,460,0,0,,,,3,0,,,,,0,OK,,0,2,141,694,
-						unsecure,member:3:10.84.79.74,0,0,0,38,15000,196033,200351241,1229683585,,0,,0,1,0,0,UP,1,1,0,0,0,49093,0,,1,4,5,,196033,,2,4,,18,L7OK,200,7,0,38881,145674,11000,477,0,0,,,,2,0,,,,,0,OK,,0,2,196,844,
+						unsecure,member:3:10.84.103.48,0,0,0,0,15000,0,0,0,,0,,0,0,0,0,DOWN,1,1,0,4,1,216,216,,1,4,2,,0,,2,0,,0,L4CON,,0,0,0,0,0,0,0,0,,,,0,0,,,,,-1,Connection error during SSL handshake (Connection refused),,0,0,0,0,
+						unsecure,member:4:10.84.79.74,0,0,0,38,15000,196033,200351241,1229683585,,0,,0,1,0,0,UP,1,1,0,0,0,49093,0,,1,4,5,,196033,,2,4,,18,L7OK,200,7,0,38881,145674,11000,477,0,0,,,,2,0,,,,,0,OK,,0,2,196,844,
 						unsecure,BACKEND,0,0,1,95,5000,980167,999157511,6150738160,0,0,,0,2,0,0,UP,5,5,0,,0,49093,0,,1,4,0,,980167,,1,20,,90,,,,0,193685,729781,54332,2365,0,,,,,10,0,0,0,0,0,0,,,0,2,169,837,`),
 					},
 				},
@@ -52,12 +53,21 @@ func TestinitStats(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		g.Describe("initStats()", func() {
+		g.Describe("GetHaproxyStatus()", func() {
 			g.It(test.TestDescription, func() {
 				runner = &test.HTTPRunner
-				result, err := initStats(logrus.New(), fakeConfig)
+				result, err := getHaproxyStatus(logrus.New(), fakeConfig)
 				g.Assert(reflect.DeepEqual(err, nil)).Equal(true)
-				g.Assert(reflect.DeepEqual(result, string(test.HTTPRunner.ResultsList[0].Data))).Equal(true)
+				g.Assert(len(result)).Equal(7)
+				for _, record := range result {
+					if record["haproxy.type"] == "frontend" {
+						g.Assert(reflect.DeepEqual(record["haproxy.frontend.name"], nil)).Equal(false)
+					}
+					if record["haproxy.type"] == "backend" {
+						g.Assert(reflect.DeepEqual(record["haproxy.frontend.name"], nil)).Equal(false)
+					}
+					myLog.Errorf("%s, %s, %s", record["haproxy.type"], record["haproxy.frontend.name"], record["haproxy.backend.name"])
+				}
 			})
 		})
 	}
