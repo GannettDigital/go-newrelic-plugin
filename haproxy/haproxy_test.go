@@ -21,8 +21,6 @@ func init() {
 
 func TestGetHaproxyStatus(t *testing.T) {
 	g := goblin.Goblin(t)
-	myLog := logrus.New()
-
 	var tests = []struct {
 		HTTPRunner      fake.HTTPResult
 		TestDescription string
@@ -64,9 +62,11 @@ func TestGetHaproxyStatus(t *testing.T) {
 						g.Assert(reflect.DeepEqual(record["haproxy.frontend.name"], nil)).Equal(false)
 					}
 					if record["haproxy.type"] == "backend" {
-						g.Assert(reflect.DeepEqual(record["haproxy.frontend.name"], nil)).Equal(false)
+						g.Assert(reflect.DeepEqual(record["haproxy.backend.name"], nil)).Equal(false)
 					}
-					myLog.Errorf("%s, %s, %s", record["haproxy.type"], record["haproxy.frontend.name"], record["haproxy.backend.name"])
+					if record["haproxy.type"] == "backend-member" {
+						g.Assert(reflect.DeepEqual(record["haproxy.backend.member.name"], nil)).Equal(false)
+					}
 				}
 			})
 		})
