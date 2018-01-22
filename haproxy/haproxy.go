@@ -126,12 +126,13 @@ func getHaproxyStatus(log *logrus.Logger, haproxyConf Config) ([]MetricData, err
 		return nil, err
 	}
 	Stats := make([]MetricData, 0)
-	for _, record := range InitialStats {
-		if record[0] != "stats" && record[1] == "FRONTEND" {
+	for _, record := range InitialStats[1:] {
+		if strings.TrimSpace(record[0]) != "stats" && record[1] == "FRONTEND" {
 			Stats = append(Stats, MetricData{
 				"event_type":                        EVENT_TYPE,
 				"provider":                          PROVIDER,
 				"haproxy.type":                      "frontend",
+				"haproxy.frontend.name":             strings.TrimSpace(record[0]),
 				"haproxy.frontend.session.current":  toInt(log, record[4]),
 				"haproxy.frontend.session.max":      toInt(log, record[5]),
 				"haproxy.frontend.session.limit":    toInt(log, record[6]),
@@ -150,11 +151,13 @@ func getHaproxyStatus(log *logrus.Logger, haproxyConf Config) ([]MetricData, err
 				"haproxy.frontend.response.other":   toInt(log, record[44]),
 				"haproxy.frontend.requests.rate":    toInt(log, record[46]),
 			})
-		} else if record[0] != "stats" && record[1] == "BACKEND" {
+			continue
+		} else if strings.TrimSpace(record[0]) != "stats" && record[1] == "BACKEND" {
 			Stats = append(Stats, MetricData{
 				"event_type":                          EVENT_TYPE,
 				"provider":                            PROVIDER,
 				"haproxy.type":                        "backend",
+				"haproxy.backend.name":                strings.TrimSpace(record[0]),
 				"haproxy.backend.queue.current":       toInt(log, record[2]),
 				"haproxy.backend.queue.max":           toInt(log, record[3]),
 				"haproxy.backend.session.current":     toInt(log, record[4]),
@@ -176,6 +179,42 @@ func getHaproxyStatus(log *logrus.Logger, haproxyConf Config) ([]MetricData, err
 				"haproxy.backend.response.4xx":        toInt(log, record[42]),
 				"haproxy.backend.response.5xx":        toInt(log, record[43]),
 				"haproxy.backend.response.other":      toInt(log, record[44]),
+				"haproxy.backend.queue.time":          toInt(log, record[58]),
+				"haproxy.backend.connect.time":        toInt(log, record[59]),
+				"haproxy.backend.response.time":       toInt(log, record[60]),
+				"haproxy.backend.session.time":        toInt(log, record[61]),
+			})
+			continue
+		} else if strings.TrimSpace(record[0]) != "stats" && record[1] != "BACKEND" && record[1] != "FRONTEND" {
+			Stats = append(Stats, MetricData{
+				"event_type":                          EVENT_TYPE,
+				"provider":                            PROVIDER,
+				"haproxy.type":                        "backend-member",
+				"haproxy.backend.name":                strings.TrimSpace(record[0]),
+				"haproxy.backend.member.name":         record[1],
+				"haproxy.backend.queue.current":       toInt(log, record[2]),
+				"haproxy.backend.queue.max":           toInt(log, record[3]),
+				"haproxy.backend.session.current":     toInt(log, record[4]),
+				"haproxy.backend.session.max":         toInt(log, record[5]),
+				"haproxy.backend.session.limit":       toInt(log, record[6]),
+				"haproxy.backend.session.total":       toInt(log, record[7]),
+				"haproxy.backend.bytes.in_rate":       toInt64(log, record[8]),
+				"haproxy.backend.bytes.out_rate":      toInt64(log, record[9]),
+				"haproxy.backend.denied.req_rate":     toInt(log, record[10]),
+				"haproxy.backend.denied.resp_rate":    toInt(log, record[11]),
+				"haproxy.backend.errors.con_rate":     toInt(log, record[13]),
+				"haproxy.backend.errors.resp_rate":    toInt(log, record[14]),
+				"haproxy.backend.warnings.retr_rate":  toInt(log, record[15]),
+				"haproxy.backend.warnings.redis_rate": toInt(log, record[16]),
+				"haproxy.backend.status":              record[17],
+				"haproxy.backend.session.rate":        toInt(log, record[33]),
+				"haproxy.backend.response.1xx":        toInt(log, record[39]),
+				"haproxy.backend.response.2xx":        toInt(log, record[40]),
+				"haproxy.backend.response.3xx":        toInt(log, record[41]),
+				"haproxy.backend.response.4xx":        toInt(log, record[42]),
+				"haproxy.backend.response.5xx":        toInt(log, record[43]),
+				"haproxy.backend.response.other":      toInt(log, record[44]),
+				"haproxy.backend.last_check":          record[56],
 				"haproxy.backend.queue.time":          toInt(log, record[58]),
 				"haproxy.backend.connect.time":        toInt(log, record[59]),
 				"haproxy.backend.response.time":       toInt(log, record[60]),
