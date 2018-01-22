@@ -721,6 +721,11 @@ func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, w
 		}
 	}
 
+	nodeStatValue := 0
+	for server := range stat.NodeStats {
+		nodeStatValue += int(server[len(server)-1])
+	}
+
 	statsChan <- remoteMeticChanResp{
 		Data: MetricData{
 			"event_type": EVENT_TYPE,
@@ -730,7 +735,7 @@ func processRemoteReplicationStats(log *logrus.Logger, config CouchbaseConfig, w
 			fmt.Sprintf("couchbase.replication.%s.lasttstamp", endpoint):   stat.LastTStamp,
 			fmt.Sprintf("couchbase.replication.%s.interval", endpoint):     stat.Internal,
 			fmt.Sprintf("couchbase.replication.%s.timestamp", endpoint):    stat.Timestamp,
-			fmt.Sprintf("couchbase.replication.%s.nodestats", endpoint):    stat.NodeStats,
+			fmt.Sprintf("couchbase.replication.%s.nodestats", endpoint):    nodeStatValue,
 		},
 		Err: err,
 	}

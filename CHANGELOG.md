@@ -3,6 +3,9 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.6.1
+Kris Vincent - Adjust NodeStats logging to be a summed value (PAAS-10767)
+
 # 1.6.0
 Michael Dunton - Improving haproxy plugin
 
