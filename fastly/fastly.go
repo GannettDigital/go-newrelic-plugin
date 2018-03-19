@@ -152,6 +152,7 @@ func convertToNrMetric(stats FastlyStats, dataCenter string, config Config, log 
 		"fastly.status.302":       stats.Status302,
 		"fastly.status.304":       stats.Status304,
 		"fastly.hits":             stats.Hits,
+		"fastly.miss":             stats.Miss,
 		"fastly.pass":             stats.Pass,
 		"fastly.synth":            stats.Synth,
 		"fastly.errors":           stats.Errors,
