@@ -174,7 +174,7 @@ func fatalIfErr(log *logrus.Logger, err error) {
 }
 
 func getFastlyStats(log *logrus.Logger, config Config) FastlyRealTimeDataV1 {
-	fastlyStats := fmt.Sprintf("%vchannel/%v/ts/0", FastlyStatsEndpoint, config.ServiceID)
+	fastlyStats := fmt.Sprintf("%vchannel/%v/ts/h", FastlyStatsEndpoint, config.ServiceID)
 	httpReq, err := http.NewRequest("GET", fastlyStats, bytes.NewBuffer([]byte("")))
 	httpReq.Header.Set("Fastly-Key", config.FastlyAPIKey)
 	httpReq.Header.Set("Content-Type", "application/json")
