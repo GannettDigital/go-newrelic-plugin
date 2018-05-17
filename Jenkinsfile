@@ -30,7 +30,6 @@ node {
         --x-kubernetes-api-user=\"not used\" \
         --x-kubernetes-api-token=\"not used\" \
         --slack-webhook=\"${SLACK_URL}\" \
-        --branch=\"${env.BRANCH_NAME}\" \
         --artifactory-key=\"${PASS_API_ART_KEY}\" \
         --aws-access-key-id=\"${CONFIGS_ACCESS_KEY}\" \
         --aws-secret-access-key=\"${CONFIGS_SECRET_KEY}\" \
