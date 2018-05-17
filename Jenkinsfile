@@ -11,6 +11,7 @@ node {
     string(credentialsId: "CONFIGS_ACCESS_KEY", variable: "CONFIGS_ACCESS_KEY"),
     string(credentialsId: "CONFIGS_SECRET_KEY", variable: "CONFIGS_SECRET_KEY"),
     string(credentialsId: "CODECOV_GO_NEWRELIC_PLUGIN", variable: "CODECOV_GO_NEWRELIC_PLUGIN"),
+    string(credentialsId: "PAAS_API_CI_VAULT_TOKEN", variable: "PAAS_API_CI_VAULT_TOKEN")
   ]) {
     try {
 
@@ -18,11 +19,13 @@ node {
       def repo = "GannettDigital/go-newrelic-plugin"
       def environment = "staging"
       def region = "us-east-1"
+      def vaultURL = "https://vault.service.us-east-1.gciconsul.com:8200"
+      def vaultConfig = "/secret/paas-api/paas-api-ci"
 
       print 'Running docker run'
 
 
-      sh "docker run -e \"GIT_BRANCH=${env.BRANCH_NAME}\" --rm -v ~/.docker/config.json:/root/.docker/config.json -v /var/run/docker.sock:/var/run/docker.sock paas-docker-artifactory.gannettdigital.com/paas-api-ci:${paasApiCiVersion} build \
+      sh "docker run -e \"GIT_BRANCH=${env.BRANCH_NAME}\" -e \"VAULT_ADDR=${vaultURL}\" -e \"VAULT_CONFIG_LOCATION=${vaultConfig}\" -e \"VAULT_TOKEN=${PAAS_API_CI_VAULT_TOKEN}\" --rm -v ~/.docker/config.json:/root/.docker/config.json -v /var/run/docker.sock:/var/run/docker.sock paas-docker-artifactory.gannettdigital.com/paas-api-ci:${paasApiCiVersion} build \
         --repo=\"${repo}\" \
         --x-api-key=\"${X_API_KEY}\" \
         --x-scalr-access-key=\"${SCALR_KEY}\" \
