@@ -10,6 +10,7 @@ node {
     string(credentialsId: "PASS_API_ART_KEY", variable: "PASS_API_ART_KEY"),
     string(credentialsId: "CONFIGS_ACCESS_KEY", variable: "CONFIGS_ACCESS_KEY"),
     string(credentialsId: "CONFIGS_SECRET_KEY", variable: "CONFIGS_SECRET_KEY"),
+    string(credentialsId: "NEWRELIC_LICENSE_KEY", variable: "NEWRELIC_LICENSE_KEY"),
     string(credentialsId: "CODECOV_GO_NEWRELIC_PLUGIN", variable: "CODECOV_GO_NEWRELIC_PLUGIN"),
     string(credentialsId: "PAAS_API_CI_VAULT_TOKEN", variable: "PAAS_API_CI_VAULT_TOKEN")
   ]) {
@@ -41,6 +42,7 @@ node {
         --skip-swagger \
         --skip-source-check \
         --skip-validate \
+        --newrelic-license=\"${NEWRELIC_LICENSE_KEY}\" \
         --codecov-token=\"${CODECOV_GO_NEWRELIC_PLUGIN}\""
     }
     catch (err) {
