@@ -14,7 +14,7 @@ node {
   ]) {
     try {
 
-      def paasApiCiVersion = "3.32.1-113"
+      def paasApiCiVersion = "5.9.4-169"
       def repo = "GannettDigital/go-newrelic-plugin"
       def environment = "staging"
       def region = "us-east-1"
