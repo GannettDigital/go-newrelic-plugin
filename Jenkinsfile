@@ -31,8 +31,6 @@ node {
         --x-kubernetes-api-token=\"not used\" \
         --slack-webhook=\"${SLACK_URL}\" \
         --artifactory-key=\"${PASS_API_ART_KEY}\" \
-        --aws-access-key-id=\"${CONFIGS_ACCESS_KEY}\" \
-        --aws-secret-access-key=\"${CONFIGS_SECRET_KEY}\" \
         --environment=\"${environment}\" \
         --region=\"${region}\" \
         --ci-job-number=${env.BUILD_ID} \
