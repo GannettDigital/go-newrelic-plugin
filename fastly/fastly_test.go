@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	fake "github.com/GannettDigital/paas-api-utils/utilsHTTP/fake"
-	"github.com/franela/goblin"
 	"github.com/Sirupsen/logrus"
+	"github.com/franela/goblin"
 )
 
 var fakeConfig Config
@@ -56,7 +56,7 @@ func TestGetFastlyStats(t *testing.T) {
 				ResultsList: []fake.Result{
 					{
 						Method: "GET",
-						URI:    "/v1/channel/1234/ts/0",
+						URI:    "/v1/channel/1234/ts/h",
 						Code:   200,
 						Data: []byte(`
 							{

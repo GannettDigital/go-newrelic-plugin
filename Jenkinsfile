@@ -10,19 +10,23 @@ node {
     string(credentialsId: "PASS_API_ART_KEY", variable: "PASS_API_ART_KEY"),
     string(credentialsId: "CONFIGS_ACCESS_KEY", variable: "CONFIGS_ACCESS_KEY"),
     string(credentialsId: "CONFIGS_SECRET_KEY", variable: "CONFIGS_SECRET_KEY"),
+    string(credentialsId: "NEWRELIC_LICENSE_KEY", variable: "NEWRELIC_LICENSE_KEY"),
     string(credentialsId: "CODECOV_GO_NEWRELIC_PLUGIN", variable: "CODECOV_GO_NEWRELIC_PLUGIN"),
+    string(credentialsId: "PAAS_API_CI_VAULT_TOKEN", variable: "PAAS_API_CI_VAULT_TOKEN")
   ]) {
     try {
 
-      def paasApiCiVersion = "3.32.1-113"
+      def paasApiCiVersion = "5.9.4-169"
       def repo = "GannettDigital/go-newrelic-plugin"
       def environment = "staging"
       def region = "us-east-1"
+      def vaultURL = "https://vault.service.us-east-1.gciconsul.com:8200"
+      def vaultConfig = "/secret/paas-api/paas-api-ci"
 
       print 'Running docker run'
 
 
-      sh "docker run -e \"GIT_BRANCH=${env.BRANCH_NAME}\" --rm -v ~/.docker/config.json:/root/.docker/config.json -v /var/run/docker.sock:/var/run/docker.sock paas-docker-artifactory.gannettdigital.com/paas-api-ci:${paasApiCiVersion} build \
+      sh "docker run -e \"GIT_BRANCH=${env.BRANCH_NAME}\" -e \"VAULT_ADDR=${vaultURL}\" -e \"VAULT_CONFIG_LOCATION=${vaultConfig}\" -e \"VAULT_TOKEN=${PAAS_API_CI_VAULT_TOKEN}\" --rm -v ~/.docker/config.json:/root/.docker/config.json -v /var/run/docker.sock:/var/run/docker.sock paas-docker-artifactory.gannettdigital.com/paas-api-ci:${paasApiCiVersion} build \
         --repo=\"${repo}\" \
         --x-api-key=\"${X_API_KEY}\" \
         --x-scalr-access-key=\"${SCALR_KEY}\" \
@@ -30,10 +34,7 @@ node {
         --x-kubernetes-api-user=\"not used\" \
         --x-kubernetes-api-token=\"not used\" \
         --slack-webhook=\"${SLACK_URL}\" \
-        --branch=\"${env.BRANCH_NAME}\" \
         --artifactory-key=\"${PASS_API_ART_KEY}\" \
-        --aws-access-key-id=\"${CONFIGS_ACCESS_KEY}\" \
-        --aws-secret-access-key=\"${CONFIGS_SECRET_KEY}\" \
         --environment=\"${environment}\" \
         --region=\"${region}\" \
         --ci-job-number=${env.BUILD_ID} \
@@ -41,6 +42,7 @@ node {
         --skip-swagger \
         --skip-source-check \
         --skip-validate \
+        --newrelic-license=\"${NEWRELIC_LICENSE_KEY}\" \
         --codecov-token=\"${CODECOV_GO_NEWRELIC_PLUGIN}\""
     }
     catch (err) {
