@@ -176,13 +176,13 @@ func fatalIfErr(log *logrus.Logger, err error) {
 func getFastlyStats(log *logrus.Logger, config Config) FastlyRealTimeDataV1 {
 	fastlyStats := fmt.Sprintf("%vchannel/%v/ts/h", FastlyStatsEndpoint, config.ServiceID)
 	httpReq, err := http.NewRequest("GET", fastlyStats, bytes.NewBuffer([]byte("")))
+	fatalIfErr(log, err)
 	httpReq.Header.Set("Fastly-Key", config.FastlyAPIKey)
 	httpReq.Header.Set("Content-Type", "application/json")
-	// http.NewRequest error
-	fatalIfErr(log, err)
 	code, data, err := runner.CallAPI(log, nil, httpReq, &http.Client{})
-	if err != nil || code != 200 {
-		fmt.Fprintln(os.Stderr, err.Error())
+	fatalIfErr(log, err)
+
+	if code != 200 {
 		log.WithFields(logrus.Fields{
 			"code":             code,
 			"data":             string(data),
@@ -190,7 +190,7 @@ func getFastlyStats(log *logrus.Logger, config Config) FastlyRealTimeDataV1 {
 			"FastlyEndpoint":   FastlyStatsEndpoint,
 			"config.ServiceID": config.ServiceID,
 			"error":            err,
-		}).Fatal("Encountered error calling CallAPI")
+		}).Error("Encountered error calling CallAPI")
 		return FastlyRealTimeDataV1{}
 	}
 
