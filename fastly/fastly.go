@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -28,8 +29,9 @@ const FastlyStatsEndpoint = "https://rt.fastly.com/v1/"
 
 // FastlyConfig is the keeper of the config
 type Config struct {
-	FastlyAPIKey string
-	ServiceID    string
+	FastlyAPIKey          string
+	ServiceID             string
+	TimestampFileLocation string
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -55,7 +57,8 @@ type PluginData struct {
 }
 
 type FastlyRealTimeDataV1 struct {
-	Data []FastlyDataObjects `json:"Data"`
+	Data      []FastlyDataObjects `json:"Data"`
+	Timestamp int                 `json:"Timestamp"`
 }
 
 type FastlyDataObjects struct {
@@ -108,12 +111,14 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 
 	var fastlyConf = Config{
-		FastlyAPIKey: os.Getenv("FASTLY_API_KEY"),
-		ServiceID:    os.Getenv("SERVICE_ID"),
+		FastlyAPIKey:          os.Getenv("FASTLY_API_KEY"),
+		ServiceID:             os.Getenv("SERVICE_ID"),
+		TimestampFileLocation: os.Getenv("TIMESTAMP_FILE_LOCATION"),
 	}
-	validateConfig(log, fastlyConf)
+	validateConfig(log, &fastlyConf)
 
 	fastlyStats := getFastlyStats(log, fastlyConf)
+	writeTimestamp(log, fastlyConf, fastlyStats.Timestamp)
 
 	// // loop over datacenter items
 	for _, dataItem := range fastlyStats.Data {
@@ -161,9 +166,14 @@ func convertToNrMetric(stats FastlyStats, dataCenter string, config Config, log 
 	}
 }
 
-func validateConfig(log *logrus.Logger, fastlyConf Config) {
+func validateConfig(log *logrus.Logger, fastlyConf *Config) {
 	if fastlyConf.FastlyAPIKey == "" || fastlyConf.ServiceID == "" {
 		log.Fatal("Config Yaml is missing values. Please check the config to continue")
+	}
+	if fastlyConf.TimestampFileLocation == "" {
+		wd, err := os.Getwd()
+		fatalIfErr(log, err)
+		fastlyConf.TimestampFileLocation = fmt.Sprintf("%s/fastlytimestamp", wd)
 	}
 }
 
@@ -173,16 +183,40 @@ func fatalIfErr(log *logrus.Logger, err error) {
 	}
 }
 
+func writeTimestamp(log *logrus.Logger, config Config, timestamp int) {
+	err := ioutil.WriteFile(config.TimestampFileLocation, []byte(fmt.Sprintf("%d", timestamp)), 0644)
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("error writing fastly timestamp file")
+	}
+}
+
+func readTimestamp(log *logrus.Logger, config Config) string {
+	defaultResult := "h"
+	raw, err := ioutil.ReadFile(config.TimestampFileLocation)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return defaultResult
+		}
+		log.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("error reading fastly timestamp file")
+		return defaultResult
+	}
+	return string(raw)
+}
+
 func getFastlyStats(log *logrus.Logger, config Config) FastlyRealTimeDataV1 {
-	fastlyStats := fmt.Sprintf("%vchannel/%v/ts/h", FastlyStatsEndpoint, config.ServiceID)
+	fastlyStats := fmt.Sprintf("%vchannel/%v/ts/%s", FastlyStatsEndpoint, config.ServiceID, readTimestamp(log, config))
 	httpReq, err := http.NewRequest("GET", fastlyStats, bytes.NewBuffer([]byte("")))
+	fatalIfErr(log, err)
 	httpReq.Header.Set("Fastly-Key", config.FastlyAPIKey)
 	httpReq.Header.Set("Content-Type", "application/json")
-	// http.NewRequest error
-	fatalIfErr(log, err)
 	code, data, err := runner.CallAPI(log, nil, httpReq, &http.Client{})
-	if err != nil || code != 200 {
-		fmt.Fprintln(os.Stderr, err.Error())
+	fatalIfErr(log, err)
+
+	if code != 200 {
 		log.WithFields(logrus.Fields{
 			"code":             code,
 			"data":             string(data),
@@ -190,7 +224,7 @@ func getFastlyStats(log *logrus.Logger, config Config) FastlyRealTimeDataV1 {
 			"FastlyEndpoint":   FastlyStatsEndpoint,
 			"config.ServiceID": config.ServiceID,
 			"error":            err,
-		}).Fatal("Encountered error calling CallAPI")
+		}).Error("Encountered error calling CallAPI")
 		return FastlyRealTimeDataV1{}
 	}
 

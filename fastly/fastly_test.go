@@ -49,6 +49,7 @@ func TestGetFastlyStats(t *testing.T) {
 
 	var tests = []struct {
 		HTTPRunner      fake.HTTPResult
+		ExpectedLength  int
 		TestDescription string
 	}{
 		{
@@ -1060,7 +1061,23 @@ func TestGetFastlyStats(t *testing.T) {
 					},
 				},
 			},
+			ExpectedLength:  1,
 			TestDescription: "Successfully GET fastly stats",
+		},
+		{
+			HTTPRunner: fake.HTTPResult{
+				ResultsList: []fake.Result{
+					{
+						Method: "GET",
+						URI:    "/v1/channel/1234/ts/h",
+						Code:   500,
+						Data:   []byte(``),
+						Err:    nil,
+					},
+				},
+			},
+			ExpectedLength:  0,
+			TestDescription: "Successfully not pannic when a non 200 result occurrs",
 		},
 	}
 
@@ -1069,7 +1086,10 @@ func TestGetFastlyStats(t *testing.T) {
 			g.It(test.TestDescription, func() {
 				runner = &test.HTTPRunner
 				result := getFastlyStats(logrus.New(), fakeConfig)
-				g.Assert(result.Data[0].Aggregated.Hits).Equal(1195)
+				g.Assert(len(result.Data)).Equal(test.ExpectedLength)
+				if len(result.Data) > 0 {
+					g.Assert(result.Data[0].Aggregated.Hits).Equal(1195)
+				}
 			})
 		})
 	}
