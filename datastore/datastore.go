@@ -1,0 +1,99 @@
+package datastore
+
+import (
+	"github.com/Sirupsen/logrus"
+
+	"context"
+	"encoding/json"
+	"fmt"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/monitoring/v3"
+	"log"
+	"time"
+)
+
+var metrics = []string{
+	"datastore.googleapis.com/api/request_count",
+	"datastore.googleapis.com/entity/read_sizes",
+	"datastore.googleapis.com/entity/write_sizes",
+	"datastore.googleapis.com/index/write_count",
+}
+
+func Run(log *logrus.Logger, prettyPrint bool, version string) {
+	ctx := context.Background()
+	s, err := createService(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	projectID := "gannett-api-services-stage"
+
+	//get datastore metrics
+	for _, metric := range metrics {
+		if err := listMetricDescriptors(s, projectID,metric); err != nil {
+			log.Fatal(err)
+		}
+		if err := listTimeSeries(s, projectID,metric); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+
+
+}
+
+func createService(ctx context.Context) (*monitoring.Service, error) {
+	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
+	if err != nil {
+		return nil, err
+	}
+	s, err := monitoring.New(hc)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func listMetricDescriptors(s *monitoring.Service, projectID string, metric string) error {
+
+	resp, err := s.Projects.MetricDescriptors.List(projectResource(projectID)).
+		Filter(fmt.Sprintf("metric.type=%q", metric)).
+		Do()
+	if err != nil {
+		return fmt.Errorf("Could not list metric descriptors: %v", err)
+	}
+
+	log.Printf("listMetricDescriptors %s\n", formatResource(resp))
+	return nil
+}
+
+func listTimeSeries(s *monitoring.Service, projectID string, metric string) error {
+	startTime := time.Now().UTC().Add(-time.Hour)
+	endTime := startTime.Add(5 * time.Minute)
+
+	resp, err := s.Projects.TimeSeries.List(projectResource(projectID)).
+		PageSize(3).
+		Filter(fmt.Sprintf("metric.type=\"%s\"", metric)).
+		IntervalStartTime(startTime.Format(time.RFC3339)).
+		IntervalEndTime(endTime.Format(time.RFC3339)).
+		Do()
+	if err != nil {
+		return fmt.Errorf("Could not list time series: %v", err)
+	}
+
+	log.Printf("listTimeseries %s\n", formatResource(resp))
+	return nil
+}
+
+func projectResource(projectID string) string {
+	return "projects/" + projectID
+}
+
+// formatResource marshals a response objects as JSON.
+func formatResource(resource interface{}) []byte {
+	b, err := json.MarshalIndent(resource, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
