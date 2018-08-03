@@ -1,15 +1,17 @@
 package datastore
 
 import (
-	"github.com/Sirupsen/logrus"
-
-	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/monitoring/v3"
 	"log"
 	"time"
+
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/monitoring/v3"
+	"github.com/Sirupsen/logrus"
+	"cloud.google.com/go/datastore"
+	"google.golang.org/api/option"
 )
 
 var metrics = []string{
@@ -19,40 +21,72 @@ var metrics = []string{
 	"datastore.googleapis.com/index/write_count",
 }
 
+type DatastoreKind struct {
+	KindName            string    `datastore:"kind_name"`
+	EntityBytes         int       `datastore:"entity_bytes"`
+	BuiltinIndexBytes   int       `datastore:"builtin_index_bytes"`
+	BuiltinIndexCount   int       `datastore:"builtin_index_count"`
+	CompositeIndexBytes int       `datastore:"composite_index_bytes"`
+	CompositeIndexCount int       `datastore:"composite_index_count"`
+	Timestamp           time.Time `datastore:"timestamp"`
+	Count               int       `datastore:"count"`
+	Bytes               int       `datastore:"bytes"`
+}
+
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
+	stackdriverMetrics()
+	datastoreStats()
+}
+
+func datastoreStats(){
 	ctx := context.Background()
-	s, err := createService(ctx)
+	dsClient, err := datastore.NewClient(ctx,"gannett-api-services-stage",option.WithCredentialsFile(`/Users/jstorer/Downloads/gannett-api-services-stage-76507247423e.json`))
+	if err != nil{
+		log.Fatal("Error connecting to datastore")
+	}
+
+
+	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
+	kinds := []*DatastoreKind{}
+	_, err = dsClient.GetAll(ctx,q,&kinds)
+	if err != nil{
+		log.Fatal(err)
+	}
+
+	for _, k := range kinds{
+		fmt.Printf("\nkind %q\t%d entries\t%d bytes\n", k.KindName, k.Count, k.Bytes)
+	}
+}
+
+func stackdriverMetrics(){
+	ctx := context.Background()
+
+	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	s, err := monitoring.New(hc)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
 	projectID := "gannett-api-services-stage"
 
-	//get datastore metrics
+	//loop through datastore metrics
 	for _, metric := range metrics {
-		if err := listMetricDescriptors(s, projectID,metric); err != nil {
+		if err := listMetricDescriptors(s, projectID, metric); err != nil {
 			log.Fatal(err)
 		}
-		if err := listTimeSeries(s, projectID,metric); err != nil {
+		if err := listTimeSeries(s, projectID, metric); err != nil {
 			log.Fatal(err)
 		}
 	}
-
-
-
 }
 
-func createService(ctx context.Context) (*monitoring.Service, error) {
-	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
-	if err != nil {
-		return nil, err
-	}
-	s, err := monitoring.New(hc)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
 
 func listMetricDescriptors(s *monitoring.Service, projectID string, metric string) error {
 
