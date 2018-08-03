@@ -11,7 +11,6 @@ import (
 	"google.golang.org/api/monitoring/v3"
 	"github.com/Sirupsen/logrus"
 	"cloud.google.com/go/datastore"
-	"google.golang.org/api/option"
 )
 
 var metrics = []string{
@@ -40,7 +39,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 func datastoreStats(){
 	ctx := context.Background()
-	dsClient, err := datastore.NewClient(ctx,"gannett-api-services-stage",option.WithCredentialsFile(`/Users/jstorer/Downloads/gannett-api-services-stage-76507247423e.json`))
+	dsClient, err := datastore.NewClient(ctx,"gannett-api-services-stage")
 	if err != nil{
 		log.Fatal("Error connecting to datastore")
 	}
