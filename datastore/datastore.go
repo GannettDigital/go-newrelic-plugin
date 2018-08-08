@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -13,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
+	"os"
 )
 
 var stackdriverEndpoints = []string{
@@ -123,7 +123,8 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	var keyData KeyData
 
-	keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
+	//keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
+	keyFile,err :=ioutil.ReadFile("/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,13 +134,15 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		log.Fatal(err)
 	}
 
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/key.json")
+	//os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/key.json")
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
 
 	projectID := keyData.ProjectID
+	ctx := context.Background()
 
 	//add stackdriver metrics
 	for _, metric := range stackdriverEndpoints {
-		result, err := getStackdriverMetrics(projectID, metric)
+		result, err := getStackdriverMetrics(ctx, projectID, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -150,7 +153,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 
 	//add query metrics
-	result, err := getDatastoreQueryMetrics(projectID)
+	result, err := getDatastoreQueryMetrics(ctx, projectID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,39 +165,48 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	fatalIfErr(log, helpers.OutputJSON(data, true))
 }
 
-func getStackdriverMetrics(projectID string, metric string) ([]map[string]interface{}, error) {
-	var requestCountBody StackdriverMetric
+func getStackdriverMetrics(ctx context.Context,projectID string, metric string) ([]map[string]interface{}, error) {
+	var stackdriverMetricBody StackdriverMetric
 	var metricResult []map[string]interface{}
-
-	ctx := context.Background()
 
 	s, err := createService(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := listTimeSeries(s, projectID, metric)
+	startTime := time.Now().UTC().Add(time.Minute * -3)
+	endTime := time.Now().UTC()
+
+	resp, err := s.Projects.TimeSeries.List(projectResource(projectID)).
+		Filter(fmt.Sprintf("metric.type=\"%s\"", metric)).
+		IntervalStartTime(startTime.Format(time.RFC3339)).
+		IntervalEndTime(endTime.Format(time.RFC3339)).
+		Do()
 
 	if err != nil {
 		return nil, err
 	}
 
-	json.Unmarshal(formatResource(resp), &requestCountBody)
+	err = json.Unmarshal(formatResource(resp), &stackdriverMetricBody)
+	if err != nil {
+		return nil, err
+	}
 
-	for id := range requestCountBody.TimeSeries {
+	for id := range stackdriverMetricBody.TimeSeries {
 		metricResult = append(metricResult, map[string]interface{}{
 			"event_type":                        "DatastoreSample",
 			"provider":                          "datastoreStackdriver",
-			"datastoreStackdriver.apiMethod":    requestCountBody.TimeSeries[id].Metric.Labels.ApiMethod,
-			"datastoreStackdriver.responseCode": requestCountBody.TimeSeries[id].Metric.Labels.ResponseCode,
-			"datastoreStackdriver.metricType":   requestCountBody.TimeSeries[id].Metric.Type,
-			"datastoreStackdriver.metricKind":   requestCountBody.TimeSeries[id].MetricKind,
-			"datastoreStackdriver.timestamp":    requestCountBody.TimeSeries[id].Points[0].Interval.StartTime.Unix(),
-			"datastoreStackdriver.value":        requestCountBody.TimeSeries[id].Points[0].Value.Int64Value,
-			"datastoreStackdriver.projectId":    requestCountBody.TimeSeries[id].Resource.Labels.ProjectID,
-			"datastoreStackdriver.resourceType": requestCountBody.TimeSeries[id].Resource.Type,
+			"datastoreStackdriver.apiMethod":    stackdriverMetricBody.TimeSeries[id].Metric.Labels.ApiMethod,
+			"datastoreStackdriver.responseCode": stackdriverMetricBody.TimeSeries[id].Metric.Labels.ResponseCode,
+			"datastoreStackdriver.metricType":   stackdriverMetricBody.TimeSeries[id].Metric.Type,
+			"datastoreStackdriver.metricKind":   stackdriverMetricBody.TimeSeries[id].MetricKind,
+			"datastoreStackdriver.timestamp":    stackdriverMetricBody.TimeSeries[id].Points[0].Interval.StartTime.Unix(),
+			"datastoreStackdriver.value":        stackdriverMetricBody.TimeSeries[id].Points[0].Value.Int64Value,
+			"datastoreStackdriver.projectId":    stackdriverMetricBody.TimeSeries[id].Resource.Labels.ProjectID,
+			"datastoreStackdriver.resourceType": stackdriverMetricBody.TimeSeries[id].Resource.Type,
 		})
 	}
+
 	return metricResult, nil
 }
 
@@ -210,27 +222,9 @@ func createService(ctx context.Context) (*monitoring.Service, error) {
 	return s, nil
 }
 
-func listTimeSeries(s *monitoring.Service, projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
-	startTime := time.Now().UTC().Add(time.Minute * -3)
-	endTime := time.Now().UTC()
-
-	resp, err := s.Projects.TimeSeries.List(projectResource(projectID)).
-		Filter(fmt.Sprintf("metric.type=\"%s\"", metric)).
-		IntervalStartTime(startTime.Format(time.RFC3339)).
-		IntervalEndTime(endTime.Format(time.RFC3339)).
-		Do()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func getDatastoreQueryMetrics(projectID string) ([]map[string]interface{}, error) {
+func getDatastoreQueryMetrics(ctx context.Context,projectID string) ([]map[string]interface{}, error) {
 	var queryResult []map[string]interface{}
 
-	ctx := context.Background()
 	dsClient, err := datastore.NewClient(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -250,7 +244,7 @@ func getDatastoreQueryMetrics(projectID string) ([]map[string]interface{}, error
 		queryResult = append(queryResult, map[string]interface{}{
 			"event_type":               "DatastoreSample",
 			"provider":                 "datastoreQuery",
-			"datastoreQuery.timestamp": time.Now().UTC().Add(time.Minute * -3).Unix(),
+			"datastoreQuery.timestamp": time.Now().UTC().Add(time.Minute * - 3).Unix(),
 			"datastoreQuery.kindName":  k.KindName,
 			"datastoreQuery.count":     k.Count,
 			"datastoreQuery.bytes":     k.Bytes,
