@@ -1,0 +1,8 @@
+# /var/db/newrelic-infra/integrations.d/datastore.yaml
+
+integration_name: com.gannettdigital.datastore
+instances:
+  - name: com.gannettdigital.datastore
+    command: datastore
+
+

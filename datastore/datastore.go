@@ -1,26 +1,27 @@
 package datastore
 
 import (
+	"cloud.google.com/go/datastore"
 	"encoding/json"
 	"fmt"
-	"time"
-	"strconv"
-
-	"cloud.google.com/go/datastore"
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
+	"io/ioutil"
+	"os"
+	"time"
 )
 
 var stackdriverEndpoints = []string{
 	"datastore.googleapis.com/api/request_count",
 	"datastore.googleapis.com/index/write_count",
 	//"datastore.googleapis.com/entity/read_sizes",
-	//"datastore.googleapis.com/entity/write_sizes", -- TODO create appropriate sized and number of buckets
+	//"datastore.googleapis.com/entity/write_sizes",
 }
 
+//fields for datastore Query
 type DatastoreKind struct {
 	KindName            string    `datastore:"kind_name"`
 	EntityBytes         int       `datastore:"entity_bytes"`
@@ -44,26 +45,7 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-// InventoryData is the data type for inventory data produced by a plugin data
-// source and emitted to the agent's inventory data store
-type InventoryData map[string]interface{}
-
-// MetricData is the data type for events produced by a plugin data source and
-// emitted to the agent's metrics data store
-type MetricData map[string]interface{}
-
-// EventData is the data type for single shot events
-type EventData map[string]interface{}
-
-// NAME - name of plugin
-const NAME string = "datastore"
-
-// PROVIDER -
-const PROVIDER string = "datastore" //we might want to make this an env tied to nginx version or app name maybe...
-
-// ProtocolVersion -
-const ProtocolVersion string = "1"
-
+//fields for stackdriver returns
 type StackdriverMetric struct {
 	TimeSeries []struct {
 		Metric struct {
@@ -95,6 +77,39 @@ type StackdriverMetric struct {
 	} `json:"timeSeries"`
 }
 
+type KeyData struct {
+	AuthProviderX509CertURL string  `json:"auth_provider_x509_cert_url"`
+	AuthURI                 string  `json:"auth_uri"`
+	ClientEmail             string  `json:"client_email"`
+	ClientID                float64 `json:"client_id,string"`
+	ClientX509CertURL       string  `json:"client_x509_cert_url"`
+	PrivateKey              string  `json:"private_key"`
+	PrivateKeyID            string  `json:"private_key_id"`
+	ProjectID               string  `json:"project_id"`
+	TokenURI                string  `json:"token_uri"`
+	Type                    string  `json:"type"`
+}
+
+// InventoryData is the data type for inventory data produced by a plugin data
+// source and emitted to the agent's inventory data store
+type InventoryData map[string]interface{}
+
+// MetricData is the data type for events produced by a plugin data source and
+// emitted to the agent's metrics data store
+type MetricData map[string]interface{}
+
+// EventData is the data type for single shot events
+type EventData map[string]interface{}
+
+// NAME - name of plugin
+const NAME string = "datastore"
+
+// PROVIDER -
+const PROVIDER string = "datastore" //we might want to make this an env tied to nginx version or app name maybe...
+
+// ProtocolVersion -
+const ProtocolVersion string = "1"
+
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var data = PluginData{
 		Name:            NAME,
@@ -105,87 +120,75 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	ctx := context.Background()
-	projectID := "gannett-api-services-stage"
+	var keyData KeyData
 
-	//stackdriver metrics
-	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
-
+	//keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
+	keyFile, err := ioutil.ReadFile("/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	s, err := monitoring.New(hc)
-
+	err = json.Unmarshal(keyFile, &keyData)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//loop through datastore stackdriverEndpoints
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
+	projectID := keyData.ProjectID
+
 	for _, metric := range stackdriverEndpoints {
-
-		resp, err := listTimeSeries(s, projectID, metric)
-
+		err = stackdriverMetrics(projectID, &data, log, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		var requestCountBody StackdriverMetric
-
-		json.Unmarshal(formatResource(resp), &requestCountBody)
-
-		//fmt.Printf("%s",formatResource(resp))
-		for id := range requestCountBody.TimeSeries {
-			data.Metrics = append(data.Metrics, map[string]interface{}{
-				"event_type":                        "DatastoreSample",
-				"provider":                          PROVIDER,
-				"datastoreStackdriver.apiMethod":    requestCountBody.TimeSeries[id].Metric.Labels.ApiMethod,
-				"datastoreStackdriver.responseCode": requestCountBody.TimeSeries[id].Metric.Labels.ResponseCode,
-				"datastoreStackdriver.metricType":   requestCountBody.TimeSeries[id].Metric.Type,
-				"datastoreStackdriver.metricKind":   requestCountBody.TimeSeries[id].MetricKind,
-				"datastoreStackriver.time":          requestCountBody.TimeSeries[id].Points[0].Interval.EndTime.String(),
-				"datastoreStackdriver.value":        strconv.FormatInt(requestCountBody.TimeSeries[0].Points[0].Value.Int64Value, 10),
-				"datastoreStackdriver.projectId":    requestCountBody.TimeSeries[id].Resource.Labels.ProjectID,
-				"datastoreStackdriver.resourceType": requestCountBody.TimeSeries[id].Resource.Type,
-			})
-		}
 	}
 
-	//datastore statistics
-	dsClient, err := datastore.NewClient(ctx, "gannett-api-services-stage")
-	if err != nil {
-		log.Fatal("Error connecting to datastore")
-	}
-
-	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
-
-	kinds := []*DatastoreKind{}
-
-	_, err = dsClient.GetAll(ctx, q, &kinds)
-
+	err = datastoreQueryMetrics(projectID, &data, log)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, k := range kinds {
-		fmt.Printf("\nkind %q\t%d entries\t%d bytes\n", k.KindName, k.Count, k.Bytes)
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
+}
+
+func stackdriverMetrics(projectID string, data *PluginData, log *logrus.Logger, metric string) error {
+	ctx := context.Background()
+
+	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
+	if err != nil {
+		return err
+	}
+
+	s, err := monitoring.New(hc)
+	if err != nil {
+		return err
+	}
+
+	resp, err := listTimeSeries(s, projectID, metric)
+
+	if err != nil {
+		return err
+	}
+
+	var requestCountBody StackdriverMetric
+	json.Unmarshal(formatResource(resp), &requestCountBody)
+
+	for id := range requestCountBody.TimeSeries {
 		data.Metrics = append(data.Metrics, map[string]interface{}{
-			"event_type":              "DatastoreSample",
-			"provider":                PROVIDER,
-			"datastoreQuery.time":     time.Now().UTC(),
-			"datastoreQuery.kindName": k.KindName,
-			"datastoreQuery.count":    k.Count,
-			"datastoreQuery.bytes":    k.Bytes,
+			"event_type":                        "DatastoreSample",
+			"provider":                          "datastoreStackdriver",
+			"datastoreStackdriver.apiMethod":    requestCountBody.TimeSeries[id].Metric.Labels.ApiMethod,
+			"datastoreStackdriver.responseCode": requestCountBody.TimeSeries[id].Metric.Labels.ResponseCode,
+			"datastoreStackdriver.metricType":   requestCountBody.TimeSeries[id].Metric.Type,
+			"datastoreStackdriver.metricKind":   requestCountBody.TimeSeries[id].MetricKind,
+			"datastoreStackdriver.timestamp":    requestCountBody.TimeSeries[id].Points[0].Interval.StartTime.Unix() * 1000,
+			"datastoreStackdriver.value":        requestCountBody.TimeSeries[0].Points[0].Value.Int64Value,
+			"datastoreStackdriver.projectId":    requestCountBody.TimeSeries[id].Resource.Labels.ProjectID,
+			"datastoreStackdriver.resourceType": requestCountBody.TimeSeries[id].Resource.Type,
 		})
 	}
 
-	fatalIfErr(log, helpers.OutputJSON(data,prettyPrint))
-}
-
-func fatalIfErr(log *logrus.Logger, err error) {
-	if err != nil {
-		log.WithError(err).Fatal("can't continue")
-	}
+	return nil
 }
 
 func listTimeSeries(s *monitoring.Service, projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
@@ -203,6 +206,42 @@ func listTimeSeries(s *monitoring.Service, projectID string, metric string) (*mo
 	}
 
 	return resp, nil
+}
+
+func datastoreQueryMetrics(projectID string, data *PluginData, log *logrus.Logger) error {
+	ctx := context.Background()
+	dsClient, err := datastore.NewClient(ctx, "gannett-api-services-stage")
+	if err != nil {
+		return err
+	}
+
+	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
+
+	kinds := []*DatastoreKind{}
+
+	_, err = dsClient.GetAll(ctx, q, &kinds)
+
+	if err != nil {
+		return err
+	}
+
+	for _, k := range kinds {
+		data.Metrics = append(data.Metrics, map[string]interface{}{
+			"event_type":               "DatastoreSample",
+			"provider":                 "datastoreQuery",
+			"datastoreQuery.timestamp": time.Now().UTC().Add(time.Minute * -3).Unix(),
+			"datastoreQuery.kindName":  k.KindName,
+			"datastoreQuery.count":     k.Count,
+			"datastoreQuery.bytes":     k.Bytes,
+		})
+	}
+	return nil
+}
+
+func fatalIfErr(log *logrus.Logger, err error) {
+	if err != nil {
+		log.WithError(err).Fatal("can't continue")
+	}
 }
 
 func projectResource(projectID string) string {
