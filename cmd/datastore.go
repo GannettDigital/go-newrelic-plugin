@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"github.com/GannettDigital/go-newrelic-plugin/datastore"
 	"github.com/GannettDigital/goStateModule"
 	"github.com/spf13/cobra"
-	"github.com/GannettDigital/go-newrelic-plugin/datastore"
 )
 
 func init() {
