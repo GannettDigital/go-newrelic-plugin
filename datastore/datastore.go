@@ -1,23 +1,24 @@
 package datastore
 
 import (
-	"cloud.google.com/go/datastore"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"time"
+
+	"cloud.google.com/go/datastore"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
-	"io/ioutil"
-	"os"
-	"time"
 )
 
 var stackdriverEndpoints = []string{
 	"datastore.googleapis.com/api/request_count",
 	"datastore.googleapis.com/index/write_count",
-	//"datastore.googleapis.com/entity/read_sizes",
+	//"datastore.googleapis.com/entity/read_sizes", --TODO add distribution data
 	//"datastore.googleapis.com/entity/write_sizes",
 }
 
@@ -122,8 +123,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	var keyData KeyData
 
-	//keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
-	keyFile, err := ioutil.ReadFile("/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
+	keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,48 +133,56 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		log.Fatal(err)
 	}
 
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/key.json")
+
 	projectID := keyData.ProjectID
 
+	//add stackdriver metrics
 	for _, metric := range stackdriverEndpoints {
-		err = stackdriverMetrics(projectID, &data, log, metric)
+		result, err := getStackdriverMetrics(projectID, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		for _, metricResult := range result {
+			data.Metrics = append(data.Metrics, metricResult)
+		}
 	}
 
-	err = datastoreQueryMetrics(projectID, &data, log)
+	//add query metrics
+	result, err := getDatastoreQueryMetrics(projectID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
-}
-
-func stackdriverMetrics(projectID string, data *PluginData, log *logrus.Logger, metric string) error {
-	ctx := context.Background()
-
-	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
-	if err != nil {
-		return err
+	for _, metricResult := range result {
+		data.Metrics = append(data.Metrics, metricResult)
 	}
 
-	s, err := monitoring.New(hc)
+	fatalIfErr(log, helpers.OutputJSON(data, true))
+}
+
+func getStackdriverMetrics(projectID string, metric string) ([]map[string]interface{}, error) {
+	var requestCountBody StackdriverMetric
+	var metricResult []map[string]interface{}
+
+	ctx := context.Background()
+
+	s, err := createService(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := listTimeSeries(s, projectID, metric)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var requestCountBody StackdriverMetric
 	json.Unmarshal(formatResource(resp), &requestCountBody)
 
 	for id := range requestCountBody.TimeSeries {
-		data.Metrics = append(data.Metrics, map[string]interface{}{
+		metricResult = append(metricResult, map[string]interface{}{
 			"event_type":                        "DatastoreSample",
 			"provider":                          "datastoreStackdriver",
 			"datastoreStackdriver.apiMethod":    requestCountBody.TimeSeries[id].Metric.Labels.ApiMethod,
@@ -187,8 +195,19 @@ func stackdriverMetrics(projectID string, data *PluginData, log *logrus.Logger, 
 			"datastoreStackdriver.resourceType": requestCountBody.TimeSeries[id].Resource.Type,
 		})
 	}
+	return metricResult, nil
+}
 
-	return nil
+func createService(ctx context.Context) (*monitoring.Service, error) {
+	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
+	if err != nil {
+		return nil, err
+	}
+	s, err := monitoring.New(hc)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 func listTimeSeries(s *monitoring.Service, projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
@@ -208,11 +227,13 @@ func listTimeSeries(s *monitoring.Service, projectID string, metric string) (*mo
 	return resp, nil
 }
 
-func datastoreQueryMetrics(projectID string, data *PluginData, log *logrus.Logger) error {
+func getDatastoreQueryMetrics(projectID string) ([]map[string]interface{}, error) {
+	var queryResult []map[string]interface{}
+
 	ctx := context.Background()
-	dsClient, err := datastore.NewClient(ctx, "gannett-api-services-stage")
+	dsClient, err := datastore.NewClient(ctx, projectID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
@@ -222,20 +243,21 @@ func datastoreQueryMetrics(projectID string, data *PluginData, log *logrus.Logge
 	_, err = dsClient.GetAll(ctx, q, &kinds)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, k := range kinds {
-		data.Metrics = append(data.Metrics, map[string]interface{}{
+		queryResult = append(queryResult, map[string]interface{}{
 			"event_type":               "DatastoreSample",
 			"provider":                 "datastoreQuery",
 			"datastoreQuery.timestamp": time.Now().UTC().Add(time.Minute * -3).Unix(),
 			"datastoreQuery.kindName":  k.KindName,
 			"datastoreQuery.count":     k.Count,
 			"datastoreQuery.bytes":     k.Bytes,
+			"datastoreQuery.projectId": projectID,
 		})
 	}
-	return nil
+	return queryResult, nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
