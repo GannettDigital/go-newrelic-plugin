@@ -78,6 +78,48 @@ type StackdriverMetric struct {
 	} `json:"timeSeries"`
 }
 
+
+type Client struct {
+	Dsc DatastoreImpl
+	Sdc StackDriverImpl
+}
+
+
+type DatastoreImpl interface {
+	GetAll(ctx context.Context, q *datastore.Query, dst interface{}) (keys []*datastore.Key, err error)
+}
+
+type StackDriverImpl interface{
+	List(name string) *monitoring.ProjectsTimeSeriesListCall
+	// add methods that are used by stackDriver. You likely need multiple interfaces sense it does chaining like List.Filter....DO()
+}
+
+
+
+func NewClient(projectId string) Client {
+
+	ctx := context.Background()
+	dsClient, err := datastore.NewClient(ctx, projectId)
+	if err != nil {
+		panic("unable to set client")
+	}
+
+	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
+	if err != nil {
+		panic("unable to set client")
+	}
+	s, err := monitoring.New(hc)
+	if err != nil {
+		panic("unable to set client")
+	}
+
+	return Client{
+		dsClient,
+		s.Projects.TimeSeries,
+	}
+}
+
+
 type KeyData struct {
 	AuthProviderX509CertURL string  `json:"auth_provider_x509_cert_url"`
 	AuthURI                 string  `json:"auth_uri"`
@@ -111,7 +153,11 @@ const PROVIDER string = "datastore" //we might want to make this an env tied to 
 // ProtocolVersion -
 const ProtocolVersion string = "1"
 
+
+// I would not test this method
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
+
+
 	var data = PluginData{
 		Name:            NAME,
 		ProtocolVersion: ProtocolVersion,
@@ -138,16 +184,13 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
 
 	projectID := keyData.ProjectID
-	ctx := context.Background()
 
-	s, err := createService(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
+	c := NewClient(projectID)
+
 
 	//add stackdriver metrics
 	for _, metric := range stackdriverEndpoints {
-		resp, err := getStackdriverResp(s, projectID, metric)
+		resp, err := getStackdriverResp(c.Sdc, projectID, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -162,7 +205,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 
 	//add query metrics
-	kinds, err := getDatastoreQueryResult(ctx, projectID)
+	kinds, err := getDatastoreQueryResult(c.Dsc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -175,11 +218,12 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
-func getStackdriverResp(s *monitoring.Service, projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
+// I would not test this method
+func getStackdriverResp(sdl StackDriverImpl , projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
 	startTime := time.Now().UTC().Add(time.Minute * -3)
 	endTime := time.Now().UTC()
 
-	resp, err := s.Projects.TimeSeries.List(projectResource(projectID)).
+	resp, err := sdl.List(projectResource(projectID)).
 		Filter(fmt.Sprintf("metric.type=\"%s\"", metric)).
 		IntervalStartTime(startTime.Format(time.RFC3339)).
 		IntervalEndTime(endTime.Format(time.RFC3339)).
@@ -193,6 +237,9 @@ func getStackdriverResp(s *monitoring.Service, projectID string, metric string) 
 
 }
 
+
+// To test this, I would pass in a filled out *monitoring.ListTimeSeriesResponse with the data you know
+// then, check the results of this data validating we are setting the correct proprties.. ie datastoreStackdriver.resourceType to the value you would expect
 func getStackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]interface{}, error) {
 	var stackdriverMetricBody StackdriverMetric
 	var metricResult []map[string]interface{}
@@ -220,17 +267,14 @@ func getStackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]i
 	return metricResult, nil
 }
 
-func getDatastoreQueryResult(ctx context.Context, projectID string) ([]*DatastoreKind, error) {
-	dsClient, err := datastore.NewClient(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
+func getDatastoreQueryResult(ds DatastoreImpl) ([]*DatastoreKind, error) {
 
 	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
 
 	kinds := []*DatastoreKind{}
 
-	_, err = dsClient.GetAll(ctx, q, &kinds)
+	ctx := context.Background()
+	_, err := ds.GetAll(ctx, q, &kinds)
 
 	if err != nil {
 		return nil, err
