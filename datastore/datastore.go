@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -12,7 +13,6 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
-	"os"
 )
 
 var stackdriverEndpoints = []string{
@@ -124,7 +124,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var keyData KeyData
 
 	//keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
-	keyFile,err :=ioutil.ReadFile("/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
+	keyFile, err := ioutil.ReadFile("/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -140,40 +140,42 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	projectID := keyData.ProjectID
 	ctx := context.Background()
 
+	s, err := createService(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	//add stackdriver metrics
 	for _, metric := range stackdriverEndpoints {
-		result, err := getStackdriverMetrics(ctx, projectID, metric)
+		resp, err := getStackdriverResp(s, projectID, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
 
+		result, err := getStackdriverData(resp)
+		if err != nil {
+			log.Fatal(err)
+		}
 		for _, metricResult := range result {
 			data.Metrics = append(data.Metrics, metricResult)
 		}
 	}
 
 	//add query metrics
-	result, err := getDatastoreQueryMetrics(ctx, projectID)
+	kinds, err := getDatastoreQueryResult(ctx, projectID)
 	if err != nil {
 		log.Fatal(err)
 	}
+	result := getDatastoreData(kinds, projectID)
 
 	for _, metricResult := range result {
 		data.Metrics = append(data.Metrics, metricResult)
 	}
 
-	fatalIfErr(log, helpers.OutputJSON(data, true))
+	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
-func getStackdriverMetrics(ctx context.Context,projectID string, metric string) ([]map[string]interface{}, error) {
-	var stackdriverMetricBody StackdriverMetric
-	var metricResult []map[string]interface{}
-
-	s, err := createService(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func getStackdriverResp(s *monitoring.Service, projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
 	startTime := time.Now().UTC().Add(time.Minute * -3)
 	endTime := time.Now().UTC()
 
@@ -187,7 +189,15 @@ func getStackdriverMetrics(ctx context.Context,projectID string, metric string) 
 		return nil, err
 	}
 
-	err = json.Unmarshal(formatResource(resp), &stackdriverMetricBody)
+	return resp, nil
+
+}
+
+func getStackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]interface{}, error) {
+	var stackdriverMetricBody StackdriverMetric
+	var metricResult []map[string]interface{}
+
+	err := json.Unmarshal(formatResource(resp), &stackdriverMetricBody)
 	if err != nil {
 		return nil, err
 	}
@@ -210,21 +220,7 @@ func getStackdriverMetrics(ctx context.Context,projectID string, metric string) 
 	return metricResult, nil
 }
 
-func createService(ctx context.Context) (*monitoring.Service, error) {
-	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
-	if err != nil {
-		return nil, err
-	}
-	s, err := monitoring.New(hc)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-func getDatastoreQueryMetrics(ctx context.Context,projectID string) ([]map[string]interface{}, error) {
-	var queryResult []map[string]interface{}
-
+func getDatastoreQueryResult(ctx context.Context, projectID string) ([]*DatastoreKind, error) {
 	dsClient, err := datastore.NewClient(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -240,18 +236,35 @@ func getDatastoreQueryMetrics(ctx context.Context,projectID string) ([]map[strin
 		return nil, err
 	}
 
+	return kinds, nil
+}
+
+func getDatastoreData(kinds []*DatastoreKind, projectID string) []map[string]interface{} {
+	var queryResult []map[string]interface{}
 	for _, k := range kinds {
 		queryResult = append(queryResult, map[string]interface{}{
 			"event_type":               "DatastoreSample",
 			"provider":                 "datastoreQuery",
-			"datastoreQuery.timestamp": time.Now().UTC().Add(time.Minute * - 3).Unix(),
+			"datastoreQuery.timestamp": time.Now().UTC().Add(time.Minute * -3).Unix(),
 			"datastoreQuery.kindName":  k.KindName,
 			"datastoreQuery.count":     k.Count,
 			"datastoreQuery.bytes":     k.Bytes,
 			"datastoreQuery.projectId": projectID,
 		})
 	}
-	return queryResult, nil
+	return queryResult
+}
+
+func createService(ctx context.Context) (*monitoring.Service, error) {
+	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
+	if err != nil {
+		return nil, err
+	}
+	s, err := monitoring.New(hc)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
