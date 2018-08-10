@@ -6,20 +6,21 @@ import (
 	"context"
 	"time"
 	"github.com/franela/goblin"
-)
+	"reflect"
+	)
 
 
 
 type FakeDataStoreClient struct{
-	kinds []DatastoreKind
+	kindsFake []DatastoreKind
 	err error
 }
 
 
-func NewFakeClient( kinds []DatastoreKind, err error ) Client {
+func NewFakeClient( kindsInit []DatastoreKind, err error ) Client {
 	return Client{
 		Dsc: FakeDataStoreClient{
-			kinds: kinds,
+			kindsFake: kindsInit,
 			err: err,
 		},
 	}
@@ -27,7 +28,19 @@ func NewFakeClient( kinds []DatastoreKind, err error ) Client {
 
 
 func (fdsc FakeDataStoreClient) GetAll(ctx context.Context, q *datastore.Query, dst interface{}) (keys []*datastore.Key, err error){
-	dst = fdsc.kinds
+
+	dv  := reflect.ValueOf(dst).Elem()
+
+	for _, value := range fdsc.kindsFake {
+		tempDataStore := DatastoreKind{
+			BuiltinIndexBytes: value.BuiltinIndexBytes,
+			// todo fill out rest
+		}
+
+		dv.Set(reflect.Append(dv, reflect.ValueOf(tempDataStore)))
+	}
+
+
 	return []*datastore.Key{}, err
 }
 
@@ -50,7 +63,7 @@ func TestGetDatastoreQueryResult(t *testing.T){
 					EntityBytes:         5,
 					Bytes:               6,
 					Count:               7,
-					KindName:            "testAsset",
+					KindName:            "testAsset1",
 					Timestamp:           time.Now(),
 				},
 			},
@@ -64,9 +77,9 @@ func TestGetDatastoreQueryResult(t *testing.T){
 		g.Describe("getDatastoreQueryResult()", func() {
 			g.It(test.description, func() {
 				fakeClient := NewFakeClient(test.datastoreKind,test.err)
-				kinds, err := getDatastoreQueryResult(fakeClient.Dsc)
+				kindsResult, err := getDatastoreQueryResult(fakeClient.Dsc)
 				g.Assert(err).Equal(test.expectedErr)
-				g.Assert(kinds).Equal(test.datastoreKind)
+				g.Assert(kindsResult).Equal(test.datastoreKind)
 			})
 		})
 

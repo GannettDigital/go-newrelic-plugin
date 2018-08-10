@@ -232,7 +232,7 @@ func getStackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]i
 func getDatastoreQueryResult(ds DatastoreImpl) ([]DatastoreKind, error) {
 	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
 
-	kinds := []DatastoreKind{}
+	var kinds []DatastoreKind
 
 	ctx := context.Background()
 	_, err := ds.GetAll(ctx, q, &kinds)
