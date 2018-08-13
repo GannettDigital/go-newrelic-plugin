@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -12,7 +13,6 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
-	"os"
 )
 
 var stackdriverEndpoints = []string{
@@ -133,7 +133,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	var keyData KeyData
 
-	keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
+	keyFile, err := ioutil.ReadFile("/var/secrets/google/key.json")
 
 	if err != nil {
 		log.Fatal(err)

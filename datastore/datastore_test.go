@@ -1,15 +1,15 @@
 package datastore
 
 import (
-	"github.com/franela/goblin"
-	"google.golang.org/api/googleapi"
-	"google.golang.org/api/monitoring/v3"
-	"cloud.google.com/go/datastore"
-
+	"context"
 	"reflect"
 	"testing"
 	"time"
-	"context"
+
+	"cloud.google.com/go/datastore"
+	"github.com/franela/goblin"
+	"google.golang.org/api/googleapi"
+	"google.golang.org/api/monitoring/v3"
 )
 
 type FakeDataStoreClient struct {
