@@ -1,3 +1,7 @@
+/*
+the datastore package retrieves data from the stackdriver API as well as query of '__Stat_Kind__' from datastore directly.
+*/
+
 package datastore
 
 import (
@@ -8,11 +12,21 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/buger/jsonparser"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
+	"encoding/base64"
+	"google.golang.org/api/option"
+)
+
+const (
+	// NAME - name of plugin
+	NAME string = "datastore"
+	// ProtocolVersion -
+	ProtocolVersion string = "1"
 )
 
 var stackdriverEndpoints = []string{
@@ -22,7 +36,7 @@ var stackdriverEndpoints = []string{
 	//"datastore.googleapis.com/entity/write_sizes",
 }
 
-//fields for datastore Query
+//DatastoreKind represents the fields for a datastore Query
 type DatastoreKind struct {
 	BuiltinIndexBytes   int       `datastore:"builtin_index_bytes"`
 	BuiltinIndexCount   int       `datastore:"builtin_index_count"`
@@ -46,7 +60,7 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-//fields for stackdriver returns
+//StackdriverMetric represents fields for stackdriver returns
 type StackdriverMetric struct {
 	TimeSeries []struct {
 		Metric struct {
@@ -79,16 +93,12 @@ type StackdriverMetric struct {
 }
 
 type Client struct {
-	Dsc DatastoreImpl
-	Sdc StackDriverImpl
+	Dsc DatastoreInterface
 }
 
-type DatastoreImpl interface {
+//DatastoreInterface is used for testing purposes
+type DatastoreInterface interface {
 	GetAll(ctx context.Context, q *datastore.Query, dst interface{}) (keys []*datastore.Key, err error)
-}
-
-type StackDriverImpl interface {
-	List(name string) *monitoring.ProjectsTimeSeriesListCall
 }
 
 type KeyData struct {
@@ -114,12 +124,6 @@ type MetricData map[string]interface{}
 
 // EventData is the data type for single shot events
 type EventData map[string]interface{}
-
-// NAME - name of plugin
-const NAME string = "datastore"
-
-// ProtocolVersion -
-const ProtocolVersion string = "1"
 
 func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	var data = PluginData{
@@ -147,16 +151,19 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/key.json")
 
 	projectID := keyData.ProjectID
-	c := NewClient(projectID)
+	c,err := NewClient(projectID)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	//add stackdriver metrics
 	for _, metric := range stackdriverEndpoints {
-		resp, err := getStackdriverResp(c.Sdc, projectID, metric)
+		resp, err := stackdriverResp(projectID, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		result, err := getStackdriverData(resp)
+		result, err := stackdriverData(resp)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -179,11 +186,23 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
 }
 
-func getStackdriverResp(sdl StackDriverImpl, projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
+func stackdriverResp(projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
+	ctx := context.Background()
+
+	hc,err := google.DefaultClient(ctx,monitoring.MonitoringScope)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := monitoring.New(hc)
+	if err != nil {
+		return nil, err
+	}
+
 	startTime := time.Now().UTC().Add(time.Minute * -3)
 	endTime := time.Now().UTC()
 
-	resp, err := sdl.List(projectResource(projectID)).
+	resp, err := s.Projects.TimeSeries.List(projectResource(projectID)).
 		Filter(fmt.Sprintf("metric.type=\"%s\"", metric)).
 		IntervalStartTime(startTime.Format(time.RFC3339)).
 		IntervalEndTime(endTime.Format(time.RFC3339)).
@@ -197,7 +216,7 @@ func getStackdriverResp(sdl StackDriverImpl, projectID string, metric string) (*
 
 }
 
-func getStackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]interface{}, error) {
+func stackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]interface{}, error) {
 	var stackdriverMetricBody StackdriverMetric
 	var metricResult []map[string]interface{}
 
@@ -206,25 +225,25 @@ func getStackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]i
 		return nil, err
 	}
 
-	for id := range stackdriverMetricBody.TimeSeries {
+	for _, item := range stackdriverMetricBody.TimeSeries {
 		metricResult = append(metricResult, map[string]interface{}{
 			"event_type":                        "DatastoreSample",
 			"provider":                          "datastoreStackdriver",
-			"datastoreStackdriver.apiMethod":    stackdriverMetricBody.TimeSeries[id].Metric.Labels.ApiMethod,
-			"datastoreStackdriver.responseCode": stackdriverMetricBody.TimeSeries[id].Metric.Labels.ResponseCode,
-			"datastoreStackdriver.metricType":   stackdriverMetricBody.TimeSeries[id].Metric.Type,
-			"datastoreStackdriver.metricKind":   stackdriverMetricBody.TimeSeries[id].MetricKind,
-			"datastoreStackdriver.timestamp":    stackdriverMetricBody.TimeSeries[id].Points[0].Interval.StartTime.Unix(),
-			"datastoreStackdriver.value":        stackdriverMetricBody.TimeSeries[id].Points[0].Value.Int64Value,
-			"datastoreStackdriver.projectId":    stackdriverMetricBody.TimeSeries[id].Resource.Labels.ProjectID,
-			"datastoreStackdriver.resourceType": stackdriverMetricBody.TimeSeries[id].Resource.Type,
+			"datastoreStackdriver.apiMethod":    item.Metric.Labels.ApiMethod,
+			"datastoreStackdriver.responseCode": item.Metric.Labels.ResponseCode,
+			"datastoreStackdriver.metricType":   item.Metric.Type,
+			"datastoreStackdriver.metricKind":   item.MetricKind,
+			"datastoreStackdriver.timestamp":    item.Points[0].Interval.StartTime.Unix(),
+			"datastoreStackdriver.value":        item.Points[0].Value.Int64Value,
+			"datastoreStackdriver.projectId":    item.Resource.Labels.ProjectID,
+			"datastoreStackdriver.resourceType": item.Resource.Type,
 		})
 	}
 
 	return metricResult, nil
 }
 
-func getDatastoreQueryResult(ds DatastoreImpl) ([]DatastoreKind, error) {
+func getDatastoreQueryResult(ds DatastoreInterface) ([]DatastoreKind, error) {
 	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
 
 	var kinds []DatastoreKind
@@ -260,27 +279,26 @@ func getDatastoreData(kinds []DatastoreKind, projectID string) []map[string]inte
 	return datastoreData
 }
 
-func NewClient(projectId string) Client {
+func NewClient(projectId string) (Client,error) {
 
 	ctx := context.Background()
 	dsClient, err := datastore.NewClient(ctx, projectId)
 	if err != nil {
-		panic("unable to set client")
+		return Client{},err
 	}
 
 	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
 	if err != nil {
-		panic("unable to set client")
+		return Client{},err
 	}
 	s, err := monitoring.New(hc)
 	if err != nil {
-		panic("unable to set client")
+		return Client{},err
 	}
 
 	return Client{
-		dsClient,
-		s.Projects.TimeSeries,
-	}
+		dsClient
+	},nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
@@ -300,4 +318,24 @@ func formatResource(resource interface{}) []byte {
 		panic(err)
 	}
 	return b
+}
+
+// ConnectDatastore establishes a datastore.Client from a base64 encoding JSON credentials file.
+func ConnectDatastore(base64Config string) (*datastore.Client, error) {
+	jsonConfig, err := base64.StdEncoding.DecodeString(base64Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode datastore credentials: %v", err)
+	}
+	projectID, err := jsonparser.GetString(jsonConfig, "project_id")
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine project_id from credentials file: %v", err)
+	}
+
+	ctx := context.Background()
+	creds, err := google.CredentialsFromJSON(ctx, jsonConfig, datastore.ScopeDatastore)
+	if err != nil {
+		return nil, err
+	}
+
+	return datastore.NewClient(ctx, projectID, option.WithCredentials(creds))
 }

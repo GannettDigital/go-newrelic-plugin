@@ -391,9 +391,9 @@ func TestGetStackdriverData(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		g.Describe("getStackdriverData()", func() {
+		g.Describe("stackdriverData()", func() {
 			g.It(test.description, func() {
-				data, err := getStackdriverData(&test.resp)
+				data, err := stackdriverData(&test.resp)
 				for id, _ := range data {
 					g.Assert(data[id]).Equal(test.dataWanted[id])
 
