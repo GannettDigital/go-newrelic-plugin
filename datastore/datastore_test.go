@@ -125,8 +125,6 @@ func TestGetDataStoreData(t *testing.T) {
 		projectID           string
 		datastoreKind       []DatastoreKind
 		datastoreDataWanted []map[string]interface{}
-		err                 error
-		expectedErr         error
 		description         string
 	}{
 		{
@@ -160,8 +158,6 @@ func TestGetDataStoreData(t *testing.T) {
 					"datastoreQuery.timestamp":           time.Now().Unix(),
 				},
 			},
-			nil,
-			nil,
 			"valid return one kind",
 		},
 		{
@@ -220,8 +216,6 @@ func TestGetDataStoreData(t *testing.T) {
 					"datastoreQuery.timestamp":           time.Now().Unix(),
 				},
 			},
-			nil,
-			nil,
 			"valid return multiple kinds",
 		},
 	}
