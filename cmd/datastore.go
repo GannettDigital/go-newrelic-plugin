@@ -15,6 +15,6 @@ var datastoreCmd = &cobra.Command{
 	Short: "execute a datastore real time metric collection",
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Info("datastore collection")
-		datastore.Run(log, prettyPrint, status.GetInfo().Version)
+		datastore.Run(log, true, status.GetInfo().Version)
 	},
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -13,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
+	"os"
 )
 
 var stackdriverEndpoints = []string{
@@ -89,7 +89,6 @@ type DatastoreImpl interface {
 
 type StackDriverImpl interface {
 	List(name string) *monitoring.ProjectsTimeSeriesListCall
-	// add methods that are used by stackDriver. You likely need multiple interfaces sense it does chaining like List.Filter....DO()
 }
 
 type KeyData struct {
@@ -119,9 +118,6 @@ type EventData map[string]interface{}
 // NAME - name of plugin
 const NAME string = "datastore"
 
-// PROVIDER -
-const PROVIDER string = "datastore" //we might want to make this an env tied to nginx version or app name maybe...
-
 // ProtocolVersion -
 const ProtocolVersion string = "1"
 
@@ -137,8 +133,8 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	var keyData KeyData
 
-	//keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
-	keyFile, err := ioutil.ReadFile("/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
+	keyFile,err :=ioutil.ReadFile("/var/secrets/google/key.json")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -148,8 +144,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		log.Fatal(err)
 	}
 
-	//os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/key.json")
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/Users/jstorer/Downloads/gannett-api-services-stage-e.json")
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/key.json")
 
 	projectID := keyData.ProjectID
 	c := NewClient(projectID)
@@ -245,9 +240,9 @@ func getDatastoreQueryResult(ds DatastoreImpl) ([]DatastoreKind, error) {
 }
 
 func getDatastoreData(kinds []DatastoreKind, projectID string) []map[string]interface{} {
-	var queryResult []map[string]interface{}
+	var datastoreData []map[string]interface{}
 	for _, k := range kinds {
-		queryResult = append(queryResult, map[string]interface{}{
+		datastoreData = append(datastoreData, map[string]interface{}{
 			"event_type":                         "DatastoreSample",
 			"provider":                           "datastoreQuery",
 			"datastoreQuery.builtinIndexBytes":   k.BuiltinIndexBytes,
@@ -262,7 +257,7 @@ func getDatastoreData(kinds []DatastoreKind, projectID string) []map[string]inte
 			"datastoreQuery.timestamp":           k.Timestamp.Unix(),
 		})
 	}
-	return queryResult
+	return datastoreData
 }
 
 func NewClient(projectId string) Client {
