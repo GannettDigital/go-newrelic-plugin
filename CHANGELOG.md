@@ -3,6 +3,9 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 
+# 1.7.0
+Jeremy Storer - add datastore collector
+
 # 1.6.4
 Tom Barber - correct panic due to improper error handling logic and add timestamp logic to fastly endpoint
 
