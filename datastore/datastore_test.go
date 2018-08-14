@@ -110,7 +110,7 @@ func TestDatastoreStatKindQueryResult(t *testing.T) {
 		g.Describe("DatastoreStatKindQueryResult()", func() {
 			g.It(test.description, func() {
 				fakeClient := NewFakeClient(test.datastoreKind, test.err)
-				kindsResult, err := DatastoreStatKindQueryResult(fakeClient.Dsc)
+				kindsResult, err := fakeClient.KindStats()
 				g.Assert(err).Equal(test.expectedErr)
 				g.Assert(kindsResult).Equal(test.datastoreKind)
 			})
