@@ -1,24 +1,23 @@
 /*
 the datastore package retrieves data from the stackdriver API as well as query of '__Stat_Kind__' from datastore directly.
+datastore.go contains the logic to send data to new relic and the datastore query metric/connection. stackdrive.go contains
+the stackdriver API metrics/connection.
 */
 
 package datastore
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/buger/jsonparser"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
+	"github.com/buger/jsonparser"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/monitoring/v3"
-	"encoding/base64"
 	"google.golang.org/api/option"
 )
 
@@ -28,6 +27,8 @@ const (
 	// ProtocolVersion -
 	ProtocolVersion string = "1"
 )
+
+var base64Config string
 
 var stackdriverEndpoints = []string{
 	"datastore.googleapis.com/api/request_count",
@@ -60,38 +61,6 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-//StackdriverMetric represents fields for stackdriver returns
-type StackdriverMetric struct {
-	TimeSeries []struct {
-		Metric struct {
-			Labels struct {
-				ApiMethod    string `json:"api_method"`
-				ResponseCode string `json:"response_code"`
-			} `json:"labels"`
-			Type string `json:"type"`
-		} `json:"metric"`
-		MetricKind string `json:"metricKind"`
-		Points     []struct {
-			Interval struct {
-				EndTime   time.Time `json:"endTime"`
-				StartTime time.Time `json:"startTime"`
-			} `json:"interval"`
-			Value struct {
-				Int64Value int64 `json:"int64Value,string"`
-			} `json:"value"`
-		} `json:"points"`
-		Resource struct {
-			Labels struct {
-				ModuleID  string `json:"module_id"`
-				ProjectID string `json:"project_id"`
-				VersionID string `json:"version_id"`
-			} `json:"labels"`
-			Type string `json:"type"`
-		} `json:"resource"`
-		ValueType string `json:"valueType"`
-	} `json:"timeSeries"`
-}
-
 type Client struct {
 	Dsc DatastoreInterface
 }
@@ -99,19 +68,6 @@ type Client struct {
 //DatastoreInterface is used for testing purposes
 type DatastoreInterface interface {
 	GetAll(ctx context.Context, q *datastore.Query, dst interface{}) (keys []*datastore.Key, err error)
-}
-
-type KeyData struct {
-	AuthProviderX509CertURL string  `json:"auth_provider_x509_cert_url"`
-	AuthURI                 string  `json:"auth_uri"`
-	ClientEmail             string  `json:"client_email"`
-	ClientID                float64 `json:"client_id,string"`
-	ClientX509CertURL       string  `json:"client_x509_cert_url"`
-	PrivateKey              string  `json:"private_key"`
-	PrivateKeyID            string  `json:"private_key_id"`
-	ProjectID               string  `json:"project_id"`
-	TokenURI                string  `json:"token_uri"`
-	Type                    string  `json:"type"`
 }
 
 // InventoryData is the data type for inventory data produced by a plugin data
@@ -135,30 +91,25 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	var keyData KeyData
-
-	keyFile, err := ioutil.ReadFile("/var/secrets/google/key.json")
-
+	c, projectId, err := NewClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = json.Unmarshal(keyFile, &keyData)
+	//add query metrics
+	kinds, err := getDatastoreQueryResult(c.Dsc)
 	if err != nil {
 		log.Fatal(err)
 	}
+	result := getDatastoreData(kinds,projectId)
 
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "/var/secrets/google/key.json")
-
-	projectID := keyData.ProjectID
-	c,err := NewClient(projectID)
-	if err != nil {
-		log.Fatal(err)
+	for _, metricResult := range result {
+		data.Metrics = append(data.Metrics, metricResult)
 	}
 
 	//add stackdriver metrics
 	for _, metric := range stackdriverEndpoints {
-		resp, err := stackdriverResp(projectID, metric)
+		resp, err := stackdriverResp(projectId, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -172,75 +123,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		}
 	}
 
-	//add query metrics
-	kinds, err := getDatastoreQueryResult(c.Dsc)
-	if err != nil {
-		log.Fatal(err)
-	}
-	result := getDatastoreData(kinds, projectID)
-
-	for _, metricResult := range result {
-		data.Metrics = append(data.Metrics, metricResult)
-	}
-
 	fatalIfErr(log, helpers.OutputJSON(data, prettyPrint))
-}
-
-func stackdriverResp(projectID string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
-	ctx := context.Background()
-
-	hc,err := google.DefaultClient(ctx,monitoring.MonitoringScope)
-	if err != nil {
-		return nil, err
-	}
-
-	s, err := monitoring.New(hc)
-	if err != nil {
-		return nil, err
-	}
-
-	startTime := time.Now().UTC().Add(time.Minute * -3)
-	endTime := time.Now().UTC()
-
-	resp, err := s.Projects.TimeSeries.List(projectResource(projectID)).
-		Filter(fmt.Sprintf("metric.type=\"%s\"", metric)).
-		IntervalStartTime(startTime.Format(time.RFC3339)).
-		IntervalEndTime(endTime.Format(time.RFC3339)).
-		Do()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-
-}
-
-func stackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]interface{}, error) {
-	var stackdriverMetricBody StackdriverMetric
-	var metricResult []map[string]interface{}
-
-	err := json.Unmarshal(formatResource(resp), &stackdriverMetricBody)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range stackdriverMetricBody.TimeSeries {
-		metricResult = append(metricResult, map[string]interface{}{
-			"event_type":                        "DatastoreSample",
-			"provider":                          "datastoreStackdriver",
-			"datastoreStackdriver.apiMethod":    item.Metric.Labels.ApiMethod,
-			"datastoreStackdriver.responseCode": item.Metric.Labels.ResponseCode,
-			"datastoreStackdriver.metricType":   item.Metric.Type,
-			"datastoreStackdriver.metricKind":   item.MetricKind,
-			"datastoreStackdriver.timestamp":    item.Points[0].Interval.StartTime.Unix(),
-			"datastoreStackdriver.value":        item.Points[0].Value.Int64Value,
-			"datastoreStackdriver.projectId":    item.Resource.Labels.ProjectID,
-			"datastoreStackdriver.resourceType": item.Resource.Type,
-		})
-	}
-
-	return metricResult, nil
 }
 
 func getDatastoreQueryResult(ds DatastoreInterface) ([]DatastoreKind, error) {
@@ -279,26 +162,15 @@ func getDatastoreData(kinds []DatastoreKind, projectID string) []map[string]inte
 	return datastoreData
 }
 
-func NewClient(projectId string) (Client,error) {
-
-	ctx := context.Background()
-	dsClient, err := datastore.NewClient(ctx, projectId)
+func NewClient() (Client,string, error) {
+	dsClient,projectId,err:=ConnectDatastore(base64Config)
 	if err != nil {
-		return Client{},err
-	}
-
-	hc, err := google.DefaultClient(ctx, monitoring.MonitoringScope)
-	if err != nil {
-		return Client{},err
-	}
-	s, err := monitoring.New(hc)
-	if err != nil {
-		return Client{},err
+		return Client{},"", err
 	}
 
 	return Client{
-		dsClient
-	},nil
+		dsClient,
+	},projectId, nil
 }
 
 func fatalIfErr(log *logrus.Logger, err error) {
@@ -321,21 +193,24 @@ func formatResource(resource interface{}) []byte {
 }
 
 // ConnectDatastore establishes a datastore.Client from a base64 encoding JSON credentials file.
-func ConnectDatastore(base64Config string) (*datastore.Client, error) {
+func ConnectDatastore(base64Config string) (*datastore.Client,string, error) {
 	jsonConfig, err := base64.StdEncoding.DecodeString(base64Config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode datastore credentials: %v", err)
+		return nil,"", fmt.Errorf("failed to decode datastore credentials: %v", err)
 	}
-	projectID, err := jsonparser.GetString(jsonConfig, "project_id")
+	projectId, err := jsonparser.GetString(jsonConfig, "project_id")
 	if err != nil {
-		return nil, fmt.Errorf("failed to determine project_id from credentials file: %v", err)
+		return nil,"", fmt.Errorf("failed to determine project_id from credentials file: %v", err)
 	}
 
 	ctx := context.Background()
 	creds, err := google.CredentialsFromJSON(ctx, jsonConfig, datastore.ScopeDatastore)
 	if err != nil {
-		return nil, err
+		return nil,"", err
 	}
-
-	return datastore.NewClient(ctx, projectID, option.WithCredentials(creds))
+	c,err:=datastore.NewClient(ctx, projectId, option.WithCredentials(creds))
+	if err != nil {
+		return nil,"", err
+	}
+	return c,projectId,err
 }
