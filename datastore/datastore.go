@@ -11,16 +11,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
 	"cloud.google.com/go/datastore"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
+	"github.com/buger/jsonparser"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
-	"github.com/buger/jsonparser"
 	"google.golang.org/api/option"
+	"os"
+	"strings"
 )
 
 const (
@@ -28,7 +29,7 @@ const (
 	ProtocolVersion = "1"
 )
 
-var base64Config string
+var base64Creds string
 
 var stackdriverEndpoints = []string{
 	"datastore.googleapis.com/api/request_count",
@@ -37,7 +38,7 @@ var stackdriverEndpoints = []string{
 	//"datastore.googleapis.com/entity/write_sizes",
 }
 
-//DatastoreKind represents the fields for a datastore Query
+// DatastoreKind represents the fields for a datastore Query
 type DatastoreKind struct {
 	BuiltinIndexBytes   int       `datastore:"builtin_index_bytes"`
 	BuiltinIndexCount   int       `datastore:"builtin_index_count"`
@@ -61,7 +62,7 @@ type PluginData struct {
 	Status          string                   `json:"status"`
 }
 
-//DatastoreClient is used for testing purposes
+// DatastoreClient is used for testing purposes
 type DatastoreClient interface {
 	GetAll(ctx context.Context, q *datastore.Query, dst interface{}) (keys []*datastore.Key, err error)
 }
@@ -119,25 +120,33 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	c, projectId, err := NewDatastoreClient()
+	base64Creds = os.Getenv("CREDENTIALS_DATA")
+	base64Creds = strings.Replace(base64Creds, " ", "\n",-1)
+
+	dsc, err := NewDatastoreClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//add query metrics
-	kinds, err := c.KindStats()
+	kinds, err := dsc.KindStats()
 	if err != nil {
 		log.Fatal(err)
 	}
-	result := DatastoreData(kinds, projectId)
+	result := dsc.DatastoreData(kinds)
 
 	for _, metricResult := range result {
 		data.Metrics = append(data.Metrics, metricResult)
 	}
 
+	s, projectId, err := ConnectStackdriver(base64Creds)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	//add stackdriver metrics
 	for _, metric := range stackdriverEndpoints {
-		resp, err := StackdriverResp(projectId, metric)
+		resp, err := StackdriverResp(s, projectId, metric)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -154,13 +163,14 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	helpers.OutputJSON(data, prettyPrint)
 }
 
-//Client stores a DatastoreClient
-type Client struct {
-	Dsc DatastoreClient
+// ClientDatastore stores a DatastoreClient and corresponding projectId
+type ClientDatastore struct {
+	Dsc       DatastoreClient
+	projectId string
 }
 
-//KindStats return the results of a query against datastore using __Stat_Kind__
-func (c *Client) KindStats() ([]DatastoreKind, error) {
+// KindStats return the results of a query against datastore using __Stat_Kind__
+func (c *ClientDatastore) KindStats() ([]DatastoreKind, error) {
 	q := datastore.NewQuery("__Stat_Kind__").Order("kind_name")
 
 	var kinds []DatastoreKind
@@ -175,20 +185,8 @@ func (c *Client) KindStats() ([]DatastoreKind, error) {
 	return kinds, nil
 }
 
-//NewDatastoreClient() creates a client for datastore, it primarily exists for testing purposes
-func NewDatastoreClient() (Client, string, error) {
-	dsClient, projectId, err := ConnectDatastore(base64Config)
-	if err != nil {
-		return Client{}, "", err
-	}
-
-	return Client{
-		dsClient,
-	}, projectId, nil
-}
-
-//DatastoreData converts a []DatastoreKind to a []map[string]interface{} to be used for the final output to new relic
-func DatastoreData(kinds []DatastoreKind, projectID string) []map[string]interface{} {
+// DatastoreData converts a []DatastoreKind to a []map[string]interface{} to be used for the final output to new relic
+func (c *ClientDatastore) DatastoreData(kinds []DatastoreKind) []map[string]interface{} {
 	var datastoreData []map[string]interface{}
 	for _, k := range kinds {
 		datastoreData = append(datastoreData, map[string]interface{}{
@@ -202,32 +200,30 @@ func DatastoreData(kinds []DatastoreKind, projectID string) []map[string]interfa
 			"datastoreQuery.bytes":               k.Bytes,
 			"datastoreQuery.count":               k.Count,
 			"datastoreQuery.kindName":            k.KindName,
-			"datastoreQuery.projectId":           projectID,
+			"datastoreQuery.projectId":           c.projectId,
 			"datastoreQuery.timestamp":           k.Timestamp.Unix(),
 		})
 	}
 	return datastoreData
 }
 
+//NewDatastoreClient() creates a client for datastore, it primarily exists for testing purposes
+func NewDatastoreClient() (ClientDatastore, error) {
+	dsClient, projectId, err := ConnectDatastore(base64Creds)
+	if err != nil {
+		return ClientDatastore{}, err
+	}
+
+	return ClientDatastore{
+		dsClient,
+		projectId,
+	}, nil
+}
+
 //StackdriverResp gets the data of the wanted metric from the stackdriver API. Start time is set at -3 minutes to act as a Timestamp
 //as data from stackdriver is always 3 minutes old and refreshed every 1 minute. This timing also ensures we only ever get 1 point
 //back at a time.
-func StackdriverResp(projectId string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
-	ctx := context.Background()
-	jsonConfig, err := base64.StdEncoding.DecodeString(base64Config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode datastore credentials: %v", err)
-	}
-
-	creds, err := google.CredentialsFromJSON(ctx, jsonConfig, monitoring.MonitoringScope)
-
-	hc := oauth2.NewClient(ctx, creds.TokenSource)
-
-	s, err := monitoring.New(hc)
-	if err != nil {
-		return nil, err
-	}
-
+func StackdriverResp(s *monitoring.Service, projectId string, metric string) (*monitoring.ListTimeSeriesResponse, error) {
 	startTime := time.Now().UTC().Add(time.Minute * -3)
 	endTime := time.Now().UTC()
 
@@ -242,7 +238,6 @@ func StackdriverResp(projectId string, metric string) (*monitoring.ListTimeSerie
 	}
 
 	return resp, nil
-
 }
 
 //StackdriverData converts a ListTimeSeriesResponse to a []map[string]interface{} to be used for the final output to be sent to new relic
@@ -255,7 +250,7 @@ func StackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]inte
 		return nil, err
 	}
 
-	if err = json.Unmarshal(b, &stackdriverMetricBody); err != nil{
+	if err = json.Unmarshal(b, &stackdriverMetricBody); err != nil {
 		return nil, err
 	}
 
@@ -277,12 +272,8 @@ func StackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]inte
 	return metricResult, nil
 }
 
-func projectResource(projectID string) string {
-	return "projects/" + projectID
-}
-
 // ConnectDatastore establishes a datastore.Client from a base64 encoding JSON credentials file.
-func ConnectDatastore(base64Config string) (*datastore.Client,string, error) {
+func ConnectDatastore(base64Config string) (*datastore.Client, string, error) {
 	jsonConfig, err := base64.StdEncoding.DecodeString(base64Config)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to decode datastore credentials: %v", err)
@@ -302,4 +293,32 @@ func ConnectDatastore(base64Config string) (*datastore.Client,string, error) {
 		return nil, "", err
 	}
 	return c, projectId, err
+}
+
+// ConnectStackdriver establishes a monitoring.Service from a base64 encoding JSON credentials file.
+func ConnectStackdriver(base64Config string) (*monitoring.Service, string, error) {
+	jsonConfig, err := base64.StdEncoding.DecodeString(base64Config)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to decode datastore credentials: %v", err)
+	}
+
+	projectId, err := jsonparser.GetString(jsonConfig, "project_id")
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to determine project_id from credentials file: %v", err)
+	}
+
+	ctx := context.Background()
+	creds, err := google.CredentialsFromJSON(ctx, jsonConfig, monitoring.MonitoringScope)
+	hc := oauth2.NewClient(ctx, creds.TokenSource)
+
+	s, err := monitoring.New(hc)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return s, projectId, nil
+}
+
+func projectResource(projectID string) string {
+	return "projects/" + projectID
 }

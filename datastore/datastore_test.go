@@ -8,8 +8,8 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/franela/goblin"
-	"google.golang.org/api/monitoring/v3"
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/monitoring/v3"
 )
 
 type FakeDataStoreClient struct {
@@ -17,8 +17,8 @@ type FakeDataStoreClient struct {
 	err       error
 }
 
-func NewFakeClient(kindsInit []DatastoreKind, err error) Client {
-	return Client{
+func NewFakeClient(kindsInit []DatastoreKind, err error) ClientDatastore {
+	return ClientDatastore{
 		Dsc: FakeDataStoreClient{
 			kindsFake: kindsInit,
 			err:       err,
@@ -222,7 +222,9 @@ func TestDataStoreData(t *testing.T) {
 	for _, test := range tests {
 		g.Describe("DatastoreData()", func() {
 			g.It(test.description, func() {
-				data := DatastoreData(test.datastoreKind, test.projectID)
+				fakeClient := NewFakeClient(test.datastoreKind, nil)
+				fakeClient.projectId = test.projectID
+				data := fakeClient.DatastoreData(test.datastoreKind)
 				g.Assert(data).Equal(test.datastoreDataWanted)
 			})
 		})
@@ -394,7 +396,7 @@ func TestStackdriverData(t *testing.T) {
 		g.Describe("StackdriverData()", func() {
 			g.It(test.description, func() {
 				data, err := StackdriverData(&test.resp)
-				for id, _ := range data {
+				for id := range data {
 					g.Assert(data[id]).Equal(test.dataWanted[id])
 
 				}

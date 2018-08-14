@@ -4,5 +4,7 @@ integration_name: com.gannettdigital.datastore
 instances:
   - name: com.gannettdigital.datastore
     command: datastore
+      arguments:
+        CREDENTIALS_DATA: <cred data>
 
 
