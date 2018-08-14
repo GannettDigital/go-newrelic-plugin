@@ -10,7 +10,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"time"
+
 	"cloud.google.com/go/datastore"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
@@ -20,8 +23,6 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/monitoring/v3"
 	"google.golang.org/api/option"
-	"os"
-	"strings"
 )
 
 const (
@@ -121,7 +122,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	}
 
 	base64Creds = os.Getenv("CREDENTIALS_DATA")
-	base64Creds = strings.Replace(base64Creds, " ", "\n",-1)
+	base64Creds = strings.Replace(base64Creds, " ", "\n", -1)
 
 	dsc, err := NewDatastoreClient()
 	if err != nil {
