@@ -207,7 +207,7 @@ func (c *ClientDatastore) DatastoreData(kinds []DatastoreKind) []map[string]inte
 	return datastoreData
 }
 
-//NewDatastoreClient() creates a client for datastore, it primarily exists for testing purposes
+//NewDatastoreClient creates a client for datastore, it primarily exists for testing purposes
 func NewDatastoreClient() (ClientDatastore, error) {
 	dsClient, projectId, err := ConnectDatastore(base64Creds)
 	if err != nil {
