@@ -287,7 +287,13 @@ func StackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]inte
 	var stackdriverMetricBody StackdriverMetric
 	var metricResult []map[string]interface{}
 
-	err := json.Unmarshal(formatResource(resp), &stackdriverMetricBody)
+	b, err := json.Marshal(resp)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(b, &stackdriverMetricBody)
+
 	if err != nil {
 		return nil, err
 	}
@@ -314,11 +320,3 @@ func projectResource(projectID string) string {
 	return "projects/" + projectID
 }
 
-// formatResource marshals a response objects as JSON.
-func formatResource(resource interface{}) []byte {
-	b, err := json.MarshalIndent(resource, "", "    ")
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
