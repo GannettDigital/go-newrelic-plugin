@@ -95,6 +95,7 @@ This document outlines the extensibility mechanism built into the New Relic Infr
 * [mysql](mysql/mysql.go)
 * [memcached](memcached/memcached.go)
 * [saucelabs](saucelabs/saucelabs.go)
+* [datastore](datastore/datastore.go)
 
 #### Contributing
 

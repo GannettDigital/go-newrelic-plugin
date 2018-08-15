@@ -1,0 +1,11 @@
+name: com.gannettdigital.datastore
+description: Reports Datastore Real time Metrics
+protocol_version: 1
+os: linux
+commands:
+  datastore:
+    command:
+     - /var/db/newrelic-infra/custom-integrations/bin/go-newrelic-plugin
+     - datastore
+    prefix: gannett
+    interval: 60
