@@ -127,6 +127,10 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 
 	base64Path = os.Getenv("CREDENTIALS_DATA")
 	base64CredsByte, err := ioutil.ReadFile("/var/run/secrets/vault-volume/content-datastore-monitor")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	base64Creds = string(base64CredsByte[:])
 	base64Creds = strings.Replace(base64Creds, " ", "\n", -1)
 
