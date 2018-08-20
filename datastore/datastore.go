@@ -10,12 +10,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/datastore"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
+
+	"cloud.google.com/go/datastore"
 	"github.com/Sirupsen/logrus"
 	"github.com/buger/jsonparser"
 	"golang.org/x/net/context"
@@ -30,14 +32,14 @@ const (
 	ProtocolVersion = "1"
 )
 
-var base64Creds string
-
-var stackdriverEndpoints = []string{
-	"datastore.googleapis.com/api/request_count",
-	"datastore.googleapis.com/index/write_count",
-	//"datastore.googleapis.com/entity/read_sizes", --TODO add distribution data
-	//"datastore.googleapis.com/entity/write_sizes",
-}
+var (
+	stackdriverEndpoints = []string{
+		"datastore.googleapis.com/api/request_count",
+		"datastore.googleapis.com/index/write_count",
+		//"datastore.googleapis.com/entity/read_sizes", --TODO add distribution data
+		//"datastore.googleapis.com/entity/write_sizes",
+	}
+)
 
 // DatastoreKind represents the fields for a datastore Query
 type DatastoreKind struct {
@@ -121,10 +123,17 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	base64Creds = os.Getenv("CREDENTIALS_DATA")
+	//read in credentials
+	base64Path := os.Getenv("CREDENTIALS_DATA")
+	base64CredsByte, err := ioutil.ReadFile(base64Path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	base64Creds := string(base64CredsByte)
 	base64Creds = strings.Replace(base64Creds, " ", "\n", -1)
 
-	dsc, err := NewDatastoreClient()
+	dsc, err := NewDatastoreClient(base64Creds)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -209,7 +218,7 @@ func (c *ClientDatastore) DatastoreData(kinds []DatastoreKind) []map[string]inte
 }
 
 //NewDatastoreClient creates a client for datastore, it primarily exists for testing purposes
-func NewDatastoreClient() (ClientDatastore, error) {
+func NewDatastoreClient(base64Creds string) (ClientDatastore, error) {
 	dsClient, projectId, err := ConnectDatastore(base64Creds)
 	if err != nil {
 		return ClientDatastore{}, err

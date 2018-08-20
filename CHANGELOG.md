@@ -2,6 +2,8 @@ go-newrelic-plugin CHANGELOG
 ==============================
 
 This file is used to list changes made in each version of go-newrelic-plugin.
+# 1.7.1
+Jeremy Storer - add secret handling for datastore collector
 
 # 1.7.0
 Jeremy Storer - add datastore collector
