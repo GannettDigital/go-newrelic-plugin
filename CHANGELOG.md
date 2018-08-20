@@ -3,7 +3,7 @@ go-newrelic-plugin CHANGELOG
 
 This file is used to list changes made in each version of go-newrelic-plugin.
 # 2.0.0
-Jeremy Storer - moved to quay instead of artifactory
+Jeremy Storer - moved to quay instead of artifactory, updated env variable
 
 # 1.7.1
 Jeremy Storer - add secret handling for datastore collector
