@@ -10,15 +10,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
-	"strings"
-
-	"io/ioutil"
+	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 
 	"cloud.google.com/go/datastore"
-	"github.com/GannettDigital/go-newrelic-plugin/helpers"
 	"github.com/Sirupsen/logrus"
 	"github.com/buger/jsonparser"
 	"golang.org/x/net/context"
