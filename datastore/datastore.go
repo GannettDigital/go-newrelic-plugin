@@ -11,8 +11,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"time"
+
+	"strings"
+
+	"io/ioutil"
 
 	"cloud.google.com/go/datastore"
 	"github.com/GannettDigital/go-newrelic-plugin/helpers"
@@ -30,14 +33,16 @@ const (
 	ProtocolVersion = "1"
 )
 
-var base64Creds string
-
-var stackdriverEndpoints = []string{
-	"datastore.googleapis.com/api/request_count",
-	"datastore.googleapis.com/index/write_count",
-	//"datastore.googleapis.com/entity/read_sizes", --TODO add distribution data
-	//"datastore.googleapis.com/entity/write_sizes",
-}
+var (
+	base64Creds          string
+	base64Path           string
+	stackdriverEndpoints = []string{
+		"datastore.googleapis.com/api/request_count",
+		"datastore.googleapis.com/index/write_count",
+		//"datastore.googleapis.com/entity/read_sizes", --TODO add distribution data
+		//"datastore.googleapis.com/entity/write_sizes",
+	}
+)
 
 // DatastoreKind represents the fields for a datastore Query
 type DatastoreKind struct {
@@ -121,7 +126,9 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
-	base64Creds = os.Getenv("CREDENTIALS_DATA")
+	base64Path = os.Getenv("CREDENTIALS_DATA")
+	base64CredsByte, err := ioutil.ReadFile("/var/run/secrets/vault-volume/content-datastore-monitor")
+	base64Creds = string(base64CredsByte[:])
 	base64Creds = strings.Replace(base64Creds, " ", "\n", -1)
 
 	dsc, err := NewDatastoreClient()
