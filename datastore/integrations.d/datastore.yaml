@@ -5,6 +5,6 @@ instances:
   - name: com.gannettdigital.datastore
     command: datastore
       arguments:
-        CREDENTIALS_DATA: <cred data>
+        CREDENTIALS_DATA: /var/run/secrets/vault-volume/content-datastore-monitor
 
 
