@@ -123,6 +123,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		Events:          make([]EventData, 0),
 	}
 
+	//read in credentials
 	base64Path := os.Getenv("CREDENTIALS_DATA")
 	base64CredsByte, err := ioutil.ReadFile(base64Path)
 	if err != nil {
