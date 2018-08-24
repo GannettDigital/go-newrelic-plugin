@@ -192,7 +192,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		}
 	}
 
-	helpers.OutputJSON(data, true)
+	helpers.OutputJSON(data, prettyPrint)
 }
 
 // ClientDatastore stores a DatastoreClient and corresponding projectId
