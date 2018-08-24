@@ -289,6 +289,7 @@ func TestStackdriverData(t *testing.T) {
 					"datastoreStackdriver.value":        int64(2),
 					"datastoreStackdriver.projectId":    "gannett-api-services-stage",
 					"datastoreStackdriver.resourceType": "datastore_request",
+					"datastoreStackdriver.valueType":    "INT64",
 				},
 			},
 			nil,
@@ -373,6 +374,7 @@ func TestStackdriverData(t *testing.T) {
 					"datastoreStackdriver.value":        int64(2),
 					"datastoreStackdriver.projectId":    "gannett-api-services-stage",
 					"datastoreStackdriver.resourceType": "datastore_request",
+					"datastoreStackdriver.valueType":    "INT64",
 				},
 				{
 					"event_type":                        "DatastoreSample",
@@ -385,10 +387,93 @@ func TestStackdriverData(t *testing.T) {
 					"datastoreStackdriver.value":        int64(2),
 					"datastoreStackdriver.projectId":    "gannett-api-services-stage",
 					"datastoreStackdriver.resourceType": "datastore_request",
+					"datastoreStackdriver.valueType":    "INT64",
 				},
 			},
 			nil,
 			"Two timeseries points",
+		},
+		{
+			monitoring.ListTimeSeriesResponse{
+				ExecutionErrors: []*monitoring.Status{},
+				NextPageToken:   "",
+				TimeSeries: []*monitoring.TimeSeries{
+					{
+						Metric: &monitoring.Metric{
+							Labels: map[string]string{
+								"op": "CREATE",
+							},
+							Type: "datastore.googleapis.com/entity/write_sizes",
+						},
+						MetricKind: "DELTA",
+						Points: []*monitoring.Point{
+							{
+								Interval: &monitoring.TimeInterval{
+									EndTime:   "2018-08-10T20:17:37.754Z",
+									StartTime: "2018-08-10T20:16:37.754Z",
+								},
+								Value: &monitoring.TypedValue{
+									DistributionValue: &monitoring.Distribution{
+										BucketCounts: googleapi.Int64s{0, 1, 1},
+										Count:        2,
+										Mean:         100,
+									},
+								},
+							},
+						},
+						Resource: &monitoring.MonitoredResource{
+							Labels: map[string]string{
+								"module_id":  "__unknown__",
+								"project_id": "gannett-api-services-stage",
+								"version_id": "__unknown__",
+							},
+							Type: "datastore_request",
+						},
+						ValueType: "DISTRIBUTION",
+					},
+				},
+			},
+			[]map[string]interface{}{
+				{
+					"event_type":                      "DatastoreSample",
+					"provider":                        "datastoreStackdriver",
+					"datastoreStackdriver.op":         "CREATE",
+					"datastoreStackdriver.mean":       float64(100),
+					"datastoreStackdriver.type":       "",
+					"datastoreStackdriver.metricType": "datastore.googleapis.com/entity/write_sizes",
+					"datastoreStackdriver.timestamp":  int64(1533932197),
+					"datastoreStackdriver.projectId":  "gannett-api-services-stage",
+					"datastoreStackdriver.valueType":  "DISTRIBUTION",
+				},
+				{
+					"event_type":                        "DatastoreSample",
+					"provider":                          "datastoreStackdriver",
+					"datastoreStackdriver.type":         "",
+					"datastoreStackdriver.op":           "CREATE",
+					"datastoreStackdriver.metricType":   "datastore.googleapis.com/entity/write_sizes",
+					"datastoreStackdriver.metricKind":   "DELTA",
+					"datastoreStackdriver.timestamp":    int64(1533932197),
+					"datastoreStackdriver.bucket":       float64(4),
+					"datastoreStackdriver.projectId":    "gannett-api-services-stage",
+					"datastoreStackdriver.resourceType": "datastore_request",
+					"datastoreStackdriver.valueType":    "DISTRIBUTION",
+				},
+				{
+					"event_type":                        "DatastoreSample",
+					"provider":                          "datastoreStackdriver",
+					"datastoreStackdriver.op":           "CREATE",
+					"datastoreStackdriver.type":         "",
+					"datastoreStackdriver.bucket":       float64(16),
+					"datastoreStackdriver.metricType":   "datastore.googleapis.com/entity/write_sizes",
+					"datastoreStackdriver.metricKind":   "DELTA",
+					"datastoreStackdriver.timestamp":    int64(1533932197),
+					"datastoreStackdriver.projectId":    "gannett-api-services-stage",
+					"datastoreStackdriver.valueType":    "DISTRIBUTION",
+					"datastoreStackdriver.resourceType": "datastore_request",
+				},
+			},
+			nil,
+			"distribution point",
 		},
 	}
 
