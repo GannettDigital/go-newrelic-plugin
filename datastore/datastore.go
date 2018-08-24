@@ -294,6 +294,7 @@ func StackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]inte
 				"datastoreStackdriver.type":       item.Metric.Labels.Type,
 				"datastoreStackdriver.metricType": item.Metric.Type,
 				"datastoreStackdriver.valueType":  item.ValueType,
+				"datastoreStackdriver.count":      item.Points[0].Value.DistributionValue.Count,
 			})
 			for id, bucket := range item.Points[0].Value.DistributionValue.BucketCounts {
 				numInBucket, _ := strconv.Atoi(bucket)
