@@ -41,10 +41,6 @@ var (
 		"datastore.googleapis.com/entity/read_sizes",
 		"datastore.googleapis.com/entity/write_sizes",
 	}
-	stackdriverDistributionEndpoints = []string{
-		"datastore.googleapis.com/entity/read_sizes",
-		"datastore.googleapis.com/entity/write_sizes",
-	}
 )
 
 // DatastoreKind represents the fields for a datastore Query
