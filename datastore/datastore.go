@@ -11,7 +11,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,8 +38,8 @@ var (
 	stackdriverEndpoints = []string{
 		"datastore.googleapis.com/api/request_count",
 		"datastore.googleapis.com/index/write_count",
-		//"datastore.googleapis.com/entity/read_sizes", --TODO add distribution data
-		//"datastore.googleapis.com/entity/write_sizes",
+		"datastore.googleapis.com/entity/read_sizes",
+		"datastore.googleapis.com/entity/write_sizes",
 	}
 )
 
@@ -88,6 +90,8 @@ type StackdriverMetric struct {
 			Labels struct {
 				ApiMethod    string `json:"api_method"`
 				ResponseCode string `json:"response_code"`
+				Type         string `json:"type"`
+				Op           string `json:"op"`
 			} `json:"labels"`
 			Type string `json:"type"`
 		} `json:"metric"`
@@ -98,7 +102,19 @@ type StackdriverMetric struct {
 				StartTime time.Time `json:"startTime"`
 			} `json:"interval"`
 			Value struct {
-				Int64Value int64 `json:"int64Value,string"`
+				Int64Value        int64 `json:"int64Value,string"`
+				DistributionValue struct {
+					BucketCounts  []string `json:"bucketCounts"`
+					BucketOptions struct {
+						ExponentialBuckets struct {
+							GrowthFactor     int64 `json:"growthFactor"`
+							NumFiniteBuckets int64 `json:"numFiniteBuckets"`
+							Scale            int64 `json:"scale"`
+						} `json:"exponentialBuckets"`
+					} `json:"bucketOptions"`
+					Count int64   `json:"count,string"`
+					Mean  float64 `json:"mean"`
+				} `json:"distributionValue"`
 			} `json:"value"`
 		} `json:"points"`
 		Resource struct {
@@ -133,6 +149,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 	base64Creds := string(base64CredsByte)
 	base64Creds = strings.Replace(base64Creds, " ", "\n", -1)
 
+	//create datastore client
 	dsc, err := NewDatastoreClient(base64Creds)
 	if err != nil {
 		log.Fatal(err)
@@ -149,6 +166,7 @@ func Run(log *logrus.Logger, prettyPrint bool, version string) {
 		data.Metrics = append(data.Metrics, metricResult)
 	}
 
+	//connect to stackdriver
 	s, projectId, err := ConnectStackdriver(base64Creds)
 	if err != nil {
 		log.Fatal(err)
@@ -265,18 +283,51 @@ func StackdriverData(resp *monitoring.ListTimeSeriesResponse) ([]map[string]inte
 	}
 
 	for _, item := range stackdriverMetricBody.TimeSeries {
-		metricResult = append(metricResult, map[string]interface{}{
-			"event_type":                        "DatastoreSample",
-			"provider":                          "datastoreStackdriver",
-			"datastoreStackdriver.apiMethod":    item.Metric.Labels.ApiMethod,
-			"datastoreStackdriver.responseCode": item.Metric.Labels.ResponseCode,
-			"datastoreStackdriver.metricType":   item.Metric.Type,
-			"datastoreStackdriver.metricKind":   item.MetricKind,
-			"datastoreStackdriver.timestamp":    item.Points[0].Interval.StartTime.Unix(),
-			"datastoreStackdriver.value":        item.Points[0].Value.Int64Value,
-			"datastoreStackdriver.projectId":    item.Resource.Labels.ProjectID,
-			"datastoreStackdriver.resourceType": item.Resource.Type,
-		})
+		if item.ValueType == "DISTRIBUTION" {
+			metricResult = append(metricResult, map[string]interface{}{
+				"event_type":                      "DatastoreSample",
+				"provider":                        "datastoreStackdriver",
+				"datastoreStackdriver.mean":       item.Points[0].Value.DistributionValue.Mean,
+				"datastoreStackdriver.op":         item.Metric.Labels.Op,
+				"datastoreStackdriver.projectId":  item.Resource.Labels.ProjectID,
+				"datastoreStackdriver.timestamp":  item.Points[0].Interval.StartTime.Unix(),
+				"datastoreStackdriver.type":       item.Metric.Labels.Type,
+				"datastoreStackdriver.metricType": item.Metric.Type,
+				"datastoreStackdriver.valueType":  item.ValueType,
+			})
+			for id, bucket := range item.Points[0].Value.DistributionValue.BucketCounts {
+				numInBucket, _ := strconv.Atoi(bucket)
+				for i := 0; i < numInBucket; i++ {
+					metricResult = append(metricResult, map[string]interface{}{
+						"event_type":                        "DatastoreSample",
+						"provider":                          "datastoreStackdriver",
+						"datastoreStackdriver.type":         item.Metric.Labels.Type,
+						"datastoreStackdriver.op":           item.Metric.Labels.Op,
+						"datastoreStackdriver.metricType":   item.Metric.Type,
+						"datastoreStackdriver.metricKind":   item.MetricKind,
+						"datastoreStackdriver.timestamp":    item.Points[0].Interval.StartTime.Unix(),
+						"datastoreStackdriver.bucket":       math.Pow(4, float64(id)),
+						"datastoreStackdriver.projectId":    item.Resource.Labels.ProjectID,
+						"datastoreStackdriver.resourceType": item.Resource.Type,
+						"datastoreStackdriver.valueType":    item.ValueType,
+					})
+				}
+			}
+		} else {
+			metricResult = append(metricResult, map[string]interface{}{
+				"event_type":                        "DatastoreSample",
+				"provider":                          "datastoreStackdriver",
+				"datastoreStackdriver.apiMethod":    item.Metric.Labels.ApiMethod,
+				"datastoreStackdriver.responseCode": item.Metric.Labels.ResponseCode,
+				"datastoreStackdriver.metricType":   item.Metric.Type,
+				"datastoreStackdriver.metricKind":   item.MetricKind,
+				"datastoreStackdriver.timestamp":    item.Points[0].Interval.StartTime.Unix(),
+				"datastoreStackdriver.value":        item.Points[0].Value.Int64Value,
+				"datastoreStackdriver.projectId":    item.Resource.Labels.ProjectID,
+				"datastoreStackdriver.resourceType": item.Resource.Type,
+				"datastoreStackdriver.valueType":    item.ValueType,
+			})
+		}
 	}
 
 	return metricResult, nil

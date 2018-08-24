@@ -2,6 +2,9 @@ go-newrelic-plugin CHANGELOG
 ==============================
 
 This file is used to list changes made in each version of go-newrelic-plugin.
+# 2.0.2
+Jeremy Storer - add distribution metrics from datastore to datastore plugin
+
 # 2.0.1
 Jeremy Storer - add env variable
 
