@@ -444,7 +444,7 @@ func TestStackdriverData(t *testing.T) {
 					"datastoreStackdriver.timestamp":  int64(1533932197),
 					"datastoreStackdriver.projectId":  "gannett-api-services-stage",
 					"datastoreStackdriver.valueType":  "DISTRIBUTION",
-					"datastoreStackdriver.count":      2,
+					"datastoreStackdriver.count":      int64(2),
 				},
 				{
 					"event_type":                        "DatastoreSample",
