@@ -199,7 +199,7 @@ func asValue(value string) interface{} {
 
 func generateDSN() string {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.user, config.password, config.host, config.port, config.database)
-	log.Debug("generateDSN: %s", dsn)
+	log.Debugf("generateDSN: %s", dsn)
 	return dsn
 }
 
