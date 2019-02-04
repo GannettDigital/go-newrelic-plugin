@@ -1,14 +1,4 @@
 #!groovy
-@Library('api-services-common@v3.2.0') _
-
-node {
-    ansiColor('xterm') {
-        stage('Git checkout') {
-                    deleteDir()
-                    checkout scm
-        }
-    }
-}
 node {
   stage 'Execute Docker CI'
   withCredentials([
