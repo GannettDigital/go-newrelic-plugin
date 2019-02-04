@@ -1,5 +1,4 @@
 #!groovy
-
 node {
   stage 'Execute Docker CI'
   withCredentials([
