@@ -20,7 +20,7 @@ node {
       def repo = "GannettDigital/go-newrelic-plugin"
       def environment = "staging"
       def region = "us-east-1"
-      def vaultURL = "https://vault.service.us-east-1.gciconsul.com:8200"
+      def vaultURL = "https://vault.gannettdigital.com"
       def vaultConfig = "/secret/paas-api/paas-api-ci"
 
       print 'Running docker run'
